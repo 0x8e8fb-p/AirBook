@@ -214,6 +214,10 @@ function SearchBar() {
     setReturnDate, setPassengers, isSearching, setSearching,
   } = useSearchStore();
 
+  useEffect(() => {
+    setSearching(false);
+  }, [setSearching]);
+
   const [showPassengers, setShowPassengers] = useState(false);
   const [isSwapping, setIsSwapping] = useState(false);
 
