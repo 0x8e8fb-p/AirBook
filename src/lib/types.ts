@@ -1,0 +1,210 @@
+// ============================================
+// FareCracker — Core Type Definitions
+// ============================================
+
+/** Supported data source identifiers */
+export type FlightSource =
+  | 'duffel'
+  | 'kiwi'
+  | 'serpapi'
+  | 'amadeus'
+  | 'scrape_indigo'
+  | 'scrape_airindia'
+  | 'scrape_spicejet';
+
+/** Cabin class options */
+export type CabinClass = 'economy' | 'premium_economy' | 'business' | 'first';
+
+/** Passenger type */
+export type PassengerType = 'adult' | 'child' | 'infant';
+
+/** Airport information */
+export interface Airport {
+  iata: string;
+  name: string;
+  nameHi: string;        // Hindi name
+  city: string;
+  cityHi: string;        // Hindi city name
+  state: string;
+  country: string;
+  lat: number;
+  lng: number;
+  tier: 1 | 2 | 3;       // City tier classification
+  popular: boolean;       // High-traffic airport
+}
+
+/** Passenger count for search */
+export interface PassengerCount {
+  adults: number;
+  children: number;
+  infants: number;
+}
+
+/** Search request parameters */
+export interface SearchParams {
+  origin: string;          // IATA code
+  destination: string;     // IATA code
+  departureDate: string;   // YYYY-MM-DD
+  returnDate?: string;     // YYYY-MM-DD (null for one-way)
+  passengers: PassengerCount;
+  cabinClass: CabinClass;
+  flexibleDates?: number;  // ±days (1, 2, or 3)
+}
+
+/** A single flight segment (one leg) */
+export interface FlightSegment {
+  airline: string;
+  airlineName: string;
+  airlineLogo?: string;
+  flightNumber: string;
+  origin: string;
+  originCity: string;
+  destination: string;
+  destinationCity: string;
+  departureTime: string;   // ISO 8601
+  arrivalTime: string;     // ISO 8601
+  durationMinutes: number;
+  aircraft?: string;
+}
+
+/** Baggage information */
+export interface BaggageInfo {
+  cabin: {
+    included: boolean;
+    weight?: number;       // kg
+    pieces?: number;
+  };
+  checked: {
+    included: boolean;
+    weight?: number;       // kg
+    pieces?: number;
+  };
+}
+
+/** A single flight result from any source */
+export interface FlightResult {
+  id: string;              // Unique identifier
+  source: FlightSource;
+  segments: FlightSegment[];
+  
+  // Price
+  price: number;           // In INR
+  currency: string;        // Always 'INR' for now
+  pricePerAdult: number;
+  
+  // Summary fields (derived)
+  airline: string;         // Primary airline
+  airlineName: string;
+  airlineLogo?: string;
+  flightNumber: string;    // Primary flight number
+  origin: string;
+  destination: string;
+  departureTime: string;
+  arrivalTime: string;
+  durationMinutes: number;
+  stops: number;
+  stopCities: string[];
+  
+  // Booking
+  bookingUrl?: string;
+  deepLink?: string;
+  
+  // Additional info
+  baggage: BaggageInfo;
+  refundable: boolean;
+  cabinClass: CabinClass;
+  seatsRemaining?: number;
+  
+  // Metadata
+  fetchedAt: string;       // ISO 8601
+  searchHash: string;
+}
+
+/** Search results from the orchestrator */
+export interface SearchResults {
+  flights: FlightResult[];
+  searchParams: SearchParams;
+  sources: {
+    source: FlightSource;
+    status: 'success' | 'error' | 'timeout';
+    resultCount: number;
+    responseTimeMs: number;
+    error?: string;
+  }[];
+  totalResults: number;
+  cheapest: number;        // Cheapest price found
+  fastest: number;         // Fastest duration in minutes
+  searchId: string;
+  cachedAt?: string;
+}
+
+/** Sort options for results */
+export type SortOption =
+  | 'cheapest'
+  | 'fastest'
+  | 'best_value'
+  | 'earliest_departure'
+  | 'latest_departure';
+
+/** Filter state */
+export interface FilterState {
+  airlines: string[];
+  maxStops: number | null;         // null = any
+  departureTimeRange: [number, number];  // hours 0-24
+  arrivalTimeRange: [number, number];
+  priceRange: [number, number];
+  sources: FlightSource[];
+  baggageIncluded: boolean | null;
+  refundableOnly: boolean;
+}
+
+/** Fare calendar day data */
+export interface CalendarDay {
+  date: string;            // YYYY-MM-DD
+  cheapestPrice: number | null;
+  source: FlightSource | null;
+  isHoliday: boolean;
+  holidayName?: string;
+  priceLevel: 'cheap' | 'average' | 'expensive' | null;
+}
+
+/** Price history data point */
+export interface PriceHistoryPoint {
+  date: string;
+  price: number;
+  source: FlightSource;
+  airline: string;
+}
+
+/** Indian holiday */
+export interface IndianHoliday {
+  date: string;
+  name: string;
+  nameHi: string;
+  type: 'national' | 'regional' | 'restricted';
+  states?: string[];
+}
+
+/** User profile */
+export interface UserProfile {
+  id: string;
+  email: string;
+  phone?: string;
+  displayName: string;
+  homeAirport: string;
+  preferredLanguage: 'en' | 'hi';
+  subscriptionTier: 'free' | 'pro' | 'premium';
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Trending route for homepage */
+export interface TrendingRoute {
+  origin: string;
+  originCity: string;
+  destination: string;
+  destinationCity: string;
+  cheapestPrice: number;
+  airline: string;
+  imageUrl?: string;
+}
