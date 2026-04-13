@@ -128,7 +128,7 @@ function FareCalendarContent({ route }: { route: string }) {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)]">
+    <div className="min-h-[100dvh] bg-[var(--bg-primary)]">
       {/* Header */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}

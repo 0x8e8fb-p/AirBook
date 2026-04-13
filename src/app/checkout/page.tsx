@@ -28,7 +28,7 @@ function CheckoutContent() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-[100dvh] bg-[var(--color-bg)] flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Background Ambience */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,229,255,0.05)_0%,transparent_70%)] pointer-events-none" />
 
@@ -118,7 +118,7 @@ export default function CheckoutPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[var(--color-bg)] flex items-center justify-center">
+        <div className="min-h-[100dvh] bg-[var(--color-bg)] flex items-center justify-center">
           <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
             <Loader2 className="w-10 h-10 text-[var(--color-accent-cyan)]" />
           </motion.div>

@@ -8,9 +8,9 @@
   --color-text-primary: #F8FAFC;
   --color-text-muted: rgba(248, 250, 252, 0.5);
 
-  --font-display: 'Clash Display', sans-serif;
-  --font-mono: 'Syne Mono', monospace;
-  --font-body: 'DM Sans', sans-serif;
+  --font-display: 'Dubai', sans-serif;
+  --font-mono: 'Dubai', sans-serif; /* fallback for mono where strict monospace isn't visually critical */
+  --font-body: 'Dubai', sans-serif;
 
   /* Easing curves */
   --ease-fluid: cubic-bezier(0.2, 0.8, 0.2, 1);

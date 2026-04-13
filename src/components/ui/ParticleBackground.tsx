@@ -34,14 +34,14 @@ function Particles() {
     if (!pointsRef.current) return;
     
     // Slow rotation
-    pointsRef.current.rotation.y += delta * 0.05;
+    pointsRef.current.rotation.y += delta * 0.015;
     
     // Lerp rotation to mouse position
-    const targetX = (state.pointer.y * Math.PI) / 8;
-    const targetY = (state.pointer.x * Math.PI) / 8;
+    const targetX = (state.pointer.y * Math.PI) / 16;
+    const targetY = (state.pointer.x * Math.PI) / 16;
     
-    pointsRef.current.rotation.x += (targetX - pointsRef.current.rotation.x) * 0.02;
-    pointsRef.current.rotation.z += (targetY * 0.5 - pointsRef.current.rotation.z) * 0.02;
+    pointsRef.current.rotation.x += (targetX - pointsRef.current.rotation.x) * 0.01;
+    pointsRef.current.rotation.z += (targetY * 0.3 - pointsRef.current.rotation.z) * 0.01;
   });
 
   return (

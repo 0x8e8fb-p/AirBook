@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useSpring } from "framer-motion";
 
 export function CustomCursor() {
@@ -28,13 +28,13 @@ export function CustomCursor() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [springX, springY]);
 
-  // Hide entirely on touch devices
-  if (typeof window !== "undefined" && window.matchMedia("(hover: none)").matches) {
-    return null;
-  }
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
+  
+  if (!isMounted) return null;
 
   return (
-    <>
+    <div className="hidden [@media(pointer:fine)]:block">
       {/* Tiny dot */}
       <div 
         ref={cursorRef} 
@@ -48,6 +48,6 @@ export function CustomCursor() {
           y: springY,
         }}
       />
-    </>
+    </div>
   );
 }

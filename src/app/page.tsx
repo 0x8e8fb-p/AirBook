@@ -28,10 +28,9 @@ const ParticleBackground = dynamic(() => import("@/components/ui/ParticleBackgro
    TYPEWRITER SYNC TRIGGER — Cycles through taglines with GSAP text
    ================================================================ */
 const TAGLINES = [
-  "Fluid spatial computing.",
-  "Every airline. One elegant search.",
-  "Immersive cinematic booking.",
-  "Experience atmospheric travel.",
+  "Global flight discovery.",
+  "Uncover hidden fare deals.",
+  "Every flight. One search.",
 ];
 
 function CyclingHeroText() {
@@ -45,8 +44,23 @@ function CyclingHeroText() {
   }, []);
 
   return (
-    <div className="h-[120px] flex items-center justify-center">
-      <AnimatedText key={index} text={TAGLINES[index]} staggerDelay={0.05} className="text-3xl sm:text-5xl lg:text-7xl font-bold leading-tight tracking-tighter" />
+    <div className="h-[120px] flex items-center justify-center relative w-full max-w-4xl mx-auto">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={index}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, y: -40, filter: "blur(10px)" }}
+          transition={{ duration: 0.6 }}
+          className="absolute inset-0 flex items-center justify-center"
+        >
+          <AnimatedText 
+            text={TAGLINES[index]} 
+            staggerDelay={0.05} 
+            className="text-3xl sm:text-5xl lg:text-7xl font-bold leading-tight tracking-tighter text-center" 
+          />
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }
@@ -316,7 +330,7 @@ function SearchBar() {
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen relative overflow-hidden font-sans">
+    <div className="min-h-[100dvh] relative overflow-hidden font-sans">
       <ParticleBackground />
       
       {/* Cinematic Header Overlay */}

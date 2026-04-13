@@ -18,49 +18,7 @@ export function MagneticButton({
   const glowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // If reduced motion, skip complex effects
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    
-    // Magnetic Pull Effect
-    const btn = buttonRef.current;
-    if (!btn) return;
-    
-    const mouseMove = (e: MouseEvent) => {
-      const { clientX, clientY } = e;
-      const { height, width, left, top } = btn.getBoundingClientRect();
-      const x = clientX - (left + width / 2);
-      const y = clientY - (top + height / 2);
-
-      // Only pull if mouse is near
-      const threshold = 60;
-      if (Math.abs(x) < width / 2 + threshold && Math.abs(y) < height / 2 + threshold) {
-        gsap.to(btn, { x: x * 0.4, y: y * 0.4, duration: 0.8, ease: "power3.out" });
-        if (glowRef.current) {
-          gsap.to(glowRef.current, { x: x, y: y, duration: 0.4, ease: "power2.out" });
-        }
-      } else {
-        // Reset when mouse leaves range
-        gsap.to(btn, { x: 0, y: 0, duration: 0.8, ease: "elastic.out(1, 0.3)" });
-        if (glowRef.current) {
-          gsap.to(glowRef.current, { x: 0, y: 0, duration: 0.4 });
-        }
-      }
-    };
-
-    const mouseLeave = () => {
-      gsap.to(btn, { x: 0, y: 0, duration: 0.8, ease: "elastic.out(1, 0.3)" });
-      if (glowRef.current) {
-        gsap.to(glowRef.current, { x: 0, y: 0, duration: 0.4 });
-      }
-    };
-
-    window.addEventListener("mousemove", mouseMove);
-    btn.addEventListener("mouseleave", mouseLeave);
-    
-    return () => {
-      window.removeEventListener("mousemove", mouseMove);
-      btn.removeEventListener("mouseleave", mouseLeave);
-    };
+    // Magnetic pull effect disabled upon user request
   }, []);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {

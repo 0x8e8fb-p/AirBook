@@ -420,7 +420,7 @@ function SearchContent() {
   const destDisplay = getAirportDisplay(to);
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] pb-20">
+    <div className="min-h-[100dvh] bg-[var(--color-bg)] pb-20">
       {/* Cinematic Header Overlay */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}
@@ -535,7 +535,7 @@ export default function SearchPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#080C14] flex items-center justify-center">
+        <div className="min-h-[100dvh] bg-[#080C14] flex items-center justify-center">
           <Loader2 className="w-8 h-8 text-[var(--color-accent-cyan)] animate-spin" />
         </div>
       }
