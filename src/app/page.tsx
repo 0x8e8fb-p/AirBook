@@ -80,11 +80,11 @@ function AirportInput({
         onFocus={() => { setIsFocused(true); setDisplayValue(""); if (suggestions.length > 0) setIsOpen(true); }}
         onBlur={() => setIsFocused(false)}
         placeholder={placeholder}
-        className="w-full bg-transparent border-none outline-none text-xl font-semibold placeholder:text-[var(--text-muted)]/40 truncate py-1 caret-[var(--text-secondary)]"
+        className="ghost-input w-full text-xl font-semibold placeholder:text-[var(--text-muted)]/40 truncate py-1 caret-[var(--text-secondary)]"
         autoComplete="off"
       />
-      {/* Subtle underline that fades in on focus */}
-      <div className={`h-px transition-all duration-300 ${isFocused ? "bg-[var(--text-secondary)] opacity-100" : "bg-transparent opacity-0"}`} />
+      {/* Text line indicator — always visible, brightens on focus */}
+      <div className={`h-px mt-1 transition-all duration-300 ${isFocused ? "bg-[var(--text-secondary)]" : "bg-[var(--border-strong)]"}`} />
 
       <AnimatePresence>
         {isOpen && suggestions.length > 0 && (
@@ -191,8 +191,9 @@ function SearchPanel() {
               value={departureDate}
               onChange={(e) => setDepartureDate(e.target.value)}
               min={new Date().toISOString().split("T")[0]}
-              className="w-full bg-transparent border-none outline-none text-base font-semibold py-1 [color-scheme:dark] cursor-pointer"
+              className="ghost-input w-full text-base font-semibold py-1 [color-scheme:dark] cursor-pointer"
             />
+            <div className="h-px mt-1 bg-[var(--border-strong)]" />
           </div>
         </div>
 
@@ -209,7 +210,7 @@ function SearchPanel() {
               value={returnDate}
               onChange={(e) => setReturnDate(e.target.value)}
               min={departureDate || new Date().toISOString().split("T")[0]}
-              className="w-full bg-transparent border-none outline-none text-base font-semibold py-1 [color-scheme:dark] cursor-pointer"
+              className="ghost-input w-full text-base font-semibold py-1 [color-scheme:dark] cursor-pointer"
             />
             {returnDate && (
               <button
@@ -221,6 +222,7 @@ function SearchPanel() {
                 <X className="w-3 h-3 text-[var(--text-muted)]" />
               </button>
             )}
+            <div className="h-px mt-1 bg-[var(--border-strong)]" />
           </div>
         </div>
 

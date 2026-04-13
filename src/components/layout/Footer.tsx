@@ -47,7 +47,7 @@ export function Footer() {
 
         <div className="mt-10 pt-6 border-t border-[var(--border-muted)] flex items-center justify-between">
           <p className="text-[11px] text-[var(--text-muted)]">© {new Date().getFullYear()} AirBook</p>
-          <p className="text-[11px] text-[var(--text-muted)]">Made in India</p>
+          <p className="text-[11px] text-[var(--text-muted)]">Made in India <span className="text-red-500">❤️</span></p>
         </div>
       </div>
     </footer>
