@@ -8,14 +8,14 @@ import { searchAirports } from "@/lib/airports";
 import type { Airport } from "@/lib/types";
 import { POPULAR_ROUTES, formatPrice } from "@/lib/constants";
 import {
-  ArrowRightLeft, Calendar, Users, ChevronDown,
-  Search, ArrowRight, MapPin, TrendingDown, Shield, Zap, Plane,
+  ArrowRightLeft, Calendar, Users, ChevronDown, X,
+  Search, ArrowRight, TrendingDown, Shield, Zap, Plane,
 } from "lucide-react";
 
 import { Footer } from "@/components/layout/Footer";
 
 /* ================================================================
-   AIRPORT INPUT
+   AIRPORT INPUT — borderless, ghost-style
    ================================================================ */
 function AirportInput({
   id, label, value, onChange, placeholder,
@@ -26,8 +26,9 @@ function AirportInput({
   const [suggestions, setSuggestions] = useState<Airport[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [displayValue, setDisplayValue] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (value) {
@@ -57,55 +58,54 @@ function AirportInput({
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (
-        dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
-        inputRef.current && !inputRef.current.contains(e.target as Node)
-      ) { setIsOpen(false); }
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
-    <div className="relative flex-1">
-      <label htmlFor={id} className="block text-[11px] font-medium text-[var(--text-muted)] mb-2 uppercase tracking-widest">
+    <div ref={wrapperRef} className="relative flex-1">
+      <label htmlFor={id} className="block text-[11px] font-medium text-[var(--text-muted)] mb-1 uppercase tracking-widest">
         {label}
       </label>
-      <div className="relative">
-        <MapPin className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-        <input
-          ref={inputRef}
-          id={id}
-          type="text"
-          value={displayValue}
-          onChange={(e) => handleSearch(e.target.value)}
-          onFocus={() => { setDisplayValue(""); if (suggestions.length > 0) setIsOpen(true); }}
-          placeholder={placeholder}
-          className="w-full bg-transparent border-b border-[var(--border-strong)] pb-2 pl-6 text-lg font-semibold focus:outline-none focus:border-[var(--text-secondary)] transition-colors placeholder:text-[var(--text-muted)] truncate"
-          autoComplete="off"
-        />
-      </div>
+      <input
+        ref={inputRef}
+        id={id}
+        type="text"
+        value={displayValue}
+        onChange={(e) => handleSearch(e.target.value)}
+        onFocus={() => { setIsFocused(true); setDisplayValue(""); if (suggestions.length > 0) setIsOpen(true); }}
+        onBlur={() => setIsFocused(false)}
+        placeholder={placeholder}
+        className="w-full bg-transparent border-none outline-none text-xl font-semibold placeholder:text-[var(--text-muted)]/40 truncate py-1 caret-[var(--text-secondary)]"
+        autoComplete="off"
+      />
+      {/* Subtle underline that fades in on focus */}
+      <div className={`h-px transition-all duration-300 ${isFocused ? "bg-[var(--text-secondary)] opacity-100" : "bg-transparent opacity-0"}`} />
 
       <AnimatePresence>
         {isOpen && suggestions.length > 0 && (
           <motion.div
-            ref={dropdownRef}
-            initial={{ opacity: 0, y: -4 }}
+            initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
+            exit={{ opacity: 0, y: 4 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-50 w-full mt-2 bg-[var(--bg-elevated)] border border-[var(--border-strong)] rounded-[var(--radius-lg)] shadow-[var(--shadow-lg)] overflow-hidden"
+            className="absolute z-50 w-full mt-3 bg-[var(--bg-elevated)] border border-[var(--border-strong)] rounded-[var(--radius-lg)] shadow-[var(--shadow-lg)] overflow-hidden"
           >
             {suggestions.map((airport) => (
               <button
                 key={airport.iata}
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleSelect(airport)}
                 className="w-full text-left px-4 py-3 hover:bg-white/[0.04] transition-colors flex items-center gap-3 border-b border-[var(--border-muted)] last:border-0"
               >
-                <span className="text-xs font-mono font-semibold text-[var(--text-secondary)] w-8">{airport.iata}</span>
+                <span className="text-[11px] font-mono font-semibold text-[var(--text-muted)] w-8">{airport.iata}</span>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{airport.city}</div>
-                  <div className="text-xs text-[var(--text-muted)] truncate">{airport.name}</div>
+                  <div className="text-[11px] text-[var(--text-muted)] truncate">{airport.name}</div>
                 </div>
               </button>
             ))}
@@ -130,6 +130,16 @@ function SearchPanel() {
 
   useEffect(() => { setSearching(false); }, [setSearching]);
   const [showPassengers, setShowPassengers] = useState(false);
+  const passRef = useRef<HTMLDivElement>(null);
+
+  // Close passengers on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (passRef.current && !passRef.current.contains(e.target as Node)) setShowPassengers(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const handleSearch = () => {
     if (!origin || !destination || !departureDate) return;
@@ -143,73 +153,113 @@ function SearchPanel() {
     router.push(`/search?${params.toString()}`);
   };
 
+  const totalTravellers = adults + childCount + infants;
+
   return (
     <div className="bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-xl)] p-6 md:p-8 w-full max-w-4xl mx-auto">
-      {/* Origin / Destination */}
-      <div className="flex flex-col md:flex-row items-stretch gap-6 mb-6 relative">
+      {/* Origin / Destination — side by side, no borders */}
+      <div className="flex flex-col md:flex-row items-stretch gap-4 md:gap-0 mb-8 relative">
         <AirportInput id="origin" label="From" value={origin} onChange={setOrigin} placeholder="Delhi" />
 
-        <div className="flex items-center justify-center -my-3 md:-mx-3 md:my-0 z-10">
+        <div className="flex items-center justify-center md:px-4 z-10">
           <button
             onClick={swapAirports}
-            className="w-9 h-9 rounded-full border border-[var(--border-strong)] bg-[var(--bg-base)] flex items-center justify-center shrink-0 hover:bg-[var(--bg-elevated)] transition-colors"
+            className="w-8 h-8 rounded-full border border-[var(--border-strong)] bg-[var(--bg-base)] flex items-center justify-center shrink-0 hover:bg-[var(--bg-elevated)] transition-colors active:scale-95"
+            aria-label="Swap airports"
           >
-            <ArrowRightLeft className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
+            <ArrowRightLeft className="w-3.5 h-3.5 text-[var(--text-muted)]" />
           </button>
         </div>
 
         <AirportInput id="destination" label="To" value={destination} onChange={setDestination} placeholder="Mumbai" />
       </div>
 
-      {/* Date + Passengers */}
-      <div className="flex flex-col md:flex-row gap-6 mb-6">
-        <div className="flex-1">
-          <label htmlFor="dep-date" className="block text-[11px] font-medium text-[var(--text-muted)] mb-2 uppercase tracking-widest">Departure</label>
+      {/* Divider */}
+      <div className="h-px bg-[var(--border-default)] mb-6" />
+
+      {/* Date + Passengers — ghost inputs */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+        {/* Departure */}
+        <div>
+          <label htmlFor="dep-date" className="block text-[11px] font-medium text-[var(--text-muted)] mb-1 uppercase tracking-widest">
+            Departure
+          </label>
           <div className="relative">
-            <Calendar className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-            <input id="dep-date" type="date" value={departureDate} onChange={(e) => setDepartureDate(e.target.value)} min={new Date().toISOString().split("T")[0]} className="w-full bg-transparent border-b border-[var(--border-strong)] pb-2 pl-6 text-lg font-semibold focus:outline-none focus:border-[var(--text-secondary)] transition-colors [color-scheme:dark]" />
+            <input
+              id="dep-date"
+              type="date"
+              value={departureDate}
+              onChange={(e) => setDepartureDate(e.target.value)}
+              min={new Date().toISOString().split("T")[0]}
+              className="w-full bg-transparent border-none outline-none text-base font-semibold py-1 [color-scheme:dark] cursor-pointer"
+            />
           </div>
         </div>
 
-        <div className="flex-1">
-          <label htmlFor="ret-date" className="block text-[11px] font-medium text-[var(--text-muted)] mb-2 uppercase tracking-widest">Return</label>
-          <div className="relative">
-            <Calendar className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-            <input id="ret-date" type="date" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} min={departureDate} className="w-full bg-transparent border-b border-[var(--border-strong)] pb-2 pl-6 text-lg font-semibold focus:outline-none focus:border-[var(--text-secondary)] transition-colors placeholder:text-[var(--text-muted)] [color-scheme:dark]" />
+        {/* Return — with clear button */}
+        <div>
+          <label htmlFor="ret-date" className="block text-[11px] font-medium text-[var(--text-muted)] mb-1 uppercase tracking-widest">
+            Return
+            <span className="text-[var(--text-muted)]/50 ml-1 normal-case tracking-normal">(optional)</span>
+          </label>
+          <div className="relative flex items-center">
+            <input
+              id="ret-date"
+              type="date"
+              value={returnDate}
+              onChange={(e) => setReturnDate(e.target.value)}
+              min={departureDate || new Date().toISOString().split("T")[0]}
+              className="w-full bg-transparent border-none outline-none text-base font-semibold py-1 [color-scheme:dark] cursor-pointer"
+            />
+            {returnDate && (
+              <button
+                onClick={() => setReturnDate("")}
+                className="absolute right-0 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/[0.06] transition-colors"
+                aria-label="Clear return date"
+                type="button"
+              >
+                <X className="w-3 h-3 text-[var(--text-muted)]" />
+              </button>
+            )}
           </div>
         </div>
 
         {/* Passengers */}
-        <div className="relative flex-1">
-          <label className="block text-[11px] font-medium text-[var(--text-muted)] mb-2 uppercase tracking-widest">Travellers</label>
-          <button onClick={() => setShowPassengers(!showPassengers)} className="w-full bg-transparent border-b border-[var(--border-strong)] pb-2 pl-6 text-lg font-semibold focus:outline-none transition-colors text-left flex items-center justify-between relative">
-            <Users className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-            <span>{adults + childCount + infants}</span>
-            <ChevronDown className={`w-3.5 h-3.5 text-[var(--text-muted)] transition-transform ${showPassengers ? "rotate-180" : ""}`} />
+        <div ref={passRef} className="relative">
+          <label className="block text-[11px] font-medium text-[var(--text-muted)] mb-1 uppercase tracking-widest">
+            Travellers
+          </label>
+          <button
+            onClick={() => setShowPassengers(!showPassengers)}
+            className="w-full bg-transparent border-none outline-none text-base font-semibold py-1 text-left flex items-center gap-2 cursor-pointer"
+          >
+            <span>{totalTravellers} {totalTravellers === 1 ? "Traveller" : "Travellers"}</span>
+            <ChevronDown className={`w-3 h-3 text-[var(--text-muted)] transition-transform duration-200 ${showPassengers ? "rotate-180" : ""}`} />
           </button>
 
           <AnimatePresence>
             {showPassengers && (
               <motion.div
-                initial={{ opacity: 0, y: -4 }}
+                initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                className="absolute z-50 right-0 left-0 top-full mt-2 bg-[var(--bg-elevated)] border border-[var(--border-strong)] rounded-[var(--radius-lg)] p-4 shadow-[var(--shadow-lg)]"
+                exit={{ opacity: 0, y: 4 }}
+                transition={{ duration: 0.15 }}
+                className="absolute z-50 right-0 left-0 top-full mt-2 bg-[var(--bg-elevated)] border border-[var(--border-strong)] rounded-[var(--radius-lg)] p-3 shadow-[var(--shadow-lg)]"
               >
                 {[
                   { label: "Adults", sub: "12+", val: adults, set: (v: number) => setPassengers(v, childCount, infants), min: 1, max: 9 },
-                  { label: "Children", sub: "2-11", val: childCount, set: (v: number) => setPassengers(adults, v, infants), min: 0, max: 8 },
-                  { label: "Infants", sub: "<2", val: infants, set: (v: number) => setPassengers(adults, childCount, v), min: 0, max: adults },
+                  { label: "Children", sub: "2–11", val: childCount, set: (v: number) => setPassengers(adults, v, infants), min: 0, max: 8 },
+                  { label: "Infants", sub: "Under 2", val: infants, set: (v: number) => setPassengers(adults, childCount, v), min: 0, max: adults },
                 ].map(({ label, sub, val, set, min, max }) => (
                   <div key={label} className="flex items-center justify-between py-2.5 border-b border-[var(--border-muted)] last:border-0">
                     <div>
                       <div className="text-sm font-medium">{label}</div>
-                      <div className="text-xs text-[var(--text-muted)]">{sub}</div>
+                      <div className="text-[11px] text-[var(--text-muted)]">{sub}</div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => val > min && set(val - 1)} disabled={val <= min} className="w-7 h-7 rounded-[var(--radius-sm)] border border-[var(--border-strong)] flex items-center justify-center disabled:opacity-20 text-sm hover:bg-white/[0.04]">−</button>
+                    <div className="flex items-center gap-2.5">
+                      <button onClick={() => val > min && set(val - 1)} disabled={val <= min} className="w-7 h-7 rounded-full border border-[var(--border-strong)] flex items-center justify-center disabled:opacity-20 text-xs hover:bg-white/[0.04] transition-colors">−</button>
                       <span className="w-4 text-center font-mono text-sm">{val}</span>
-                      <button onClick={() => val < max && set(val + 1)} disabled={val >= max} className="w-7 h-7 rounded-[var(--radius-sm)] border border-[var(--border-strong)] flex items-center justify-center disabled:opacity-20 text-sm hover:bg-white/[0.04]">+</button>
+                      <button onClick={() => val < max && set(val + 1)} disabled={val >= max} className="w-7 h-7 rounded-full border border-[var(--border-strong)] flex items-center justify-center disabled:opacity-20 text-xs hover:bg-white/[0.04] transition-colors">+</button>
                     </div>
                   </div>
                 ))}
@@ -223,7 +273,7 @@ function SearchPanel() {
       <button
         onClick={handleSearch}
         disabled={!origin || !destination || !departureDate || isSearching}
-        className="w-full py-3.5 bg-[var(--accent-cta)] text-[var(--text-inverse)] font-semibold rounded-[var(--radius-md)] hover:opacity-90 disabled:opacity-30 transition-opacity flex items-center justify-center gap-2 text-[15px]"
+        className="w-full py-3.5 bg-[var(--accent-cta)] text-[var(--text-inverse)] font-semibold rounded-[var(--radius-md)] hover:opacity-90 disabled:opacity-30 transition-opacity flex items-center justify-center gap-2 text-[15px] active:scale-[0.99]"
       >
         {isSearching ? (
           <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Searching...</>
@@ -247,10 +297,10 @@ function RouteCard({ route }: { route: typeof POPULAR_ROUTES[number] }) {
   const price = 2800 + Math.abs(hash % 4000);
 
   return (
-    <div className="min-w-[240px] snap-start border border-[var(--border-default)] rounded-[var(--radius-lg)] p-4 hover:border-[var(--border-strong)] transition-colors group">
+    <div className="min-w-[220px] snap-start rounded-[var(--radius-lg)] p-4 bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] transition-colors group cursor-pointer">
       <div className="flex items-center justify-between mb-3">
         <span className="text-[13px] font-medium text-[var(--text-secondary)]">{route.label}</span>
-        <ArrowRight className="w-3 h-3 text-[var(--text-muted)] group-hover:text-[var(--text-secondary)] transition-colors" />
+        <ArrowRight className="w-3 h-3 text-[var(--text-muted)] group-hover:translate-x-0.5 transition-transform" />
       </div>
       <span className="font-mono-price text-lg font-semibold">{formatPrice(price)}</span>
     </div>
@@ -264,14 +314,14 @@ export default function HomePage() {
   return (
     <div className="min-h-[100dvh]">
       {/* HERO */}
-      <section className="container-app pt-24 pb-16 flex flex-col items-center min-h-[85dvh] justify-center">
+      <section className="container-app pt-20 pb-12 flex flex-col items-center min-h-[80dvh] justify-center">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mb-10"
         >
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.08] tracking-tighter mb-4">
+          <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold leading-[1.08] tracking-tighter mb-4">
             Find the cheapest<br />flights, instantly.
           </h1>
           <p className="text-[var(--text-secondary)] text-base sm:text-lg max-w-md mx-auto leading-relaxed">
@@ -288,12 +338,11 @@ export default function HomePage() {
           <SearchPanel />
         </motion.div>
 
-        {/* Subtle stats */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="flex items-center gap-6 mt-12 text-[var(--text-muted)] text-xs font-mono"
+          className="flex items-center gap-6 mt-10 text-[var(--text-muted)] text-xs font-mono"
         >
           <span>12,340 searches today</span>
           <span className="w-px h-3 bg-[var(--border-strong)]" />
@@ -302,13 +351,12 @@ export default function HomePage() {
       </section>
 
       {/* POPULAR ROUTES */}
-      <section className="container-app py-20 border-t border-[var(--border-muted)]">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-xl font-semibold tracking-tight">Popular Routes</h2>
-          <button className="text-[13px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">View all</button>
+      <section className="container-app py-16 border-t border-[var(--border-muted)]">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold tracking-tight">Popular Routes</h2>
         </div>
 
-        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1">
+        <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1 scrollbar-none">
           {POPULAR_ROUTES.slice(0, 6).map((route) => (
             <RouteCard key={route.label} route={route} />
           ))}
@@ -316,8 +364,8 @@ export default function HomePage() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section className="container-app py-20 border-t border-[var(--border-muted)]">
-        <h2 className="text-xl font-semibold tracking-tight mb-10">How it works</h2>
+      <section className="container-app py-16 border-t border-[var(--border-muted)]">
+        <h2 className="text-lg font-semibold tracking-tight mb-8">How it works</h2>
 
         <div className="grid md:grid-cols-3 gap-8">
           {[
@@ -325,9 +373,9 @@ export default function HomePage() {
             { icon: TrendingDown, title: "Compare", desc: "See every option sorted by price, duration, or value." },
             { icon: Zap, title: "Book", desc: "Pick the best deal and book directly with the airline." },
           ].map((step) => (
-            <div key={step.title} className="space-y-3">
-              <step.icon className="w-5 h-5 text-[var(--text-muted)]" />
-              <h3 className="font-semibold">{step.title}</h3>
+            <div key={step.title} className="space-y-2.5">
+              <step.icon className="w-4 h-4 text-[var(--text-muted)]" />
+              <h3 className="font-semibold text-[15px]">{step.title}</h3>
               <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{step.desc}</p>
             </div>
           ))}
@@ -335,16 +383,16 @@ export default function HomePage() {
       </section>
 
       {/* WHY */}
-      <section className="container-app py-20 border-t border-[var(--border-muted)]">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <section className="container-app py-16 border-t border-[var(--border-muted)]">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { icon: Zap, title: "Real-time", desc: "Prices updated every 15 minutes." },
             { icon: Shield, title: "No hidden fees", desc: "What you see is what you pay." },
             { icon: TrendingDown, title: "Price history", desc: "Know if now is the right time to book." },
             { icon: Plane, title: "All airlines", desc: "IndiGo, Air India, SpiceJet, and more." },
           ].map((item) => (
-            <div key={item.title} className="p-5 rounded-[var(--radius-lg)] border border-[var(--border-default)] hover:border-[var(--border-strong)] transition-colors">
-              <item.icon className="w-4 h-4 text-[var(--text-muted)] mb-3" />
+            <div key={item.title} className="p-4 rounded-[var(--radius-lg)] bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] transition-colors">
+              <item.icon className="w-4 h-4 text-[var(--text-muted)] mb-2.5" />
               <h3 className="text-sm font-semibold mb-1">{item.title}</h3>
               <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{item.desc}</p>
             </div>
