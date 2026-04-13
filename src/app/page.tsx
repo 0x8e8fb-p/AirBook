@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchStore } from "@/stores/search-store";
-import { searchAirports, type Airport } from "@/lib/airports";
+import { searchAirports } from "@/lib/airports";
+import type { Airport } from "@/lib/types";
 import { POPULAR_ROUTES, formatPrice, AIRLINES } from "@/lib/constants";
 import {
   Search,

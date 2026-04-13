@@ -31,8 +31,8 @@ function generateCalendarData(
     basePrice = Math.max(2000, Math.round(dist * 3.0));
   }
 
-  const holidayDates = new Set(
-    INDIAN_HOLIDAYS_2026.map((h) => h.date)
+  const holidayDates = new Set<string>(
+    INDIAN_HOLIDAYS_2026.map((h) => h.date as string)
   );
 
   for (let day = 1; day <= daysInMonth; day++) {
