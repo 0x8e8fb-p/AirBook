@@ -1,70 +1,62 @@
 :root {
-  /* ── BASE SURFACES ── */
-  --bg-base:        #08090D;
-  --bg-subtle:      #0D0F16;
-  --bg-elevated:    #13161F;
-  --bg-overlay:     #1A1D28;
+  /* ── SURFACES — near-black with barely perceptible warmth ── */
+  --bg-base:        #09090B;
+  --bg-subtle:      #111113;
+  --bg-elevated:    #18181B;
+  --bg-overlay:     #1E1E22;
 
-  /* ── BORDERS ── */
+  /* ── BORDERS — white at low opacity, nothing colored ── */
   --border-default: rgba(255, 255, 255, 0.06);
   --border-muted:   rgba(255, 255, 255, 0.04);
-  --border-strong:  rgba(255, 255, 255, 0.12);
-  --border-focus:   rgba(0, 229, 255, 0.40);
+  --border-strong:  rgba(255, 255, 255, 0.10);
+  --border-focus:   rgba(255, 255, 255, 0.30);
 
-  /* ── BRAND ACCENTS ── */
-  --accent-primary:      #00C9E0;
-  --accent-primary-dim:  rgba(0, 201, 224, 0.12);
-  --accent-secondary:    #7C3AED;
-  --accent-secondary-dim: rgba(124, 58, 237, 0.10);
-  --accent-amber:        #F59E0B;
-  --accent-amber-dim:    rgba(245, 158, 11, 0.10);
-  --accent-green:        #10B981;
-  --accent-red:          #EF4444;
+  /* ── SINGLE ACCENT — muted warm white/gold, used sparingly ── */
+  --accent-primary:     #E4E4E7;    /* near-white — links, active states */
+  --accent-primary-dim: rgba(228, 228, 231, 0.08);
+  --accent-cta:         #FAFAFA;    /* pure bright white — primary CTAs */
+  --accent-green:       #4ADE80;    /* success only */
+  --accent-red:         #F87171;    /* error/urgency only */
+  --accent-muted:       #A1A1AA;    /* secondary interactive */
 
-  /* ── TEXT SCALE ── */
-  --text-primary:   #F0F2F7;
-  --text-secondary: #8B90A0;
-  --text-muted:     #505468;
-  --text-inverse:   #08090D;
+  /* ── TEXT — three tiers, no color ── */
+  --text-primary:   #FAFAFA;
+  --text-secondary: #A1A1AA;
+  --text-muted:     #52525B;
+  --text-inverse:   #09090B;
 
-  /* ── SHADOWS ── */
-  --shadow-sm:   0 1px 2px rgba(0,0,0,0.4);
-  --shadow-md:   0 4px 12px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3);
-  --shadow-lg:   0 12px 40px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4);
-  --shadow-glow-cyan:   0 0 20px rgba(0,201,224,0.15), 0 0 60px rgba(0,201,224,0.05);
-  --shadow-glow-amber:  0 0 20px rgba(245,158,11,0.15), 0 0 60px rgba(245,158,11,0.05);
+  /* ── SHADOWS — subtle, no color bleed ── */
+  --shadow-sm:   0 1px 2px rgba(0,0,0,0.5);
+  --shadow-md:   0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg:   0 12px 40px rgba(0,0,0,0.5);
 
   /* ── TYPOGRAPHY ── */
-  --font-display: 'Geist', sans-serif;
-  --font-mono:    'Geist Mono', monospace;
-  --font-body:    'DM Sans', sans-serif;
+  --font-display: 'Geist', system-ui, sans-serif;
+  --font-mono:    'Geist Mono', ui-monospace, monospace;
+  --font-body:    'DM Sans', system-ui, sans-serif;
 
   /* ── SPACING (8pt grid) ── */
   --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
   --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
-  --space-12: 48px; --space-16: 64px; --space-20: 80px; --space-24: 96px;
+  --space-12: 48px; --space-16: 64px; --space-20: 80px;
 
   /* ── RADII ── */
   --radius-sm: 6px;
   --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
   --radius-full: 9999px;
 
   /* ── MOTION ── */
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --duration-fast: 120ms;
-  --duration-base: 220ms;
+  --duration-base: 200ms;
   --duration-slow: 400ms;
-  --duration-xslow: 700ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

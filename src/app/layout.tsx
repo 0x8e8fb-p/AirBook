@@ -60,7 +60,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#08090D",
+  themeColor: "#09090B",
 };
 
 export default function RootLayout({
@@ -71,13 +71,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geist.variable} ${geistMono.variable} ${dmSans.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)]">
+      <body suppressHydrationWarning className="min-h-full flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)]">
         <SmoothScrollProvider>
-          <ScrollProgressBar />
           <Navbar />
-          <main className="flex-1 relative pt-16">
+          <main className="flex-1 relative pt-14">
             {children}
           </main>
         </SmoothScrollProvider>

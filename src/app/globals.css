@@ -6,32 +6,18 @@
   --color-bg-subtle: var(--bg-subtle);
   --color-bg-elevated: var(--bg-elevated);
   --color-bg-overlay: var(--bg-overlay);
-
   --color-border-default: var(--border-default);
-  --color-border-muted: var(--border-muted);
-  --color-border-strong: var(--border-strong);
-  --color-border-focus: var(--border-focus);
-
-  --color-accent-primary: var(--accent-primary);
-  --color-accent-secondary: var(--accent-secondary);
-  --color-accent-amber: var(--accent-amber);
-  --color-accent-green: var(--accent-green);
-  --color-accent-red: var(--accent-red);
-
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
-  --color-text-inverse: var(--text-inverse);
-
   --font-display: var(--font-display);
   --font-mono: var(--font-mono);
   --font-sans: var(--font-body);
 }
 
-/* ─── Base ─────────────────────────────────────────────── */
 html {
   -webkit-tap-highlight-color: transparent;
-  scroll-behavior: auto; /* Let Lenis handle it */
+  scroll-behavior: auto;
 }
 
 body {
@@ -43,7 +29,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ─── Typography overrides ────────────────────────────── */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   font-weight: 600;
@@ -55,46 +40,21 @@ h1, h2, h3, h4, h5, h6 {
   font-variant-numeric: tabular-nums;
 }
 
-/* ─── Selection ──────────────────────────────────────── */
 ::selection {
-  background: rgba(0, 201, 224, 0.25);
+  background: rgba(255, 255, 255, 0.15);
   color: var(--text-primary);
 }
 
-/* ─── Scrollbar (subtle, not hidden) ─────────────────── */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: var(--radius-full);
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.18);
-}
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
-}
+/* Scrollbar — minimal */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent; }
 
-/* ─── Focus visible ──────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid var(--accent-primary);
+  outline: 1.5px solid rgba(255,255,255,0.3);
   outline-offset: 2px;
-}
-
-/* ─── Shimmer animation ──────────────────────────────── */
-@property --angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@keyframes shimmer-border {
-  to { --angle: 360deg; }
 }
 
 @keyframes shimmer {
@@ -102,33 +62,16 @@ h1, h2, h3, h4, h5, h6 {
   100% { background-position: 200% 0; }
 }
 
-@keyframes pulse-glow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-/* ─── Utilities ──────────────────────────────────────── */
 @layer utilities {
   .container-app {
     width: 100%;
-    max-width: 1280px;
+    max-width: 1200px;
     margin-left: auto;
     margin-right: auto;
     padding-left: 1rem;
     padding-right: 1rem;
   }
-
   @media (min-width: 768px) {
-    .container-app {
-      padding-left: 1.5rem;
-      padding-right: 1.5rem;
-    }
-  }
-
-  @media (min-width: 1280px) {
-    .container-app {
-      padding-left: 2rem;
-      padding-right: 2rem;
-    }
+    .container-app { padding-left: 1.5rem; padding-right: 1.5rem; }
   }
 }
