@@ -1,5 +1,5 @@
 // ============================================
-// Atmos — Mock Flight Data Generator
+// AirBook — Mock Flight Data Generator
 // ============================================
 // Generates realistic mock flight results for demo when no API keys are configured
 // Covers all major Indian airlines with believable prices and schedules

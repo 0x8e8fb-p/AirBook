@@ -1,5 +1,5 @@
 // ============================================
-// Atmos — Core Type Definitions
+// AirBook — Core Type Definitions
 // ============================================
 
 /** Supported data source identifiers */

@@ -1,5 +1,5 @@
 // ============================================
-// Atmos — Utility Functions
+// AirBook — Utility Functions
 // ============================================
 
 import { type ClassValue, clsx } from 'clsx';

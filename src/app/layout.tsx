@@ -3,6 +3,8 @@ import { DM_Sans, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { SmoothScrollProvider } from "@/lib/lenis";
+import { Navbar } from "@/components/layout/Navbar";
+import { ScrollProgressBar } from "@/components/layout/ScrollProgressBar";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -41,8 +43,7 @@ export const metadata: Metadata = {
   authors: [{ name: "AirBook" }],
   openGraph: {
     title: "AirBook — Find Flights. Break the Price.",
-    description:
-      "Real-time flight deals, fare tracking, and price alerts. Stop overpaying for flights.",
+    description: "Real-time flight deals, fare tracking, and price alerts.",
     type: "website",
     locale: "en_IN",
     siteName: "AirBook",
@@ -52,10 +53,7 @@ export const metadata: Metadata = {
     title: "AirBook — Find Flights. Break the Price.",
     description: "Real-time flight deals and fare tracking.",
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
@@ -77,7 +75,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)]">
         <SmoothScrollProvider>
-          <main className="flex-1 relative">
+          <ScrollProgressBar />
+          <Navbar />
+          <main className="flex-1 relative pt-16">
             {children}
           </main>
         </SmoothScrollProvider>

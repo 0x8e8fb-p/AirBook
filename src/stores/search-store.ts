@@ -1,5 +1,5 @@
 // ============================================
-// Atmos — Search State Store (Zustand)
+// AirBook — Search State Store (Zustand)
 // ============================================
 
 import { create } from 'zustand';
