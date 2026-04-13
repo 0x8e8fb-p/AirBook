@@ -1,5 +1,5 @@
 // ============================================
-// FareCracker — Flight Search API Route
+// Atmos — Flight Search API Route
 // ============================================
 
 import { NextResponse } from 'next/server';

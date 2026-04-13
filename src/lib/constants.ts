@@ -1,5 +1,5 @@
 // ============================================
-// FareCracker — Application Constants
+// Atmos — Application Constants
 // ============================================
 
 /** Indian airline data with logos */

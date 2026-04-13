@@ -1,5 +1,5 @@
 // ============================================
-// FareCracker — Search State Store (Zustand)
+// Atmos — Search State Store (Zustand)
 // ============================================
 
 import { create } from 'zustand';

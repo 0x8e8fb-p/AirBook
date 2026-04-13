@@ -1,5 +1,5 @@
 // ============================================
-// FareCracker — Core Type Definitions
+// Atmos — Core Type Definitions
 // ============================================
 
 /** Supported data source identifiers */
@@ -22,9 +22,7 @@ export type PassengerType = 'adult' | 'child' | 'infant';
 export interface Airport {
   iata: string;
   name: string;
-  nameHi: string;        // Hindi name
   city: string;
-  cityHi: string;        // Hindi city name
   state: string;
   country: string;
   lat: number;
@@ -180,7 +178,6 @@ export interface PriceHistoryPoint {
 export interface IndianHoliday {
   date: string;
   name: string;
-  nameHi: string;
   type: 'national' | 'regional' | 'restricted';
   states?: string[];
 }
@@ -192,7 +189,6 @@ export interface UserProfile {
   phone?: string;
   displayName: string;
   homeAirport: string;
-  preferredLanguage: 'en' | 'hi';
   subscriptionTier: 'free' | 'pro' | 'premium';
   createdAt: string;
   updatedAt: string;

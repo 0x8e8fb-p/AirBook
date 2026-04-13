@@ -209,9 +209,7 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
             <div className="text-xs text-[var(--text-tertiary)]">per person</div>
           </div>
           <motion.a
-            href={flight.bookingUrl || flight.deepLink || "#"}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={`/checkout?flightId=${flight.id}`}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="btn-primary text-sm py-2.5 px-5 flex items-center gap-1.5 whitespace-nowrap"

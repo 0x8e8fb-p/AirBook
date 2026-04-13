@@ -1,5 +1,5 @@
 // ============================================
-// FareCracker — Duffel API Client
+// Atmos — Duffel API Client
 // ============================================
 // Duffel provides direct airline connections via NDC.
 // Docs: https://duffel.com/docs/api

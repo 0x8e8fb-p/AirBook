@@ -1,5 +1,5 @@
 // ============================================
-// FareCracker — Fare Calendar API Route
+// Atmos — Fare Calendar API Route
 // ============================================
 
 import { NextResponse } from 'next/server';

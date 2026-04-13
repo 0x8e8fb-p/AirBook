@@ -1,5 +1,5 @@
 // ============================================
-// FareCracker — Kiwi Tequila API Client
+// Atmos — Kiwi Tequila API Client
 // ============================================
 // Kiwi.com Tequila API — multi-carrier, virtual interlining, global coverage.
 // Docs: https://docs.kiwi.com/

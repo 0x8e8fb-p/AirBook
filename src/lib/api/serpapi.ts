@@ -1,5 +1,5 @@
 // ============================================
-// FareCracker — SerpAPI Google Flights Client
+// Atmos — SerpAPI Google Flights Client
 // ============================================
 // Uses SerpAPI to get structured Google Flights data.
 // Free tier: 250 searches/month. Use as price verification layer.

@@ -1,5 +1,5 @@
 // ============================================
-// FareCracker — Utility Functions
+// Atmos — Utility Functions
 // ============================================
 
 import { type ClassValue, clsx } from 'clsx';

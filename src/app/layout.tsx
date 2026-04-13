@@ -16,8 +16,8 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: {
-    default: "FareCracker — India's Smartest Flight Deal Finder",
-    template: "%s | FareCracker",
+    default: "Atmos — India's Smartest Flight Deal Finder",
+    template: "%s | Atmos",
   },
   description:
     "Compare flight prices across every Indian airline and OTA. Apply coupons, optimize credit cards, and find the TRUE cheapest fare. Save up to 40% on every booking.",
@@ -32,20 +32,19 @@ export const metadata: Metadata = {
     "fare comparison",
     "flight booking India",
   ],
-  authors: [{ name: "FareCracker" }],
+  authors: [{ name: "Atmos" }],
   openGraph: {
-    title: "FareCracker — Har Flight Ka Jugaad 🇮🇳",
+    title: "Atmos — Premium Flight Engineering",
     description:
-      "India's first app that finds the TRUE cheapest flight by combining coupons, credit card cashback, and bank offers. One search. Every deal.",
+      "Advanced 120Hz flight orchestration and dynamic pricing.",
     type: "website",
     locale: "en_IN",
-    siteName: "FareCracker",
+    siteName: "Atmos",
   },
   twitter: {
     card: "summary_large_image",
-    title: "FareCracker — India's Smartest Flight Deal Finder",
-    description:
-      "Compare prices across every airline & OTA. Auto-apply coupons. Optimize your credit card. Find the cheapest fare.",
+    title: "Atmos — Premium Flight Engineering",
+    description: "Advanced 120Hz flight orchestration and dynamic pricing.",
   },
   robots: {
     index: true,
