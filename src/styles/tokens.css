@@ -1,27 +1,72 @@
 :root {
-  --color-bg: #080C14;
-  --color-surface: rgba(255, 255, 255, 0.04);
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-accent-cyan: #00E5FF;
-  --color-accent-violet: #6B21A8;
-  --color-accent-amber: #F59E0B;
-  --color-text-primary: #F8FAFC;
-  --color-text-muted: rgba(248, 250, 252, 0.5);
+  /* ── BASE SURFACES ── */
+  --bg-base:        #08090D;
+  --bg-subtle:      #0D0F16;
+  --bg-elevated:    #13161F;
+  --bg-overlay:     #1A1D28;
 
-  --font-display: 'Dubai', sans-serif;
-  --font-mono: 'Dubai', sans-serif; /* fallback for mono where strict monospace isn't visually critical */
-  --font-body: 'Dubai', sans-serif;
+  /* ── BORDERS ── */
+  --border-default: rgba(255, 255, 255, 0.06);
+  --border-muted:   rgba(255, 255, 255, 0.04);
+  --border-strong:  rgba(255, 255, 255, 0.12);
+  --border-focus:   rgba(0, 229, 255, 0.40);
 
-  /* Easing curves */
-  --ease-fluid: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --transition-fast: 150ms var(--ease-fluid);
-  --transition-normal: 400ms var(--ease-fluid);
-  --transition-slow: 700ms var(--ease-fluid);
+  /* ── BRAND ACCENTS ── */
+  --accent-primary:      #00C9E0;
+  --accent-primary-dim:  rgba(0, 201, 224, 0.12);
+  --accent-secondary:    #7C3AED;
+  --accent-secondary-dim: rgba(124, 58, 237, 0.10);
+  --accent-amber:        #F59E0B;
+  --accent-amber-dim:    rgba(245, 158, 11, 0.10);
+  --accent-green:        #10B981;
+  --accent-red:          #EF4444;
 
-  /* Shared geometry / Radii */
-  --radius-sm: 8px;
-  --radius-md: 12px;
+  /* ── TEXT SCALE ── */
+  --text-primary:   #F0F2F7;
+  --text-secondary: #8B90A0;
+  --text-muted:     #505468;
+  --text-inverse:   #08090D;
+
+  /* ── SHADOWS ── */
+  --shadow-sm:   0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md:   0 4px 12px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-lg:   0 12px 40px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-glow-cyan:   0 0 20px rgba(0,201,224,0.15), 0 0 60px rgba(0,201,224,0.05);
+  --shadow-glow-amber:  0 0 20px rgba(245,158,11,0.15), 0 0 60px rgba(245,158,11,0.05);
+
+  /* ── TYPOGRAPHY ── */
+  --font-display: 'Geist', sans-serif;
+  --font-mono:    'Geist Mono', monospace;
+  --font-body:    'DM Sans', sans-serif;
+
+  /* ── SPACING (8pt grid) ── */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+  --space-12: 48px; --space-16: 64px; --space-20: 80px; --space-24: 96px;
+
+  /* ── RADII ── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
   --radius-lg: 16px;
-  --radius-xl: 32px;
+  --radius-xl: 24px;
   --radius-full: 9999px;
+
+  /* ── MOTION ── */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-fast: 120ms;
+  --duration-base: 220ms;
+  --duration-slow: 400ms;
+  --duration-xslow: 700ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

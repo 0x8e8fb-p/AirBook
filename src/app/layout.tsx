@@ -1,35 +1,56 @@
 import type { Metadata, Viewport } from "next";
+import { DM_Sans, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { SmoothScrollProvider } from "@/lib/lenis";
-import { CustomCursor } from "@/components/ui/CustomCursor";
+
+const geist = Geist({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-geist",
+});
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-geist-mono",
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-dm-sans",
+  weight: ["300", "400", "500", "600", "700"],
+});
 
 export const metadata: Metadata = {
   title: {
-    default: "Atmos — Velocity Engine",
-    template: "%s | Atmos",
+    default: "AirBook — Find Flights. Break the Price.",
+    template: "%s | AirBook",
   },
   description:
-    "The world's most elegant flight orchestration. No ads, no popups. Just pure, immersive travel intelligence.",
+    "Discover the cheapest flights with real-time fare tracking, price alerts, and deal analysis. The smartest way to book flights.",
   keywords: [
-    "cheap flights India",
+    "cheap flights",
     "flight deals",
+    "fare tracker",
     "flight comparison",
-    "atmos flights",
+    "airbook",
+    "price alerts",
   ],
-  authors: [{ name: "Atmos" }],
+  authors: [{ name: "AirBook" }],
   openGraph: {
-    title: "Atmos — Immersive Travel",
+    title: "AirBook — Find Flights. Break the Price.",
     description:
-      "Advanced supersonic flight orchestration and dynamic pricing.",
+      "Real-time flight deals, fare tracking, and price alerts. Stop overpaying for flights.",
     type: "website",
     locale: "en_IN",
-    siteName: "Atmos",
+    siteName: "AirBook",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Atmos — Immersive Travel",
-    description: "Advanced supersonic flight orchestration.",
+    title: "AirBook — Find Flights. Break the Price.",
+    description: "Real-time flight deals and fare tracking.",
   },
   robots: {
     index: true,
@@ -41,7 +62,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#080C14", // matches new background
+  themeColor: "#08090D",
 };
 
 export default function RootLayout({
@@ -52,16 +73,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className="h-full antialiased dark"
+      className={`${geist.variable} ${geistMono.variable} ${dmSans.variable} h-full antialiased dark`}
     >
-      <head>
-        {/* Load Clash Display since @fontsource package does not exist */}
-        <link href="https://api.fontshare.com/v2/css?f[]=clash-display@200,300,400,500,600,700&display=swap" rel="stylesheet" />
-      </head>
-      <body className="min-h-full flex flex-col bg-[var(--color-bg)] text-[var(--color-text-primary)]">
+      <body className="min-h-full flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)]">
         <SmoothScrollProvider>
-          <CustomCursor />
-          <main className="flex-1 overflow-hidden relative">
+          <main className="flex-1 relative">
             {children}
           </main>
         </SmoothScrollProvider>

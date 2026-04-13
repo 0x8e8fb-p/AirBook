@@ -1,15 +1,28 @@
-@import url('https://fonts.cdnfonts.com/css/dubai');
 @import "tailwindcss";
 @import "../styles/tokens.css";
 
 @theme {
-  --color-brand-cyan: var(--color-accent-cyan);
-  --color-brand-violet: var(--color-accent-violet);
-  --color-brand-amber: var(--color-accent-amber);
-  --color-base: var(--color-bg);
-  --color-surface: var(--color-surface);
-  --color-border: var(--color-border);
-  
+  --color-bg-base: var(--bg-base);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-overlay: var(--bg-overlay);
+
+  --color-border-default: var(--border-default);
+  --color-border-muted: var(--border-muted);
+  --color-border-strong: var(--border-strong);
+  --color-border-focus: var(--border-focus);
+
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-accent-amber: var(--accent-amber);
+  --color-accent-green: var(--accent-green);
+  --color-accent-red: var(--accent-red);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: var(--text-inverse);
+
   --font-display: var(--font-display);
   --font-mono: var(--font-mono);
   --font-sans: var(--font-body);
@@ -19,14 +32,12 @@
 html {
   -webkit-tap-highlight-color: transparent;
   scroll-behavior: auto; /* Let Lenis handle it */
-  cursor: none; /* Hide default for custom cursor */
 }
 
 body {
-  background: var(--color-bg);
-  color: var(--color-text-primary);
+  background: var(--bg-base);
+  color: var(--text-primary);
   font-family: var(--font-body);
-  /* Optional: a subtle noise overlay can go here if needed */
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -41,22 +52,41 @@ h1, h2, h3, h4, h5, h6 {
 
 .font-mono-price {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
-/* ─── Scrollbar hidden (modern aesthetic) ─────────────── */
-::-webkit-scrollbar { display: none; }
-* { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* ─── Reduced Motion ─────────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+/* ─── Selection ──────────────────────────────────────── */
+::selection {
+  background: rgba(0, 201, 224, 0.25);
+  color: var(--text-primary);
 }
 
-/* Shimmer animation for badges/buttons */
+/* ─── Scrollbar (subtle, not hidden) ─────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+/* ─── Focus visible ──────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* ─── Shimmer animation ──────────────────────────────── */
 @property --angle {
   syntax: '<angle>';
   initial-value: 0deg;
@@ -67,13 +97,38 @@ h1, h2, h3, h4, h5, h6 {
   to { --angle: 360deg; }
 }
 
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ─── Utilities ──────────────────────────────────────── */
 @layer utilities {
   .container-app {
     width: 100%;
-    max-width: 1200px;
+    max-width: 1280px;
     margin-left: auto;
     margin-right: auto;
     padding-left: 1rem;
     padding-right: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .container-app {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .container-app {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
   }
 }

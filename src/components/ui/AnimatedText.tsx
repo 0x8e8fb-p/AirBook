@@ -1,60 +1,43 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { gsap } from "@/lib/gsap";
+import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
+import { cn } from "@/lib/utils";
 
-export function AnimatedText({
-  text,
-  className = "",
-  staggerDelay = 0.08
-}: {
+interface AnimatedTextProps {
   text: string;
   className?: string;
   staggerDelay?: number;
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  as?: "h1" | "h2" | "h3" | "p" | "span";
+}
 
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    
-    // We get all the word elements child of this container
-    const words = containerRef.current?.querySelectorAll(".word-wrap");
-    
-    if (words && words.length > 0) {
-      gsap.fromTo(words, 
-        { 
-          opacity: 0,
-          y: 60,
-          filter: "blur(10px)"
-        },
-        {
-          opacity: 1,
-          y: 0,
-          filter: "blur(0px)",
-          duration: 1.2,
-          ease: "power4.out",
-          stagger: staggerDelay,
-          // Remove transform willChange optimization after completion
-          onComplete: () => {
-             gsap.set(words, { clearProps: "filter,willChange" });
-          }
-        }
-      );
-    }
-  }, [text, staggerDelay]);
-
-  // Fallback split logic
+export function AnimatedText({
+  text,
+  className,
+  staggerDelay = 0.06,
+  as: Tag = "h1",
+}: AnimatedTextProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
   const words = text.split(" ");
 
   return (
-    <div ref={containerRef} className={className}>
+    <Tag ref={ref as React.RefObject<HTMLHeadingElement>} className={cn("flex flex-wrap", className)}>
       {words.map((word, i) => (
-        <span key={i} className="inline-block overflow-hidden mr-[0.25em] pb-[0.1em]">
-          <span className="word-wrap inline-block" style={{ willChange: "transform, filter, opacity" }}>
-            {word}
-          </span>
-        </span>
+        <motion.span
+          key={`${word}-${i}`}
+          initial={{ opacity: 0, y: 20, filter: "blur(4px)" }}
+          animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : {}}
+          transition={{
+            duration: 0.5,
+            delay: i * staggerDelay,
+            ease: [0.16, 1, 0.3, 1],
+          }}
+          className="mr-[0.3em] inline-block"
+        >
+          {word}
+        </motion.span>
       ))}
-    </div>
+    </Tag>
   );
 }

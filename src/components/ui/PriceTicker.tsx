@@ -1,48 +1,60 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 
-export function PriceTicker({
-  value,
-  prefix = "",
-  suffix = "",
-  className = "",
-  duration = 1.2
-}: {
+interface PriceTickerProps {
   value: number;
+  duration?: number;
   prefix?: string;
   suffix?: string;
   className?: string;
-  duration?: number;
-}) {
-  const count = useMotionValue(0);
-  const rounded = useTransform(count, (latest) => Math.round(latest));
-  const [displayReady, setDisplayReady] = useState(false);
+}
+
+export function PriceTicker({
+  value,
+  duration = 1.2,
+  prefix = "₹",
+  suffix,
+  className,
+}: PriceTickerProps) {
+  const [displayValue, setDisplayValue] = useState(0);
+  const rafRef = useRef<number>(0);
+  const startRef = useRef<number>(0);
+  const elRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    setDisplayReady(true);
-    // Don't animate if user prefers reduced motion
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      count.set(value);
-      return;
+    const start = performance.now();
+    startRef.current = start;
+
+    function animate(now: number) {
+      const elapsed = (now - startRef.current) / 1000;
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out-expo
+      const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      setDisplayValue(Math.round(eased * value));
+
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(animate);
+      }
     }
-    
-    const controls = animate(count, value, {
-      duration,
-      ease: [0.16, 1, 0.3, 1] // Custom Expo Out
-    });
 
-    return controls.stop;
-  }, [value, duration, count]);
+    rafRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [value, duration]);
 
-  if (!displayReady) return <span className={className}>{prefix}{value}{suffix}</span>;
+  const formatted = new Intl.NumberFormat("en-IN").format(displayValue);
 
   return (
-    <span className={`inline-flex items-center ${className}`}>
-      {prefix && <span className="opacity-80 mr-1">{prefix}</span>}
-      <motion.span>{rounded}</motion.span>
-      {suffix && <span className="ml-1">{suffix}</span>}
+    <span
+      ref={elRef}
+      className={cn("font-mono-price tabular-nums", className)}
+      aria-live="polite"
+      aria-label={`${prefix}${formatted}${suffix ? ` ${suffix}` : ""}`}
+    >
+      {prefix}
+      {formatted}
+      {suffix && <span className="ml-1 text-[0.8em] opacity-70">{suffix}</span>}
     </span>
   );
 }
