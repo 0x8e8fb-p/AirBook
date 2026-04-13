@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback, Suspense } from "react";
+import { useEffect, useState, useMemo, useCallback, Suspense, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchStore } from "@/stores/search-store";
@@ -13,251 +13,223 @@ import {
   X, ChevronDown, ExternalLink, AlertCircle, Loader2,
 } from "lucide-react";
 
-/* ─── Loading Animation: Airplane flying with trail ──── */
+import { MagneticButton } from "@/components/ui/MagneticButton";
+import { GlassCard } from "@/components/ui/GlassCard";
+import { PriceTicker } from "@/components/ui/PriceTicker";
+import { gsap } from "@/lib/gsap";
+
+/* ─── Loading Animation ──── */
 function SearchingAnimation() {
   return (
-    <div className="glass-card p-6 mb-6 overflow-hidden">
-      <div className="flex items-center gap-4">
-        <div className="relative w-12 h-12">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            className="w-12 h-12 rounded-full border-2 border-[var(--border-primary)] border-t-[var(--color-primary)]"
-          />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <motion.div
-              animate={{ y: [-2, 2, -2] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <Plane className="w-5 h-5 text-[var(--color-primary)]" />
-            </motion.div>
-          </div>
-        </div>
-        <div>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-sm font-medium"
-          >
-            Searching across all airlines & OTAs...
-          </motion.p>
-          <div className="flex items-center gap-2 mt-1">
-            {["IndiGo", "Air India", "SpiceJet", "Akasa"].map((name, i) => (
-              <motion.span
-                key={name}
-                initial={{ opacity: 0.3 }}
-                animate={{ opacity: [0.3, 1, 0.3] }}
-                transition={{ duration: 1.5, delay: i * 0.3, repeat: Infinity }}
-                className="text-xs text-[var(--text-tertiary)]"
-              >
-                {name}
-              </motion.span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="mt-4 h-1 bg-[var(--bg-elevated)] rounded-full overflow-hidden">
+    <GlassCard className="p-8 mb-6 overflow-hidden flex flex-col items-center justify-center min-h-[300px]">
+      <div className="relative w-20 h-20 mb-6">
         <motion.div
-          className="h-full gradient-primary rounded-full"
-          initial={{ width: "0%" }}
-          animate={{ width: "85%" }}
-          transition={{ duration: 3, ease: [0.16, 1, 0.3, 1] }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          className="absolute inset-0 rounded-full border-2 border-white/10 border-t-[var(--color-accent-cyan)]"
         />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <motion.div
+            animate={{ y: [-3, 3, -3] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <Plane className="w-8 h-8 text-[var(--color-accent-cyan)] -rotate-45" />
+          </motion.div>
+        </div>
       </div>
+      <h3 className="text-xl font-bold font-display mb-2">Analyzing Vectors</h3>
+      <p className="text-sm text-white/50 text-center font-mono">Comparing millions of potential itineraries...</p>
+    </GlassCard>
+  );
+}
+
+/* ─── Skeleton Loader ────────────────────────────────── */
+function SkeletonCard({ delay }: { delay: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.4 }}
+      className="backdrop-blur-xl bg-white/[0.02] border border-white/5 rounded-2xl p-5 mb-3 flex flex-col sm:flex-row gap-4 animate-pulse relative overflow-hidden"
+    >
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+      <div className="flex items-center gap-3 sm:w-44">
+        <div className="w-10 h-10 rounded-lg bg-white/10 shrink-0" />
+        <div className="space-y-2 flex-1">
+          <div className="h-4 bg-white/10 rounded w-24" />
+          <div className="h-3 bg-white/10 rounded w-16" />
+        </div>
+      </div>
+      <div className="flex-1 flex items-center gap-4">
+        <div className="w-12 h-6 bg-white/10 rounded shrink-0" />
+        <div className="flex-1 h-0.5 bg-white/10 rounded" />
+        <div className="w-12 h-6 bg-white/10 rounded shrink-0" />
+      </div>
+      <div className="sm:w-36 flex flex-col items-end gap-2 pr-2">
+        <div className="h-6 bg-white/10 rounded w-24" />
+        <div className="h-10 bg-white/10 rounded w-full mt-2" />
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Flight Result Card (using GSAP 3D inside) ──────── */
+function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index: number; isCheapest: boolean }) {
+  const router = useRouter();
+  const airlineInfo = AIRLINES[flight.airline];
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Scroll stagger entry using GSAP
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (cardRef.current) {
+      gsap.fromTo(cardRef.current,
+        { opacity: 0, y: 40, rotateX: 8 },
+        {
+          opacity: 1, y: 0, rotateX: 0,
+          duration: 0.8,
+          delay: Math.min(index * 0.1, 0.4),
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: cardRef.current,
+            start: "top bottom-=50",
+            toggleActions: "play none none none"
+          }
+        }
+      );
+    }
+  }, [index]);
+
+  return (
+    <div ref={cardRef}>
+      <GlassCard className={`p-5 group cursor-pointer ${isCheapest ? "border-[var(--color-accent-amber)]/40 shadow-[0_0_30px_rgba(245,158,11,0.1)]" : "border-white/10"}`}>
+        {/* Cheapest badge wrapping animated property for border rotation trick */}
+        <AnimatePresence>
+          {isCheapest && (
+            <motion.div
+              initial={{ x: -30, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+              className="absolute -top-3 left-6 bg-[var(--color-accent-amber)] text-black px-3 py-0.5 rounded-full text-xs font-bold font-mono tracking-widest uppercase shadow-[0_0_15px_rgba(245,158,11,0.5)] z-10"
+            >
+              Top Pick
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-6 relative z-10">
+          
+          {/* Airline */}
+          <div className="flex items-center gap-4 sm:w-48 shrink-0">
+            <motion.div
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-lg"
+              style={{ backgroundColor: airlineInfo?.color || "#4B5563" }}
+            >
+              {flight.airline}
+            </motion.div>
+            <div className="min-w-0">
+              <div className="text-base font-bold truncate">{flight.airlineName}</div>
+              <div className="text-xs text-white/50 font-mono mt-1">{flight.flightNumber}</div>
+            </div>
+          </div>
+
+          {/* Timeline visualization */}
+          <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0 px-2 sm:px-6">
+            <div className="text-center shrink-0">
+              <div className="text-xl sm:text-2xl font-bold font-mono">{formatTime(flight.departureTime)}</div>
+              <div className="text-xs text-[var(--color-accent-cyan)] font-bold tracking-widest uppercase mt-1">{flight.origin}</div>
+            </div>
+
+            <div className="flex-1 flex flex-col items-center gap-1.5 px-2">
+              <div className="text-[10px] text-white/50 font-mono uppercase tracking-widest">{formatDuration(flight.durationMinutes)}</div>
+              <div className="w-full relative h-[2px] bg-white/10 flex items-center justify-between">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-cyan)]" />
+                {flight.stops > 0 && <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-amber)]" />}
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-violet)]" />
+              </div>
+              <div className="text-[10px] font-bold uppercase tracking-wider mt-1">
+                {flight.stops === 0 ? (
+                  <span className="text-[var(--color-accent-cyan)]">Direct Sequence</span>
+                ) : (
+                  <span className="text-[var(--color-accent-amber)]">
+                    {flight.stops} Stop{flight.stops > 1 ? "s" : ""}
+                    {flight.stopCities.length > 0 && <span className="text-white/40"> via {flight.stopCities.join(", ")}</span>}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="text-center shrink-0">
+              <div className="text-xl sm:text-2xl font-bold font-mono">{formatTime(flight.arrivalTime)}</div>
+              <div className="text-xs text-[var(--color-accent-violet)] font-bold tracking-widest uppercase mt-1">{flight.destination}</div>
+            </div>
+          </div>
+
+          {/* Price & Action */}
+          <div className="sm:w-48 flex flex-col sm:items-end justify-center shrink-0 border-t sm:border-t-0 sm:border-l border-white/10 pt-4 sm:pt-0 sm:pl-6">
+            <div className="flex flex-col sm:items-end mb-4">
+              <div className="text-[10px] text-white/50 uppercase tracking-widest">Effective Fare</div>
+              <div className="text-2xl sm:text-3xl font-bold font-mono text-white mt-1">
+                <PriceTicker value={flight.price} prefix="₹" duration={0.8} />
+              </div>
+            </div>
+
+            <MagneticButton
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/checkout?id=${flight.id}`);
+              }}
+              className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/20 hover:border-white text-sm font-bold tracking-wide flex items-center justify-center gap-2 transition-all duration-300"
+            >
+              Select <ExternalLink className="w-4 h-4 opacity-50" />
+            </MagneticButton>
+          </div>
+        </div>
+      </GlassCard>
     </div>
   );
 }
 
-/* ─── Skeleton Card with shimmer ─────────────────────── */
-function SkeletonCard({ delay }: { delay: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.4 }}
-      className="flight-card"
-    >
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-lg skeleton" />
-        <div className="flex-1">
-          <div className="h-4 w-32 skeleton mb-2" />
-          <div className="h-3 w-20 skeleton" />
-        </div>
-        <div className="text-right">
-          <div className="h-6 w-24 skeleton mb-1" />
-          <div className="h-3 w-16 skeleton" />
-        </div>
-      </div>
-      <div className="flex items-center gap-4">
-        <div className="h-4 w-16 skeleton" />
-        <div className="flex-1 h-0.5 skeleton" />
-        <div className="h-4 w-16 skeleton" />
-      </div>
-    </motion.div>
-  );
-}
-
-/* ─── Flight Result Card — with hover FX ─────────────── */
-function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index: number; isCheapest: boolean }) {
-  const airlineInfo = AIRLINES[flight.airline];
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay: index * 0.05, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{ y: -3, transition: { duration: 0.3 } }}
-      className={`flight-card group relative ${isCheapest ? "flight-card-cheapest" : ""}`}
-    >
-      {/* Cheapest badge */}
-      <AnimatePresence>
-        {isCheapest && (
-          <motion.div
-            initial={{ x: -30, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-            className="absolute -top-3 left-4 badge badge-savings text-[11px]"
-          >
-            🏆 Cheapest
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        {/* Airline */}
-        <div className="flex items-center gap-3 sm:w-44 shrink-0">
-          <motion.div
-            whileHover={{ scale: 1.1, rotate: 5 }}
-            className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-xs shrink-0"
-            style={{ backgroundColor: airlineInfo?.color || "#4B5563" }}
-          >
-            {flight.airline}
-          </motion.div>
-          <div className="min-w-0">
-            <div className="text-sm font-semibold truncate">{flight.airlineName}</div>
-            <div className="text-xs text-[var(--text-tertiary)]">{flight.flightNumber}</div>
-          </div>
-        </div>
-
-        {/* Timeline */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-          <div className="text-center shrink-0">
-            <div className="text-lg sm:text-xl font-bold tabular-nums">{formatTime(flight.departureTime)}</div>
-            <div className="text-xs text-[var(--text-tertiary)] font-medium">{flight.origin}</div>
-          </div>
-
-          {/* Route line with animated dot */}
-          <div className="flex-1 flex flex-col items-center gap-1 px-1">
-            <div className="text-[10px] text-[var(--text-tertiary)] font-medium">{formatDuration(flight.durationMinutes)}</div>
-            <div className="stops-line w-full">
-              <div className={`line-bg ${flight.stops === 0 ? "nonstop" : "has-stops"}`} />
-              <div className="travel-dot" />
-              {flight.stops > 0 && <div className="stop-dot" />}
-            </div>
-            <div className="text-[10px] font-medium">
-              {flight.stops === 0 ? (
-                <span className="text-[var(--color-savings)]">Non-stop</span>
-              ) : (
-                <span className="text-[var(--fare-average)]">
-                  {flight.stops} stop{flight.stops > 1 ? "s" : ""}
-                  {flight.stopCities.length > 0 && (
-                    <span className="text-[var(--text-tertiary)]"> via {flight.stopCities.join(", ")}</span>
-                  )}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="text-center shrink-0">
-            <div className="text-lg sm:text-xl font-bold tabular-nums">{formatTime(flight.arrivalTime)}</div>
-            <div className="text-xs text-[var(--text-tertiary)] font-medium">{flight.destination}</div>
-          </div>
-        </div>
-
-        {/* Badges */}
-        <div className="hidden sm:flex flex-col gap-1 shrink-0 w-28">
-          {flight.baggage.checked.included && (
-            <div className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)]">
-              <Luggage className="w-3 h-3" /><span>{flight.baggage.checked.weight || 15}kg bag</span>
-            </div>
-          )}
-          {flight.refundable && <div className="text-[10px] text-[var(--color-savings)]">✓ Refundable</div>}
-          {flight.seatsRemaining && flight.seatsRemaining <= 5 && (
-            <motion.div
-              animate={{ opacity: [1, 0.5, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="text-[10px] text-[var(--fare-expensive)] font-medium"
-            >
-              {flight.seatsRemaining} seats left
-            </motion.div>
-          )}
-        </div>
-
-        {/* Price + Book */}
-        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 sm:gap-1 shrink-0 sm:w-36 sm:text-right border-t sm:border-t-0 sm:border-l border-[var(--border-primary)] pt-3 sm:pt-0 sm:pl-4">
-          <div>
-            <motion.div
-              initial={isCheapest ? { scale: 1.1 } : {}}
-              animate={isCheapest ? { scale: [1.1, 1] } : {}}
-              transition={{ duration: 0.5, delay: 0.5 }}
-              className={`text-xl sm:text-2xl font-bold ${isCheapest ? "text-[var(--color-savings-light)] animate-price-flash" : "text-[var(--text-primary)]"}`}
-            >
-              {formatPrice(flight.price)}
-            </motion.div>
-            <div className="text-xs text-[var(--text-tertiary)]">per person</div>
-          </div>
-          <motion.a
-            href={`/checkout?flightId=${flight.id}`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="btn-primary text-sm py-2.5 px-5 flex items-center gap-1.5 whitespace-nowrap"
-          >
-            Book <ExternalLink className="w-3.5 h-3.5" />
-          </motion.a>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
 /* ─── Sort Bar ───────────────────────────────────────── */
-function SortBar({ sortBy, onSort, totalResults }: { sortBy: SortOption; onSort: (s: SortOption) => void; totalResults: number }) {
+function SortBar({ sortBy, onSort, totalResults }: { sortBy: SortOption; onSort: (v: SortOption) => void; totalResults: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
-      className="flex items-center justify-between mb-4 flex-wrap gap-2"
+      className="flex items-center justify-between mb-6 flex-wrap gap-4"
     >
-      <div className="text-sm text-[var(--text-secondary)]">
-        <strong className="text-[var(--text-primary)]">{totalResults}</strong> flights found
+      <div className="text-sm font-mono text-white/50 tracking-wide">
+        <strong className="text-white text-base">{totalResults}</strong> TRAJECTORIES FOUND
       </div>
-      <div className="flex items-center gap-1 overflow-x-auto">
-        {SORT_OPTIONS.map((opt) => (
-          <motion.button
-            key={opt.value}
-            onClick={() => onSort(opt.value as SortOption)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className={`sort-pill ${sortBy === opt.value ? "active" : ""}`}
-          >
-            {opt.label}
-          </motion.button>
-        ))}
+      <div className="flex items-center gap-2 overflow-x-auto p-1 bg-white/5 rounded-xl border border-white/10 p-1">
+        {SORT_OPTIONS.map((opt) => {
+          const isActive = sortBy === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => onSort(opt.value as SortOption)}
+              className={`relative px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors ${isActive ? "text-black" : "text-white/60 hover:text-white"}`}
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="sortIndicator"
+                  className="absolute inset-0 bg-[var(--color-accent-cyan)] rounded-lg shadow-[0_0_15px_rgba(0,229,255,0.4)]"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+              <span className="relative z-10">{opt.label}</span>
+            </button>
+          )
+        })}
       </div>
     </motion.div>
   );
 }
 
 /* ─── Filter Panel ───────────────────────────────────── */
-function FilterPanel({ flights, onFilter, show, onClose }: {
-  flights: FlightResult[];
-  onFilter: (filtered: FlightResult[]) => void;
-  show: boolean;
-  onClose: () => void;
-}) {
+function FilterPanel({ flights, onFilter, show, onClose }: { flights: FlightResult[]; onFilter: (filtered: FlightResult[]) => void; show: boolean; onClose: () => void; }) {
   const [maxStops, setMaxStops] = useState<number | null>(null);
   const [selectedAirlines, setSelectedAirlines] = useState<string[]>([]);
   const [priceMax, setPriceMax] = useState<number>(100000);
@@ -284,108 +256,97 @@ function FilterPanel({ flights, onFilter, show, onClose }: {
     setSelectedAirlines((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]);
   };
 
-  // Desktop filter sidebar
   const FilterContent = () => (
     <>
       {/* Stops */}
-      <div className="mb-6">
-        <h4 className="text-sm font-semibold mb-3 text-[var(--text-secondary)] uppercase tracking-wider">Stops</h4>
+      <div className="mb-8">
+        <h4 className="text-xs font-bold mb-4 text-[var(--color-accent-cyan)] uppercase tracking-[0.2em]">Stops</h4>
         <div className="flex flex-wrap gap-2">
           {[
             { val: null, label: "Any" },
             { val: 0, label: "Non-stop" },
             { val: 1, label: "1 Stop" },
             { val: 2, label: "2+ Stops" },
-          ].map(({ val, label }) => (
-            <motion.button
-              key={label}
-              onClick={() => setMaxStops(val)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${
-                maxStops === val
-                  ? "border-[var(--color-primary)] bg-[rgba(255,107,0,0.1)] text-[var(--color-primary)]"
-                  : "border-[var(--border-primary)] text-[var(--text-secondary)] hover:border-[var(--border-hover)]"
-              }`}
-            >
-              {label}
-            </motion.button>
-          ))}
-        </div>
-      </div>
-
-      {/* Airlines */}
-      <div className="mb-6">
-        <h4 className="text-sm font-semibold mb-3 text-[var(--text-secondary)] uppercase tracking-wider">Airlines</h4>
-        <div className="space-y-2">
-          {airlines.map(([code, count]) => {
-            const info = AIRLINES[code];
+          ].map(({ val, label }) => {
+            const active = maxStops === val;
             return (
-              <label key={code} className="flex items-center gap-3 cursor-pointer group">
-                <input type="checkbox" checked={selectedAirlines.length === 0 || selectedAirlines.includes(code)} onChange={() => toggleAirline(code)} className="w-4 h-4 rounded border-[var(--border-primary)] bg-[var(--bg-surface)] accent-[var(--color-primary)]" />
-                <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: info?.color || "#6B7280" }} />
-                <span className="text-sm flex-1 group-hover:text-[var(--text-primary)]">{info?.name || code}</span>
-                <span className="text-xs text-[var(--text-tertiary)]">({count})</span>
-              </label>
-            );
+              <button
+                key={String(val)}
+                onClick={() => setMaxStops(val)}
+                className={`px-4 py-2 text-xs font-semibold rounded-lg border transition-all ${
+                  active 
+                    ? "bg-[var(--color-accent-cyan)] border-[var(--color-accent-cyan)] text-black shadow-[0_0_10px_rgba(0,229,255,0.3)]" 
+                    : "bg-white/5 border-white/10 text-white/60 hover:border-white/30 hover:text-white"
+                }`}
+              >
+                {label}
+              </button>
+            )
           })}
         </div>
       </div>
 
-      {/* Price Range */}
-      <div className="mb-6">
-        <h4 className="text-sm font-semibold mb-3 text-[var(--text-secondary)] uppercase tracking-wider">Max Price</h4>
-        <input type="range" min={0} max={maxPriceInResults} step={500} value={priceMax} onChange={(e) => setPriceMax(parseInt(e.target.value))} className="w-full accent-[var(--color-primary)]" />
-        <div className="flex justify-between text-xs text-[var(--text-tertiary)] mt-1">
-          <span>₹0</span>
-          <span className="text-[var(--text-primary)] font-medium">{formatPrice(priceMax)}</span>
+      {/* Airlines */}
+      <div className="mb-8">
+        <h4 className="text-xs font-bold mb-4 text-[var(--color-accent-cyan)] uppercase tracking-[0.2em]">Airlines</h4>
+        <div className="space-y-1">
+          {airlines.map(([code, count]) => {
+            const info = AIRLINES[code];
+            const active = selectedAirlines.includes(code);
+            return (
+              <button
+                key={code}
+                onClick={() => toggleAirline(code)}
+                className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                    active ? "bg-[var(--color-accent-cyan)] border-[var(--color-accent-cyan)]" : "border-white/20 bg-black/20 group-hover:border-white/50"
+                  }`}>
+                    {active && <span className="text-[10px] text-black">✓</span>}
+                  </div>
+                  <span className="text-sm font-medium text-white/90">{info?.name || code}</span>
+                </div>
+                <span className="text-xs text-white/40 font-mono">{count}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      <motion.button
-        whileTap={{ scale: 0.97 }}
+      <button
         onClick={() => { setMaxStops(null); setSelectedAirlines([]); setPriceMax(maxPriceInResults); }}
-        className="btn-secondary w-full text-sm"
+        className="text-xs font-bold tracking-widest uppercase text-white/50 hover:text-white w-full text-center py-3 border border-white/10 rounded-lg hover:bg-white/5 transition-colors"
       >
         Reset Filters
-      </motion.button>
+      </button>
     </>
   );
 
   return (
     <>
-      {/* Desktop sidebar */}
-      <aside className="hidden sm:block w-64 shrink-0">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <FilterContent />
+      <aside className="hidden lg:block w-72 shrink-0">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+          <GlassCard className="p-6 sticky top-24">
+            <FilterContent />
+          </GlassCard>
         </motion.div>
       </aside>
 
-      {/* Mobile drawer */}
       <AnimatePresence>
         {show && (
-          <div className="fixed inset-0 z-50 sm:hidden">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/60"
-              onClick={onClose}
-            />
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
             <motion.div
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="absolute right-0 top-0 bottom-0 w-80 bg-[var(--bg-primary)] border-l border-[var(--border-primary)] overflow-y-auto p-5"
+              className="absolute right-0 top-0 bottom-0 w-[85vw] max-w-sm bg-[#080C14] border-l border-white/10 overflow-y-auto p-6"
             >
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="font-bold text-lg">Filters</h3>
-                <motion.button whileTap={{ rotate: 90 }} onClick={onClose}><X className="w-5 h-5" /></motion.button>
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="font-display font-bold text-xl tracking-wide">Radar Filters</h3>
+                <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10"><X className="w-5 h-5" /></button>
               </div>
               <FilterContent />
             </motion.div>
@@ -439,12 +400,12 @@ function SearchContent() {
             cabinClass: cabin,
           }),
         });
-        if (!response.ok) throw new Error(`Search failed: ${response.statusText}`);
+        if (!response.ok) throw new Error(`Search sequence failed: ${response.statusText}`);
         const data = await response.json();
         setAllFlights(data.flights || []);
         setFilteredFlights(data.flights || []);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to search flights");
+        setError(err instanceof Error ? err.message : "Failed to establish visual connections");
       } finally {
         setIsLoading(false);
       }
@@ -459,122 +420,109 @@ function SearchContent() {
   const destDisplay = getAirportDisplay(to);
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)]">
-      {/* Header */}
+    <div className="min-h-screen bg-[var(--color-bg)] pb-20">
+      {/* Cinematic Header Overlay */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] sticky top-0 z-40"
+        transition={{ duration: 0.6 }}
+        className="bg-black/40 backdrop-blur-2xl border-b border-white/5 sticky top-0 z-40"
       >
-        <div className="container-app py-3 flex items-center gap-3">
-          <motion.button
+        <div className="container-app py-4 flex items-center gap-4">
+          <MagneticButton
             onClick={() => router.push("/")}
-            whileHover={{ x: -3 }}
-            whileTap={{ scale: 0.9 }}
-            className="p-2 rounded-lg hover:bg-[var(--bg-surface)] transition-colors"
+            className="w-10 h-10 rounded-full border border-white/20 hover:border-white/50 flex items-center justify-center shrink-0 bg-white/5"
           >
             <ArrowLeft className="w-5 h-5" />
-          </motion.button>
+          </MagneticButton>
+
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <span className="truncate">{originDisplay}</span>
-              <motion.div animate={{ x: [0, 4, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
-                <ArrowRight className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
+            <div className="flex items-center gap-3 text-lg font-bold font-display uppercase tracking-wide">
+              <span className="truncate text-[var(--color-accent-cyan)]">{originDisplay}</span>
+              <motion.div animate={{ x: [0, 6, 0] }} transition={{ duration: 1.2, repeat: Infinity }}>
+                <ArrowRight className="w-5 h-5 text-white/30 shrink-0" />
               </motion.div>
-              <span className="truncate">{destDisplay}</span>
+              <span className="truncate text-[var(--color-accent-violet)]">{destDisplay}</span>
             </div>
-            <div className="text-xs text-[var(--text-tertiary)]">
+            <div className="text-xs text-white/50 font-mono tracking-widest mt-1">
               {new Date(date).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}
-              {" · "}{adults + children + infants} traveller{adults + children + infants > 1 ? "s" : ""}
+              {" · "}{adults + children + infants} SEAT{adults + children + infants > 1 ? "S" : ""}
             </div>
           </div>
-          <motion.button
-            whileTap={{ scale: 0.9 }}
+
+          <MagneticButton
             onClick={() => setShowFilters(!showFilters)}
-            className="sm:hidden p-2 rounded-lg hover:bg-[var(--bg-surface)] transition-colors"
+            className="lg:hidden p-3 rounded-lg border border-white/20 bg-white/5 hover:border-[var(--color-accent-cyan)]"
           >
             <SlidersHorizontal className="w-5 h-5" />
-          </motion.button>
+          </MagneticButton>
         </div>
       </motion.header>
 
-      {/* Content */}
-      <div className="container-app py-4 sm:py-6">
-        <div className="flex gap-6">
+      {/* Main Content */}
+      <div className="container-app py-8">
+        <div className="flex gap-8">
           <FilterPanel flights={allFlights} onFilter={handleFilter} show={showFilters} onClose={() => setShowFilters(false)} />
 
           <div className="flex-1 min-w-0">
             {isLoading ? (
-              <div>
+              <div className="max-w-3xl mx-auto">
                 <SearchingAnimation />
-                <div className="space-y-3">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <SkeletonCard key={i} delay={i * 0.08} />
+                <div className="space-y-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <SkeletonCard key={i} delay={i * 0.1} />
                   ))}
                 </div>
               </div>
             ) : error ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="glass-card p-8 text-center"
-              >
-                <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 0.5 }}>
-                  <AlertCircle className="w-12 h-12 text-[var(--fare-expensive)] mx-auto mb-4" />
-                </motion.div>
-                <h3 className="text-lg font-semibold mb-2">Search Error</h3>
-                <p className="text-sm text-[var(--text-secondary)] mb-4">{error}</p>
-                <motion.button whileTap={{ scale: 0.97 }} onClick={() => router.push("/")} className="btn-primary">Try Again</motion.button>
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-xl mx-auto">
+                <GlassCard className="p-10 text-center flex flex-col items-center">
+                  <AlertCircle className="w-16 h-16 text-[var(--color-accent-amber)] mb-6" />
+                  <h3 className="text-2xl font-bold font-display tracking-wide mb-3">System Anomaly</h3>
+                  <p className="text-white/50 mb-8 max-w-md mx-auto">{error}</p>
+                  <MagneticButton onClick={() => router.push("/")} className="px-8 py-3 rounded-xl bg-white/10 hover:bg-white/20 font-bold border border-white/20">Reinitialize Search</MagneticButton>
+                </GlassCard>
               </motion.div>
             ) : sortedFlights.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="glass-card p-8 text-center"
-              >
-                <motion.div animate={{ y: [-4, 4, -4] }} transition={{ duration: 2, repeat: Infinity }}>
-                  <Plane className="w-12 h-12 text-[var(--text-tertiary)] mx-auto mb-4" />
-                </motion.div>
-                <h3 className="text-lg font-semibold mb-2">No Flights Found</h3>
-                <p className="text-sm text-[var(--text-secondary)] mb-4">Try different dates, airports, or adjust your filters.</p>
-                <motion.button whileTap={{ scale: 0.97 }} onClick={() => router.push("/")} className="btn-primary">New Search</motion.button>
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-xl mx-auto">
+                <GlassCard className="p-10 text-center flex flex-col items-center">
+                  <Plane className="w-16 h-16 text-white/20 mb-6" />
+                  <h3 className="text-2xl font-bold font-display tracking-wide mb-3">Void Space Detected</h3>
+                  <p className="text-white/50 mb-8 max-w-md mx-auto">No orbital vectors available for these parameters. Try adjusting filters or dates.</p>
+                  <MagneticButton onClick={() => router.push("/")} className="px-8 py-3 rounded-xl bg-white/10 hover:bg-white/20 font-bold border border-white/20">New Search</MagneticButton>
+                </GlassCard>
               </motion.div>
             ) : (
-              <>
-                {/* Savings Banner */}
+              <div className="max-w-4xl mx-auto">
+                {/* Visual Savings Bar */}
                 {sortedFlights.length > 1 && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="mb-4 p-3 rounded-xl bg-[var(--color-savings-bg)] border border-[rgba(16,185,129,0.2)] flex items-center gap-3 overflow-hidden relative"
+                    className="mb-8 p-4 rounded-xl backdrop-blur-md bg-gradient-to-r from-[var(--color-accent-amber)]/20 to-transparent border border-[var(--color-accent-amber)]/30 flex items-center gap-4 relative overflow-hidden"
                   >
-                    {/* Shimmer overlay */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
-                      animate={{ x: ["-100%", "200%"] }}
-                      transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
-                    />
-                    <span className="text-lg relative z-10">💰</span>
-                    <div className="text-sm relative z-10">
-                      <span className="font-semibold text-[var(--color-savings-light)]">
-                        Save up to {formatPrice(Math.max(...sortedFlights.map((f) => f.price)) - Math.min(...sortedFlights.map((f) => f.price)))}
-                      </span>{" "}
-                      <span className="text-[var(--text-secondary)]">by comparing {sortedFlights.length} options</span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_2s_infinite]" />
+                    <div className="w-10 h-10 rounded-full bg-[var(--color-accent-amber)]/20 flex items-center justify-center shrink-0">
+                      <span className="text-xl">✨</span>
+                    </div>
+                    <div className="flex flex-col relative z-10">
+                      <span className="text-xl font-bold font-mono text-[var(--color-accent-amber)] shadow-sm">
+                        Max differential: <PriceTicker value={Math.max(...sortedFlights.map((f) => f.price)) - Math.min(...sortedFlights.map((f) => f.price))} prefix="₹" duration={1.5} />
+                      </span>
+                      <span className="text-xs text-white/60 tracking-widest uppercase">Between lowest and highest vectors</span>
                     </div>
                   </motion.div>
                 )}
 
                 <SortBar sortBy={sortBy} onSort={setSortBy} totalResults={sortedFlights.length} />
 
-                <AnimatePresence mode="popLayout">
-                  <div className="space-y-3">
-                    {sortedFlights.map((flight, i) => (
-                      <FlightCard key={flight.id} flight={flight} index={i} isCheapest={i === 0} />
-                    ))}
-                  </div>
-                </AnimatePresence>
-              </>
+                <div className="space-y-4">
+                  {sortedFlights.map((flight, i) => (
+                    <FlightCard key={flight.id} flight={flight} index={i} isCheapest={i === 0} />
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -583,15 +531,12 @@ function SearchContent() {
   );
 }
 
-/* ─── Search Page ────────────────────────────────────── */
 export default function SearchPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
-          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
-            <Loader2 className="w-8 h-8 text-[var(--color-primary)]" />
-          </motion.div>
+        <div className="min-h-screen bg-[#080C14] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-[var(--color-accent-cyan)] animate-spin" />
         </div>
       }
     >

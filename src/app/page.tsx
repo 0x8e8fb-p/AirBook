@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
+import dynamic from "next/dynamic";
+import { motion, AnimatePresence } from "framer-motion";
 import { useSearchStore } from "@/stores/search-store";
 import { searchAirports } from "@/lib/airports";
 import type { Airport } from "@/lib/types";
@@ -13,15 +14,18 @@ import {
   Globe, CreditCard, Bell
 } from "lucide-react";
 
-/* ================================================================
-   ANIMATED BACKGROUND — Floating particles + gradient orbs
-   ================================================================ */
-function AnimatedBackground() {
-  return <div className="aurora-bg" />;
-}
+import { MagneticButton } from "@/components/ui/MagneticButton";
+import { GlassCard } from "@/components/ui/GlassCard";
+import { PriceTicker } from "@/components/ui/PriceTicker";
+import { AnimatedText } from "@/components/ui/AnimatedText";
+
+// Dynamically import Three.js scene to avoid SSR mismatch
+const ParticleBackground = dynamic(() => import("@/components/ui/ParticleBackground"), {
+  ssr: false,
+});
 
 /* ================================================================
-   TYPEWRITER EFFECT — Cycles through taglines
+   TYPEWRITER SYNC TRIGGER — Cycles through taglines with GSAP text
    ================================================================ */
 const TAGLINES = [
   "Fluid spatial computing.",
@@ -30,103 +34,25 @@ const TAGLINES = [
   "Experience atmospheric travel.",
 ];
 
-function TypewriterText() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [displayText, setDisplayText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
+function CyclingHeroText() {
+  const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    const current = TAGLINES[currentIndex];
-    const speed = isDeleting ? 30 : 60;
-
-    if (!isDeleting && displayText === current) {
-      const pause = setTimeout(() => setIsDeleting(true), 2000);
-      return () => clearTimeout(pause);
-    }
-
-    if (isDeleting && displayText === "") {
-      setIsDeleting(false);
-      setCurrentIndex((prev) => (prev + 1) % TAGLINES.length);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      setDisplayText(
-        isDeleting
-          ? current.substring(0, displayText.length - 1)
-          : current.substring(0, displayText.length + 1)
-      );
-    }, speed);
-
-    return () => clearTimeout(timer);
-  }, [displayText, isDeleting, currentIndex]);
-
-  return (
-    <span className="inline-flex items-center">
-      <span className="gradient-text">{displayText}</span>
-      <span className="typewriter-cursor" />
-    </span>
-  );
-}
-
-/* ================================================================
-   ANIMATED COUNTER — Numbers roll up from 0
-   ================================================================ */
-function AnimatedCounter({
-  end,
-  prefix = "",
-  suffix = "",
-  duration = 2000,
-}: {
-  end: number;
-  prefix?: string;
-  suffix?: string;
-  duration?: number;
-}) {
-  const [count, setCount] = useState(0);
-  const [hasStarted, setHasStarted] = useState(false);
-  const ref = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !hasStarted) {
-          setHasStarted(true);
-        }
-      },
-      { threshold: 0.5 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [hasStarted]);
-
-  useEffect(() => {
-    if (!hasStarted) return;
-    let start = 0;
-    const step = end / (duration / 16);
     const timer = setInterval(() => {
-      start += step;
-      if (start >= end) {
-        setCount(end);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(start));
-      }
-    }, 16);
+      setIndex((i) => (i + 1) % TAGLINES.length);
+    }, 4500); // give GSAP time to run in AnimatedText
     return () => clearInterval(timer);
-  }, [hasStarted, end, duration]);
+  }, []);
 
   return (
-    <span ref={ref} className="tabular-nums font-bold text-[var(--text-primary)]">
-      {prefix}
-      {count.toLocaleString("en-IN")}
-      {suffix}
-    </span>
+    <div className="h-[120px] flex items-center justify-center">
+      <AnimatedText key={index} text={TAGLINES[index]} staggerDelay={0.05} className="text-3xl sm:text-5xl lg:text-7xl font-bold leading-tight tracking-tighter" />
+    </div>
   );
 }
 
 /* ================================================================
-   AIRPORT AUTOCOMPLETE — With animated dropdown
+   AIRPORT AUTOCOMPLETE
    ================================================================ */
 function AirportInput({
   id,
@@ -196,12 +122,12 @@ function AirportInput({
     <div className="relative flex-1">
       <label
         htmlFor={id}
-        className="block text-xs font-medium text-[var(--text-tertiary)] mb-1.5 uppercase tracking-wider"
+        className="block text-xs font-semibold text-[color:var(--color-accent-cyan)] mb-2 uppercase tracking-[0.2em]"
       >
         {label}
       </label>
       <div className="relative">
-        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
+        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
         <input
           ref={inputRef}
           id={id}
@@ -213,7 +139,7 @@ function AirportInput({
             if (suggestions.length > 0) setIsOpen(true);
           }}
           placeholder={placeholder}
-          className="input-spatial pl-[2.75rem] font-medium truncate"
+          className="w-full bg-transparent border-b border-white/20 pb-2 pl-10 text-xl font-bold focus:outline-none focus:border-[var(--color-accent-cyan)] transition-colors placeholder:text-white/20 truncate"
           autoComplete="off"
         />
       </div>
@@ -226,7 +152,7 @@ function AirportInput({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.96 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute z-50 w-full mt-2 bg-[var(--bg-elevated)] border border-[var(--border-primary)] rounded-xl shadow-2xl overflow-hidden"
+            className="absolute z-50 w-full mt-4 backdrop-blur-xl bg-[var(--color-bg)]/80 border border-white/10 rounded-xl shadow-2xl overflow-hidden"
           >
             {suggestions.map((airport, i) => (
               <motion.button
@@ -235,24 +161,21 @@ function AirportInput({
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.03, duration: 0.2 }}
                 onClick={() => handleSelect(airport)}
-                className="w-full text-left px-4 py-3 hover:bg-[var(--bg-surface-hover)] transition-colors flex items-center gap-3 border-b border-[var(--border-primary)] last:border-0"
+                className="w-full text-left px-4 py-3 hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5 last:border-0"
               >
-                <motion.div
-                  whileHover={{ scale: 1.1, rotate: 3 }}
-                  className="w-10 h-10 rounded-lg bg-[var(--color-primary-glow)] flex items-center justify-center text-[var(--color-primary)] font-bold text-sm"
-                >
+                <div className="w-10 h-10 rounded-lg bg-[var(--color-accent-cyan)]/10 border border-[var(--color-accent-cyan)]/30 flex items-center justify-center text-[var(--color-accent-cyan)] font-mono text-sm tracking-wide">
                   {airport.iata}
-                </motion.div>
+                </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm text-[var(--text-primary)] truncate">
+                  <div className="font-bold text-sm text-white truncate">
                     {airport.city}
                   </div>
-                  <div className="text-xs text-[var(--text-tertiary)] truncate">
+                  <div className="text-xs text-white/50 truncate">
                     {airport.name}
                   </div>
                 </div>
                 {airport.country !== "IN" && (
-                  <span className="text-xs text-[var(--text-tertiary)] bg-[var(--bg-surface)] px-2 py-0.5 rounded">
+                  <span className="text-xs text-white/40 bg-white/5 px-2 py-0.5 rounded">
                     {airport.country}
                   </span>
                 )}
@@ -266,7 +189,7 @@ function AirportInput({
 }
 
 /* ================================================================
-   SEARCH BAR — With glow animation and micro-interactions
+   SEARCH BAR — Velocity Re-design
    ================================================================ */
 function SearchBar() {
   const router = useRouter();
@@ -282,6 +205,7 @@ function SearchBar() {
 
   const handleSwap = () => {
     setIsSwapping(true);
+    // Uses GSAP flipping visually via layout swaps logic but we handle standard data swap for now
     swapAirports();
     setTimeout(() => setIsSwapping(false), 500);
   };
@@ -299,55 +223,48 @@ function SearchBar() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="glass-card-gradient p-4 sm:p-6 w-full max-w-4xl mx-auto animate-glow"
-    >
-      <div className="flex flex-col md:flex-row items-stretch gap-6 mb-6">
+    <GlassCard className="p-6 md:p-8 w-full max-w-5xl mx-auto z-20">
+      <div className="flex flex-col md:flex-row items-stretch gap-8 mb-8 relative">
         <AirportInput id="origin" label="From" value={origin} onChange={setOrigin} placeholder="Delhi, DEL" />
 
-        <motion.button
-          onClick={handleSwap}
-          animate={isSwapping ? { rotate: 180, scale: 1.2 } : { rotate: 0, scale: 1 }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          whileHover={{ scale: 1.15, borderColor: "rgba(0,229,255,0.5)" }}
-          whileTap={{ scale: 0.9 }}
-          className="self-center md:self-end md:mb-2 w-12 h-12 rounded-full border border-white/20 flex items-center justify-center shrink-0 hover:bg-white/5"
-          aria-label="Swap airports"
-        >
-          <ArrowRightLeft className="w-5 h-5 text-white/70" />
-        </motion.button>
+        <div className="flex items-center justify-center -my-4 md:-mx-4 md:my-0 z-10">
+          <MagneticButton
+            onClick={handleSwap}
+            className="w-14 h-14 rounded-full border border-[var(--color-accent-cyan)]/30 bg-[var(--color-bg)] flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(0,229,255,0.2)] hover:border-[var(--color-accent-cyan)] transition-colors"
+          >
+            <motion.div animate={isSwapping ? { rotate: 180, scale: 1.1 } : { rotate: 0, scale: 1 }} transition={{ type: "spring" }}>
+              <ArrowRightLeft className="w-6 h-6 text-[var(--color-accent-cyan)]" />
+            </motion.div>
+          </MagneticButton>
+        </div>
 
         <AirportInput id="destination" label="To" value={destination} onChange={setDestination} placeholder="Mumbai, BOM" />
       </div>
 
-      {/* Date / Passengers */}
-      <div className="flex flex-col sm:flex-row gap-6 mb-8">
+      <div className="flex flex-col md:flex-row gap-8 mb-8">
         <div className="flex-1">
-          <label htmlFor="departure-date" className="block text-xs font-medium text-[var(--text-tertiary)] mb-1.5 uppercase tracking-wider">Departure</label>
+          <label htmlFor="departure-date" className="block text-xs font-semibold text-[color:var(--color-accent-cyan)] mb-2 uppercase tracking-[0.2em]">Departure</label>
           <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
-            <input id="departure-date" type="date" value={departureDate} onChange={(e) => setDepartureDate(e.target.value)} className="input-spatial text-lg pl-[2.75rem] font-medium" min={new Date().toISOString().split("T")[0]} />
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <input id="departure-date" type="date" value={departureDate} onChange={(e) => setDepartureDate(e.target.value)} className="w-full bg-transparent border-b border-white/20 pb-2 pl-10 text-xl font-bold focus:outline-none focus:border-[var(--color-accent-cyan)] transition-colors cursor-pointer" min={new Date().toISOString().split("T")[0]} />
           </div>
         </div>
 
         <div className="flex-1">
-          <label htmlFor="return-date" className="block text-xs font-medium text-[var(--text-tertiary)] mb-1.5 uppercase tracking-wider">Return <span className="text-[var(--text-tertiary)]">(optional)</span></label>
+          <label htmlFor="return-date" className="block text-xs font-semibold text-[color:var(--color-accent-cyan)] mb-2 uppercase tracking-[0.2em]">Return</label>
           <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
-            <input id="return-date" type="date" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className="input-spatial text-lg pl-[2.75rem] font-medium" min={departureDate} />
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <input id="return-date" type="date" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className="w-full bg-transparent border-b border-white/20 pb-2 pl-10 text-xl font-bold focus:outline-none focus:border-[var(--color-accent-cyan)] transition-colors cursor-pointer placeholder:text-white/20" placeholder="Optional" min={departureDate} />
           </div>
         </div>
 
-        <div className="relative">
-          <label className="block text-xs font-medium text-[var(--text-tertiary)] mb-1.5 uppercase tracking-wider">Travellers</label>
-          <button onClick={() => setShowPassengers(!showPassengers)} className="input-spatial text-lg pl-[2.75rem] flex items-center justify-between min-w-[140px] font-medium !border-b-2 bg-transparent w-full">
-            <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
-            <span className="truncate pr-4">{adults + childCount + infants} {adults + childCount + infants === 1 ? "Traveller" : "Travellers"}</span>
-            <motion.div animate={{ rotate: showPassengers ? 180 : 0 }} className="absolute right-0 top-1/2 -translate-y-1/2" transition={{ duration: 0.2 }}>
-              <ChevronDown className="w-4 h-4 text-[var(--text-tertiary)]" />
+        <div className="relative flex-1">
+          <label className="block text-xs font-semibold text-[color:var(--color-accent-cyan)] mb-2 uppercase tracking-[0.2em]">Travellers</label>
+          <button onClick={() => setShowPassengers(!showPassengers)} className="w-full bg-transparent border-b border-white/20 pb-2 pl-10 text-xl font-bold focus:outline-none focus:border-[var(--color-accent-cyan)] transition-colors text-left flex items-center justify-between">
+            <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <span className="truncate pr-4">{adults + childCount + infants} <span className="font-medium opacity-60 text-lg">Seat(s)</span></span>
+            <motion.div animate={{ rotate: showPassengers ? 180 : 0 }} className="absolute right-0 top-1/2 -translate-y-1/2">
+              <ChevronDown className="w-5 h-5 text-white/40" />
             </motion.div>
           </button>
 
@@ -358,351 +275,98 @@ function SearchBar() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -8, scale: 0.95 }}
                 transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute z-50 right-0 top-full mt-2 w-64 bg-[var(--bg-elevated)] border border-[var(--border-primary)] rounded-xl p-4 shadow-2xl"
+                className="absolute z-50 right-0 left-0 top-full mt-4 backdrop-blur-xl bg-[var(--color-bg)]/80 border border-white/10 rounded-xl p-5 shadow-2xl origin-top"
               >
                 {[
-                  { label: "Adults", sublabel: "12+ years", val: adults, set: (v: number) => setPassengers(v, childCount, infants), min: 1, max: 9 },
-                  { label: "Children", sublabel: "2-12 years", val: childCount, set: (v: number) => setPassengers(adults, v, infants), min: 0, max: 8 },
-                  { label: "Infants", sublabel: "Under 2", val: infants, set: (v: number) => setPassengers(adults, childCount, v), min: 0, max: adults },
-                ].map(({ label, sublabel, val, set, min, max }) => (
-                  <div key={label} className="flex items-center justify-between py-2">
-                    <div><div className="text-sm font-medium">{label}</div><div className="text-xs text-[var(--text-tertiary)]">{sublabel}</div></div>
-                    <div className="flex items-center gap-3">
-                      <motion.button whileTap={{ scale: 0.85 }} onClick={() => val > min && set(val - 1)} disabled={val <= min} className="w-8 h-8 rounded-full bg-[var(--bg-surface)] border border-[var(--border-primary)] flex items-center justify-center text-sm disabled:opacity-30 hover:border-[var(--color-primary)]">−</motion.button>
-                      <motion.span key={val} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="w-6 text-center font-semibold">{val}</motion.span>
-                      <motion.button whileTap={{ scale: 0.85 }} onClick={() => val < max && set(val + 1)} disabled={val >= max} className="w-8 h-8 rounded-full bg-[var(--bg-surface)] border border-[var(--border-primary)] flex items-center justify-center text-sm disabled:opacity-30 hover:border-[var(--color-primary)]">+</motion.button>
+                  { label: "Adults", sub: "12+ years", val: adults, set: (v: number) => setPassengers(v, childCount, infants), min: 1, max: 9 },
+                  { label: "Children", sub: "2-11 years", val: childCount, set: (v: number) => setPassengers(adults, v, infants), min: 0, max: 8 },
+                  { label: "Infants", sub: "Under 2", val: infants, set: (v: number) => setPassengers(adults, childCount, v), min: 0, max: adults },
+                ].map(({ label, sub, val, set, min, max }) => (
+                  <div key={label} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+                    <div>
+                      <div className="font-bold">{label}</div>
+                      <div className="text-xs text-white/40 font-mono mt-0.5">{sub}</div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <button onClick={() => val > min && set(val - 1)} disabled={val <= min} className="w-8 h-8 rounded border border-white/20 flex items-center justify-center disabled:opacity-30 hover:border-[var(--color-accent-cyan)] transition-colors">−</button>
+                      <span className="w-4 text-center font-mono text-lg">{val}</span>
+                      <button onClick={() => val < max && set(val + 1)} disabled={val >= max} className="w-8 h-8 rounded border border-white/20 flex items-center justify-center disabled:opacity-30 hover:border-[var(--color-accent-cyan)] transition-colors">+</button>
                     </div>
                   </div>
                 ))}
-                <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowPassengers(false)} className="w-full mt-3 btn-primary text-sm py-2">Done</motion.button>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       </div>
 
-      {/* Search Button */}
-      <motion.button
+      <MagneticButton
         onClick={handleSearch}
         disabled={!origin || !destination || !departureDate || isSearching}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.98 }}
-        className="btn-primary w-full py-4 text-lg flex items-center justify-center gap-3 disabled:opacity-40"
+        className="w-full relative overflow-hidden group bg-gradient-to-r from-[var(--color-accent-violet)] to-[var(--color-accent-cyan)] disabled:opacity-40 rounded-xl py-5"
       >
-        {isSearching ? (
-          <>
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
-            />
-            Searching across all sources...
-          </>
-        ) : (
-          <>
-            <Search className="w-5 h-5" />
-            Search Flights
-          </>
-        )}
-      </motion.button>
-    </motion.div>
+        <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out" />
+        <span className="relative z-10 flex items-center justify-center gap-3 text-xl font-bold tracking-wide">
+          {isSearching ? "Initializing Search Sequence..." : "EXECUTE SEARCH"}
+        </span>
+      </MagneticButton>
+    </GlassCard>
   );
 }
 
-/* ================================================================
-   TRENDING ROUTE CARD — With hover glow + micro-animation
-   ================================================================ */
-function TrendingRouteCard({
-  origin, destination, label, index,
-}: {
-  origin: string; destination: string; label: string; index: number;
-}) {
-  const { setOrigin, setDestination } = useSearchStore();
-  const hash = (origin + destination).split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  const price = 2000 + (hash % 5) * 800;
-
-  return (
-    <motion.button
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.5, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{ y: -4, scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={() => { setOrigin(origin); setDestination(destination); }}
-      className="spatial-container !p-5 text-left flex items-center gap-4 group cursor-pointer"
-    >
-      <motion.div
-        whileHover={{ rotate: 12, scale: 1.1 }}
-        className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0"
-      >
-        <Plane className="w-6 h-6 text-white" />
-      </motion.div>
-      <div className="flex-1 min-w-0">
-        <div className="text-base font-medium truncate">{label}</div>
-        <div className="text-sm text-[var(--text-secondary)]">From {formatPrice(price)}</div>
-      </div>
-      <motion.div
-        initial={{ x: 0 }}
-        whileHover={{ x: 4 }}
-        transition={{ duration: 0.2 }}
-      >
-        <ArrowRight className="w-5 h-5 text-white/30 group-hover:text-white transition-colors" />
-      </motion.div>
-    </motion.button>
-  );
-}
-
-/* ================================================================
-   FEATURE CARD — How it works section with entrance animation
-   ================================================================ */
-function FeatureCard({
-  step, title, desc, icon, index,
-}: {
-  step: string; title: string; desc: string; icon: string; index: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30, scale: 0.95 }}
-      whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.6, delay: index * 0.15, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{ y: -6, scale: 1.03 }}
-      className="text-center spatial-container border-transparent relative overflow-hidden group"
-    >
-      {/* Glow overlay on hover */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-t from-[rgba(0,229,255,0.03)] to-transparent pointer-events-none" />
-      
-      <motion.div
-        className="text-4xl mb-4 relative z-10"
-        whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
-        transition={{ duration: 0.4 }}
-      >
-        {icon}
-      </motion.div>
-      <div className="text-sm font-bold text-[var(--color-primary)] mb-3 tracking-widest">STEP {step}</div>
-      <h3 className="text-xl font-medium mb-3">{title}</h3>
-      <p className="text-base text-[var(--text-secondary)] leading-relaxed">{desc}</p>
-    </motion.div>
-  );
-}
-
-/* ================================================================
-   VALUE PROP CARDS — Animated on scroll
-   ================================================================ */
-function ValueProps() {
-  const props = [
-    { icon: <Globe className="w-6 h-6" />, title: "Every Airline", desc: "IndiGo, Air India, SpiceJet, Vistara, Akasa — all in one search", color: "#3B82F6" },
-    { icon: <CreditCard className="w-6 h-6" />, title: "Card Optimization", desc: "HDFC, ICICI, SBI, Axis — auto-apply the best credit card cashback", color: "#10B981" },
-    { icon: <Bell className="w-6 h-6" />, title: "Price Alerts", desc: "Get notified when fares drop on your tracked routes", color: "#F59E0B" },
-  ];
-
-  return (
-    <section className="container-app py-12 sm:py-16">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {props.map((prop, i) => (
-          <motion.div
-            key={prop.title}
-            initial={{ opacity: 0, x: i === 0 ? -30 : i === 2 ? 30 : 0, y: i === 1 ? 30 : 0 }}
-            whileInView={{ opacity: 1, x: 0, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.6, delay: i * 0.12, ease: [0.16, 1, 0.3, 1] }}
-            whileHover={{ y: -4 }}
-            className="glass-card p-5 flex items-start gap-4 border border-[var(--border-primary)] hover:border-[var(--border-hover)] transition-colors"
-          >
-            <motion.div
-              whileHover={{ rotate: 8, scale: 1.1 }}
-              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${prop.color}15`, color: prop.color }}
-            >
-              {prop.icon}
-            </motion.div>
-            <div>
-              <h3 className="font-semibold mb-1">{prop.title}</h3>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{prop.desc}</p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ================================================================
-   AIRLINE TICKER — Horizontal scrolling airline strip
-   ================================================================ */
-function AirlineTicker() {
-  const airlineList = Object.entries(AIRLINES).slice(0, 9);
-  const doubled = [...airlineList, ...airlineList]; // double for seamless loop
-
-  return (
-    <section className="container-app py-8 overflow-hidden">
-      <motion.div
-        className="flex items-center gap-10"
-        animate={{ x: [0, -(airlineList.length * 130)] }}
-        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-      >
-        {doubled.map(([code, info], i) => (
-          <div
-            key={`${code}-${i}`}
-            className="flex items-center gap-2 shrink-0 opacity-30 hover:opacity-60 transition-opacity"
-          >
-            <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: info.color }} />
-            <span className="text-xs font-medium text-[var(--text-secondary)] whitespace-nowrap">{info.name}</span>
-          </div>
-        ))}
-      </motion.div>
-    </section>
-  );
-}
-
-/* ================================================================
-   HOMEPAGE — Full page with all animations
-   ================================================================ */
 export default function HomePage() {
   return (
-    <div className="gradient-hero min-h-screen relative overflow-hidden">
-      <AnimatedBackground />
+    <div className="min-h-screen relative overflow-hidden font-sans">
+      <ParticleBackground />
+      
+      {/* Cinematic Header Overlay */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="container-app py-4 flex items-center justify-between relative z-20"
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="container-app py-6 flex items-center justify-between relative z-20 mix-blend-difference"
       >
-        <motion.div
-          className="flex items-center gap-2"
-          whileHover={{ scale: 1.03 }}
-        >
-          <motion.div
-            className="w-10 h-10 gradient-primary rounded-2xl flex items-center justify-center shadow-lg"
-            whileHover={{ rotate: 12 }}
-          >
-            <Plane className="w-5 h-5 text-black" />
-          </motion.div>
-          <span className="text-2xl font-bold tracking-tight px-1">Atmos</span>
-        </motion.div>
-        <span className="hidden sm:inline-block text-sm font-medium tracking-widest text-[var(--text-secondary)]">V1.0</span>
+        <div className="flex items-center gap-3">
+          <Plane className="w-8 h-8 text-[var(--color-accent-cyan)]" />
+          <span className="text-2xl font-bold tracking-tight px-1 font-display">ATMOS</span>
+        </div>
+        <div className="flex items-center gap-6">
+          <span className="hidden sm:inline-block text-xs font-semibold tracking-[0.2em] uppercase text-white/50">Engine: Velocity</span>
+          <span className="w-2 h-2 rounded-full bg-[var(--color-accent-cyan)] animate-pulse shadow-[0_0_10px_var(--color-accent-cyan)]" />
+        </div>
       </motion.header>
 
-      {/* Hero */}
-      <section className="container-app pt-12 sm:pt-20 pb-8 relative z-20">
-        <div className="text-center mb-10">
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="text-3xl sm:text-5xl lg:text-6xl font-bold mb-5 leading-tight"
-            style={{ fontFamily: "var(--font-space), system-ui" }}
-          >
-            <TypewriterText />
-          </motion.h1>
+      {/* Hero Content */}
+      <section className="container-app pt-16 pb-12 relative z-20 flex flex-col items-center justify-center min-h-[90vh]">
+        <CyclingHeroText />
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg sm:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed font-light"
-          >
-            The world's most elegant flight orchestrator. No ads, no popups. Just pure, immersive travel intelligence.
-          </motion.p>
-        </div>
+        <motion.p
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          className="text-lg sm:text-xl text-white/60 max-w-2xl mx-auto text-center leading-relaxed font-light mb-12"
+        >
+          The feeling of breaking the sound barrier to find the cheapest fare. 
+          Uncompromised speed, precision, and architectural elegance.
+        </motion.p>
 
         <SearchBar />
 
-        {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 mt-8 text-sm text-[var(--text-tertiary)]"
-        >
-          <div className="flex items-center gap-1.5">
-            <Zap className="w-4 h-4 text-[var(--color-primary)]" />
-            <span><AnimatedCounter end={12340} /> deals found today</span>
+        {/* Live Counters */}
+        <div className="flex flex-wrap items-center justify-center gap-8 mt-16 text-white/50 uppercase tracking-[0.1em] text-xs font-mono">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 bg-[var(--color-accent-cyan)] rounded-full" />
+            <PriceTicker value={12340} duration={3} /> <span className="ml-1">Queries</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <TrendingDown className="w-4 h-4 text-[var(--color-savings)]" />
-            <span><AnimatedCounter end={82} prefix="₹" suffix=" Lakhs" /> saved by users</span>
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 bg-[var(--color-accent-amber)] rounded-full" />
+            <PriceTicker value={82} duration={3} prefix="₹" suffix="Lakhs" /> <span className="ml-1">Saved</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Shield className="w-4 h-4 text-blue-400" />
-            <span><AnimatedCounter end={9} /> airlines compared</span>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* Airline Ticker */}
-      <AirlineTicker />
-
-      {/* Trending Routes */}
-      <section className="container-app py-8 sm:py-12 relative z-10">
-        <motion.h2
-          initial={{ opacity: 0, x: -20 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="text-xl sm:text-2xl font-bold mb-6"
-          style={{ fontFamily: "var(--font-space), system-ui" }}
-        >
-          <Sparkles className="w-5 h-5 inline-block text-[var(--color-primary)] mr-2 animate-glow-breathe" />
-          Trending Routes
-        </motion.h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {POPULAR_ROUTES.slice(0, 9).map((route, i) => (
-            <TrendingRouteCard
-              key={`${route.origin}-${route.destination}`}
-              origin={route.origin}
-              destination={route.destination}
-              label={route.label}
-              index={i}
-            />
-          ))}
         </div>
       </section>
 
-      {/* Value Props */}
-      <ValueProps />
-
-      {/* How It Works */}
-      <section className="container-app py-12 sm:py-20 relative z-10">
-        <motion.h2
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="text-xl sm:text-2xl font-bold mb-10 text-center"
-          style={{ fontFamily: "var(--font-space), system-ui" }}
-        >
-          How Atmos Works
-        </motion.h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
-          {[
-            { step: "1", title: "Search Once", desc: "Enter your route. We search every airline, OTA, and metasearch engine simultaneously.", icon: "🔍" },
-            { step: "2", title: "Compare Everything", desc: "See every option ranked by TRUE effective price — with coupons, cashback, and card offers applied.", icon: "📊" },
-            { step: "3", title: "Save Maximum", desc: "Book the best deal directly. Track savings, set alerts, and never overpay for a flight again.", icon: "💰" },
-          ].map((f, i) => (
-            <FeatureCard key={f.step} {...f} index={i} />
-          ))}
-        </div>
-      </section>
-
-      {/* Footer */}
-      <motion.footer
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        className="border-t border-white/5 py-12 relative z-10 mt-12"
-      >
-        <div className="container-app text-center">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/10">
-              <Plane className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-medium tracking-wide">Atmos</span>
-          </div>
-          <p className="text-sm text-[var(--text-tertiary)]">The world's most elegant flight orchestration.</p>
-          <p className="text-xs text-[var(--text-tertiary)] mt-4 opacity-50">© 2026 Atmos.</p>
-        </div>
-      </motion.footer>
+      {/* Footer / Fade */}
+      <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-[#080C14] to-transparent pointer-events-none z-10" />
     </div>
   );
 }
