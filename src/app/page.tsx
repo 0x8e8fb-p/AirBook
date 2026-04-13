@@ -239,7 +239,13 @@ function SearchPanel() {
    ROUTE CARD
    ================================================================ */
 function RouteCard({ route }: { route: typeof POPULAR_ROUTES[number] }) {
-  const price = 2800 + Math.floor(Math.random() * 4000);
+  // Deterministic price from route label — avoids hydration mismatch
+  let hash = 0;
+  for (let i = 0; i < route.label.length; i++) {
+    hash = ((hash << 5) - hash + route.label.charCodeAt(i)) | 0;
+  }
+  const price = 2800 + Math.abs(hash % 4000);
+
   return (
     <div className="min-w-[240px] snap-start border border-[var(--border-default)] rounded-[var(--radius-lg)] p-4 hover:border-[var(--border-strong)] transition-colors group">
       <div className="flex items-center justify-between mb-3">
