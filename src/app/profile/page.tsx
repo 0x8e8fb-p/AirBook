@@ -39,6 +39,15 @@ export default async function ProfilePage({
           </form>
         </header>
 
+        {(message || profileErrorMsg) && (
+          <div className={`mb-8 p-4 rounded-[var(--radius-md)] text-sm flex items-center gap-3 ${
+            message ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
+          }`}>
+            <User className="w-4 h-4" />
+            <span>{message || profileErrorMsg}</span>
+          </div>
+        )}
+
         <form action={updateProfile} className="space-y-8">
           {/* PERSONAL INFO */}
           <section className="p-6 rounded-[var(--radius-lg)] border border-[var(--border-muted)] bg-[var(--bg-subtle)] space-y-6">
