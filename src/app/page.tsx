@@ -352,18 +352,7 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* POPULAR ROUTES */}
-      <section className="container-app py-16 border-t border-[var(--border-muted)]">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold tracking-tight">Popular Routes</h2>
-        </div>
 
-        <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1 scrollbar-none">
-          {POPULAR_ROUTES.slice(0, 6).map((route) => (
-            <RouteCard key={route.label} route={route} />
-          ))}
-        </div>
-      </section>
 
       {/* HOW IT WORKS */}
       <section className="container-app py-16 border-t border-[var(--border-muted)]">
