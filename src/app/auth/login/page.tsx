@@ -61,10 +61,10 @@ export default function LoginPage({
               </div>
             </div>
 
-            {searchParams.error && (
+            {error && (
               <div className="flex items-center gap-2 text-red-500 text-sm mt-2">
                 <AlertCircle className="w-4 h-4" />
-                <span>{searchParams.error}</span>
+                <span>{error}</span>
               </div>
             )}
 
