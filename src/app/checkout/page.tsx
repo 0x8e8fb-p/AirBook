@@ -11,6 +11,7 @@ function CheckoutContent() {
   const flightId = searchParams.get("id");
 
   const [step, setStep] = useState(0);
+  const [logged, setLogged] = useState(false);
 
   useEffect(() => {
     const timer1 = setTimeout(() => setStep(1), 2000);
@@ -18,6 +19,14 @@ function CheckoutContent() {
     const timer3 = setTimeout(() => setStep(3), 6000);
     return () => { clearTimeout(timer1); clearTimeout(timer2); clearTimeout(timer3); };
   }, []);
+
+  // [New] Persistence: Log the booking once confirmed
+  useEffect(() => {
+    if (step === 3 && !logged && flightId) {
+      const { logBooking } = require('./actions');
+      logBooking(flightId, 0).then(() => setLogged(true));
+    }
+  }, [step, logged, flightId]);
 
   const steps = [
     { icon: Plane, label: "Verifying fare..." },
