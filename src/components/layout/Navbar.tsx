@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Plane, Bell, Search, Menu, X } from "lucide-react";
+import { Plane, Bell, Search, Menu, X, User } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -16,6 +17,20 @@ export function Navbar() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -70,9 +85,24 @@ export function Navbar() {
             })}
           </div>
 
-
-
-          <button
+          <div className="hidden md:flex items-center gap-2">
+            {user ? (
+               <Link
+                href="/profile"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                >
+                <User className="w-4 h-4" />
+                Profile
+              </Link>
+            ) : (
+              <Link
+                href="/auth/login"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium bg-[var(--accent-cta)] text-[var(--text-inverse)] rounded-[var(--radius-md)] hover:opacity-90 transition-opacity"
+              >
+                Sign In
+              </Link>
+            )}
+          </div>          <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className="md:hidden p-2 text-[var(--text-secondary)]"
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
@@ -102,6 +132,30 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
+            {user ? (
+              <Link
+                href="/profile"
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  "text-2xl font-semibold transition-colors flex flex-col items-center gap-2 mt-4",
+                  pathname === "/profile" ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"
+                )}
+              >
+                <User className="w-6 h-6" />
+                Profile
+              </Link>
+            ) : (
+               <Link
+                href="/auth/login"
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  "text-2xl font-semibold transition-colors mt-4",
+                  pathname === "/auth/login" ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"
+                )}
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </motion.div>
       )}
