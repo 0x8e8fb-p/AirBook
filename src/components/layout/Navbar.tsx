@@ -9,7 +9,6 @@ import { Plane, Bell, Search, Menu, X } from "lucide-react";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
-  { href: "/search", label: "Search" },
   { href: "/alerts", label: "Alerts" },
 ];
 
@@ -71,15 +70,7 @@ export function Navbar() {
             })}
           </div>
 
-          <div className="hidden md:flex items-center gap-2">
-            <Link
-              href="/search"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium bg-[var(--accent-cta)] text-[var(--text-inverse)] rounded-[var(--radius-md)] hover:opacity-90 transition-opacity"
-            >
-              <Search className="w-3 h-3" />
-              Search
-            </Link>
-          </div>
+
 
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
