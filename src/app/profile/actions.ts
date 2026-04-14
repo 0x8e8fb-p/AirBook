@@ -9,25 +9,27 @@ export async function updateProfile(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
-    throw new Error('Not authenticated')
+    return redirect('/auth/login')
   }
 
   const updates = {
     id: user.id,
-    full_name: formData.get('full_name') as string,
-    date_of_birth: formData.get('date_of_birth') as string,
-    passport_number: formData.get('passport_number') as string,
-    passport_expiry: formData.get('passport_expiry') as string,
-    nationality: formData.get('nationality') as string,
-    frequent_flyer_number: formData.get('frequent_flyer_number') as string,
+    full_name: (formData.get('full_name') as string)?.trim(),
+    date_of_birth: formData.get('date_of_birth') as string || null,
+    passport_number: (formData.get('passport_number') as string)?.trim() || null,
+    passport_expiry: formData.get('passport_expiry') as string || null,
+    nationality: (formData.get('nationality') as string)?.trim() || null,
+    frequent_flyer_number: (formData.get('frequent_flyer_number') as string)?.trim() || null,
     updated_at: new Date().toISOString(),
   }
 
   const { error } = await supabase.from('profiles').upsert(updates)
 
   if (error) {
-    throw new Error(error.message)
+    console.error('Update profile error:', error.message)
+    return redirect('/profile?error=' + encodeURIComponent(error.message))
   }
 
   revalidatePath('/profile')
+  redirect('/profile?message=Profile updated successfully')
 }

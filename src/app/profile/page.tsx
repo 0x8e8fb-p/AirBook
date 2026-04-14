@@ -4,7 +4,12 @@ import { updateProfile } from './actions'
 import { User, Plane, MapPin, Search } from 'lucide-react'
 import { signout } from '../auth/actions'
 
-export default async function ProfilePage() {
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ message?: string; error?: string }>
+}) {
+  const { message, error: profileErrorMsg } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
