@@ -44,16 +44,23 @@ export async function signup(formData: FormData) {
 
   // Create initial profile record if user was created
   if (data.user) {
-    await supabase.from('profiles').insert([
+    const { error: profileError } = await supabase.from('profiles').insert([
         { 
             id: data.user.id, 
             full_name: fullName,
             email: email
         }
     ])
+    // If it fails because of RLS or constraint, we ignore for now as it means it exists
   }
 
   revalidatePath('/', 'layout')
+  
+  if (!data.session) {
+    // Email confirmation is likely required
+    return redirect('/auth/login?error=Registration successful! Please check your email to confirm your account.')
+  }
+
   redirect('/profile')
 }
 

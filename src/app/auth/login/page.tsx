@@ -5,11 +5,14 @@ import Link from 'next/link'
 import { Plane, ArrowRight, AlertCircle } from 'lucide-react'
 import { login } from '../actions'
 
+import { use } from 'react'
+
 export default function LoginPage({
   searchParams,
 }: {
-  searchParams: { error?: string }
+  searchParams: Promise<{ error?: string }>
 }) {
+  const { error } = use(searchParams)
   return (
     <div className="min-h-screen flex flex-col pt-14 bg-[var(--bg-base)] text-[var(--text-primary)]">
       <div className="flex-1 flex items-center justify-center p-4">
