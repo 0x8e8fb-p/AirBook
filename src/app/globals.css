@@ -18,6 +18,18 @@
 html {
   -webkit-tap-highlight-color: transparent;
   scroll-behavior: auto;
+  scrollbar-gutter: stable;
+}
+
+@media (pointer: fine) {
+  html { overflow-y: scroll; }
+}
+
+html[data-theme-swap] *,
+html[data-theme-swap] *::before,
+html[data-theme-swap] *::after {
+  transition: none !important;
+  animation: none !important;
 }
 
 body {

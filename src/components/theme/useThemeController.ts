@@ -65,7 +65,6 @@ export function useThemeController() {
   const lockScroll = useCallback((): LockedScroll => {
     const x = window.scrollX;
     const y = window.scrollY;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
 
     const { style } = document.body;
     const prev = {
@@ -79,10 +78,10 @@ export function useThemeController() {
 
     style.position = "fixed";
     style.top = `-${y}px`;
-    style.left = `-${x}px`;
+    style.left = "0";
     style.right = "0";
     style.width = "100%";
-    style.paddingRight = scrollbarWidth > 0 ? `${scrollbarWidth}px` : "";
+    style.paddingRight = prev.paddingRight;
 
     return { x, y, prev };
   }, []);
@@ -172,12 +171,14 @@ export function useThemeController() {
           await new Promise((r2) => setTimeout(r2, 680));
           setMode("manual");
           setTheme(nextTheme);
+          document.documentElement.dataset.themeSwap = "1";
           applyHtmlTheme(nextTheme, "manual");
           unlockScroll(locked);
           unlocked = true;
           await new Promise<void>((resolve) =>
             requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
           );
+          delete document.documentElement.dataset.themeSwap;
           setPhase("idle");
         } finally {
           if (!unlocked) unlockScroll(locked);
@@ -227,12 +228,14 @@ export function useThemeController() {
           await new Promise((r2) => setTimeout(r2, 680));
           setMode("system");
           setTheme(resolved);
+          document.documentElement.dataset.themeSwap = "1";
           applyHtmlTheme(resolved, "system");
           unlockScroll(locked);
           unlocked = true;
           await new Promise<void>((resolve) =>
             requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
           );
+          delete document.documentElement.dataset.themeSwap;
           setPhase("idle");
         } finally {
           if (!unlocked) unlockScroll(locked);
