@@ -26,6 +26,10 @@ type LockedScroll = {
     width: string;
     paddingRight: string;
   };
+  htmlPrev: {
+    overflow: string;
+    paddingRight: string;
+  };
 };
 
 function getSystemScheme(): SystemScheme {
@@ -65,6 +69,7 @@ export function useThemeController() {
   const lockScroll = useCallback((): LockedScroll => {
     const x = window.scrollX;
     const y = window.scrollY;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
 
     const { style } = document.body;
     const prev = {
@@ -76,6 +81,15 @@ export function useThemeController() {
       paddingRight: style.paddingRight,
     };
 
+    const htmlStyle = document.documentElement.style;
+    const htmlPrev = {
+      overflow: htmlStyle.overflow,
+      paddingRight: htmlStyle.paddingRight,
+    };
+
+    htmlStyle.overflow = "hidden";
+    htmlStyle.paddingRight = scrollbarWidth > 0 ? `${scrollbarWidth}px` : "";
+
     style.position = "fixed";
     style.top = `-${y}px`;
     style.left = "0";
@@ -83,7 +97,7 @@ export function useThemeController() {
     style.width = "100%";
     style.paddingRight = prev.paddingRight;
 
-    return { x, y, prev };
+    return { x, y, prev, htmlPrev };
   }, []);
 
   const unlockScroll = useCallback((locked: LockedScroll) => {
@@ -94,6 +108,11 @@ export function useThemeController() {
     style.right = locked.prev.right;
     style.width = locked.prev.width;
     style.paddingRight = locked.prev.paddingRight;
+
+    const htmlStyle = document.documentElement.style;
+    htmlStyle.overflow = locked.htmlPrev.overflow;
+    htmlStyle.paddingRight = locked.htmlPrev.paddingRight;
+
     window.scrollTo(locked.x, locked.y);
   }, []);
 
