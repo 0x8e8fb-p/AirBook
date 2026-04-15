@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SunMedium, Moon } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { SunMedium, Moon, X } from "lucide-react";
 import { ThemeTransitionOverlay } from "./ThemeTransitionOverlay";
 import { useThemeController } from "./useThemeController";
 
@@ -22,11 +23,21 @@ function getCenter(el: HTMLElement) {
 }
 
 export function ThemeFab() {
-  const { mode, theme, phase, origin, toTheme, setManualTheme, setSystemMode } =
-    useThemeController();
+  const {
+    mode,
+    theme,
+    phase,
+    origin,
+    toTheme,
+    radius,
+    supportsViewTransition,
+    setManualTheme,
+    setSystemMode,
+  } = useThemeController();
   const [open, setOpen] = useState(false);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const pendingActionRef = useRef<null | (() => void)>(null);
 
   const posStyle = useMemo(() => {
     return {
@@ -62,66 +73,102 @@ export function ThemeFab() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const runAfterClose = (fn: () => void) => {
+    if (!open) {
+      fn();
+      return;
+    }
+    pendingActionRef.current = fn;
+    setOpen(false);
+  };
+
   return (
     <>
       <ThemeTransitionOverlay
         phase={phase}
         origin={origin}
         toTheme={toTheme}
-        enabled
+        radius={radius}
+        enabled={!supportsViewTransition}
       />
 
       <div className="fixed z-[80]" style={posStyle}>
-        {open && (
-          <div className="mb-3 w-[220px] rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-lg)] overflow-hidden">
-            <div className="p-2">
-              <button
-                type="button"
-                className="w-full text-left px-3 py-2 rounded-[var(--radius-md)] hover:bg-[var(--accent-primary-dim)] transition-colors text-[13px]"
-                onClick={async () => {
-                  const el = btnRef.current;
-                  if (!el) return;
-                  await setSystemMode(getCenter(el));
-                  setOpen(false);
-                }}
-              >
-                Follow system {mode === "system" ? "•" : ""}
-              </button>
-            </div>
-            <div className="h-px bg-[var(--border-muted)]" />
-            <div className="p-2 grid gap-1.5">
-              {ITEMS.map((it) => (
+        <AnimatePresence
+          initial={false}
+          onExitComplete={() => {
+            const fn = pendingActionRef.current;
+            pendingActionRef.current = null;
+            fn?.();
+          }}
+        >
+          {open && (
+            <motion.div
+              key="theme-menu"
+              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 480, damping: 32 }}
+              className="mb-3 w-[220px] rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-lg)] overflow-hidden"
+            >
+              <div className="p-2">
                 <button
-                  key={it.id}
                   type="button"
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-[var(--radius-md)] hover:bg-[var(--accent-primary-dim)] transition-colors text-[13px]"
-                  onClick={async () => {
-                    const el = btnRef.current;
-                    if (!el) return;
-                    await setManualTheme(it.id, getCenter(el));
-                    setOpen(false);
+                  className="w-full text-left px-3 py-2 rounded-[var(--radius-md)] hover:bg-[var(--accent-primary-dim)] transition-colors text-[13px]"
+                  onClick={() => {
+                    runAfterClose(() => {
+                      const el = btnRef.current;
+                      if (!el) return;
+                      void setSystemMode(getCenter(el));
+                    });
                   }}
                 >
-                  <it.icon className="w-4 h-4 opacity-80" />
-                  <span className="flex-1">{it.label}</span>
-                  {mode === "manual" && theme === it.id ? (
-                    <span className="text-[11px] opacity-70">Active</span>
-                  ) : null}
+                  Follow system {mode === "system" ? "•" : ""}
                 </button>
-              ))}
-            </div>
-          </div>
-        )}
+              </div>
+              <div className="h-px bg-[var(--border-muted)]" />
+              <div className="p-2 grid gap-1.5">
+                {ITEMS.map((it) => (
+                  <button
+                    key={it.id}
+                    type="button"
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-[var(--radius-md)] hover:bg-[var(--accent-primary-dim)] transition-colors text-[13px]"
+                    onClick={() => {
+                      runAfterClose(() => {
+                        const el = btnRef.current;
+                        if (!el) return;
+                        void setManualTheme(it.id, getCenter(el));
+                      });
+                    }}
+                  >
+                    <it.icon className="w-4 h-4 opacity-80" />
+                    <span className="flex-1">{it.label}</span>
+                    {mode === "manual" && theme === it.id ? (
+                      <span className="text-[11px] opacity-70">Active</span>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <button
+        <motion.button
           ref={btnRef}
           type="button"
           aria-label="Theme"
-          className="h-12 w-12 rounded-full border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-lg)] flex items-center justify-center hover:opacity-95 active:scale-[0.98] transition"
+          whileTap={{ scale: 0.9 }}
+          transition={{ type: "spring", stiffness: 520, damping: 28 }}
+          className="h-12 w-12 rounded-full border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-lg)] flex items-center justify-center hover:opacity-95 transition"
           onClick={() => setOpen((v) => !v)}
         >
-          <span className="text-[12px] font-medium">{open ? "×" : "☼"}</span>
-        </button>
+          {open ? (
+            <X className="w-[22px] h-[22px] text-[var(--text-secondary)]" />
+          ) : theme === "warm" ? (
+            <SunMedium className="w-[22px] h-[22px] text-[var(--text-secondary)]" />
+          ) : (
+            <Moon className="w-[22px] h-[22px] text-[var(--text-secondary)]" />
+          )}
+        </motion.button>
       </div>
     </>
   );

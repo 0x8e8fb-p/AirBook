@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ThemeMode, ThemeName, SystemScheme } from "@/lib/theme/types";
 import { resolveThemeFromSystem } from "@/lib/theme/resolve";
 import {
@@ -15,14 +15,12 @@ import {
 } from "@/lib/theme/storage";
 import type { ThemeTransitionPhase } from "./ThemeTransitionOverlay";
 
+type ViewTransitionLike = { finished: Promise<void> };
+type StartViewTransition = (updateCallback: () => void) => ViewTransitionLike;
+
 function getSystemScheme(): SystemScheme {
   if (typeof window === "undefined") return "light";
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined") return false;
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 export function useThemeController() {
@@ -31,14 +29,40 @@ export function useThemeController() {
   const [phase, setPhase] = useState<ThemeTransitionPhase>("idle");
   const [origin, setOrigin] = useState({ x: 0, y: 0 });
   const [toTheme, setToTheme] = useState<ThemeName>("warm");
+  const [radius, setRadius] = useState(0);
 
-  const reduceMotion = useMemo(() => prefersReducedMotion(), []);
   const animatingRef = useRef(false);
+  const startViewTransition: StartViewTransition | null =
+    typeof document !== "undefined"
+      ? ((document as unknown as { startViewTransition?: StartViewTransition })
+          .startViewTransition ?? null)
+      : null;
+  const supportsViewTransition = !!startViewTransition;
 
   const applyHtmlTheme = useCallback((t: ThemeName, m: ThemeMode) => {
     const root = document.documentElement;
     root.dataset.theme = t;
     root.dataset.themeMode = m;
+  }, []);
+
+  const computeRadius = useCallback((o: { x: number; y: number }) => {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    return Math.ceil(
+      Math.max(
+        Math.hypot(o.x, o.y),
+        Math.hypot(w - o.x, o.y),
+        Math.hypot(o.x, h - o.y),
+        Math.hypot(w - o.x, h - o.y)
+      )
+    );
+  }, []);
+
+  const setViewTransitionVars = useCallback((o: { x: number; y: number }, r: number) => {
+    const root = document.documentElement;
+    root.style.setProperty("--vt-x", `${o.x}px`);
+    root.style.setProperty("--vt-y", `${o.y}px`);
+    root.style.setProperty("--vt-r", `${r}px`);
   }, []);
 
   useEffect(() => {
@@ -92,30 +116,29 @@ export function useThemeController() {
 
       setOrigin(nextOrigin);
       setToTheme(nextTheme);
+      const r = computeRadius(nextOrigin);
+      setRadius(r);
 
       const run = async () => {
-        if (reduceMotion) {
-          setPhase("morph");
-          await new Promise((r) => setTimeout(r, 120));
+        if (supportsViewTransition) {
+          setViewTransitionVars(nextOrigin, r);
           setMode("manual");
           setTheme(nextTheme);
-          applyHtmlTheme(nextTheme, "manual");
-          setPhase("idle");
+
+          const vt = startViewTransition(() => {
+            applyHtmlTheme(nextTheme, "manual");
+          });
+
+          await vt.finished;
           return;
         }
 
-        setPhase("morph");
-        await new Promise((r) => setTimeout(r, 140));
-        setPhase("glitch");
-        await new Promise((r) => setTimeout(r, 140));
-        setPhase("chroma");
-        await new Promise((r) => setTimeout(r, 140));
         setPhase("wipe");
-        await new Promise((r) => setTimeout(r, 420));
+        await new Promise((r2) => setTimeout(r2, 680));
         setMode("manual");
         setTheme(nextTheme);
         applyHtmlTheme(nextTheme, "manual");
-        await new Promise((r) => setTimeout(r, 10));
+        await new Promise((r2) => setTimeout(r2, 60));
         setPhase("idle");
       };
 
@@ -129,7 +152,7 @@ export function useThemeController() {
         animatingRef.current = false;
       }
     },
-    [applyHtmlTheme, reduceMotion]
+    [applyHtmlTheme, computeRadius, setViewTransitionVars, startViewTransition, supportsViewTransition]
   );
 
   const setSystemMode = useCallback(
@@ -140,30 +163,29 @@ export function useThemeController() {
 
       setOrigin(nextOrigin);
       setToTheme(resolved);
+      const r = computeRadius(nextOrigin);
+      setRadius(r);
 
       const run = async () => {
-        if (reduceMotion) {
-          setPhase("morph");
-          await new Promise((r) => setTimeout(r, 120));
+        if (supportsViewTransition) {
+          setViewTransitionVars(nextOrigin, r);
           setMode("system");
           setTheme(resolved);
-          applyHtmlTheme(resolved, "system");
-          setPhase("idle");
+
+          const vt = startViewTransition(() => {
+            applyHtmlTheme(resolved, "system");
+          });
+
+          await vt.finished;
           return;
         }
 
-        setPhase("morph");
-        await new Promise((r) => setTimeout(r, 140));
-        setPhase("glitch");
-        await new Promise((r) => setTimeout(r, 140));
-        setPhase("chroma");
-        await new Promise((r) => setTimeout(r, 140));
         setPhase("wipe");
-        await new Promise((r) => setTimeout(r, 420));
+        await new Promise((r2) => setTimeout(r2, 680));
         setMode("system");
         setTheme(resolved);
         applyHtmlTheme(resolved, "system");
-        await new Promise((r) => setTimeout(r, 10));
+        await new Promise((r2) => setTimeout(r2, 60));
         setPhase("idle");
       };
 
@@ -176,7 +198,7 @@ export function useThemeController() {
         animatingRef.current = false;
       }
     },
-    [applyHtmlTheme, reduceMotion]
+    [applyHtmlTheme, computeRadius, setViewTransitionVars, startViewTransition, supportsViewTransition]
   );
 
   return {
@@ -185,6 +207,8 @@ export function useThemeController() {
     phase,
     origin,
     toTheme,
+    radius,
+    supportsViewTransition,
     setManualTheme,
     setSystemMode,
   };

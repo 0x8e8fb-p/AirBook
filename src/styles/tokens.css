@@ -77,7 +77,9 @@ html[data-theme="warm"] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  html:not([data-theme-transition]) *,
+  html:not([data-theme-transition]) *::before,
+  html:not([data-theme-transition]) *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

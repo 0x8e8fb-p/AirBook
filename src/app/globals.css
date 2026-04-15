@@ -18,6 +18,7 @@
 html {
   -webkit-tap-highlight-color: transparent;
   scroll-behavior: auto;
+  view-transition-name: root;
 }
 
 body {
@@ -84,6 +85,38 @@ h1, h2, h3, h4, h5, h6 {
   100% { background-position: 200% 0; }
 }
 
+@supports (view-transition-name: root) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
+  ::view-transition-new(root) {
+    animation: vt-reveal 680ms var(--ease-out) both;
+  }
+
+  ::view-transition-old(root) {
+    animation: vt-fade 680ms var(--ease-out) both;
+  }
+}
+
+@keyframes vt-reveal {
+  from {
+    clip-path: circle(0px at var(--vt-x) var(--vt-y));
+    -webkit-clip-path: circle(0px at var(--vt-x) var(--vt-y));
+  }
+  to {
+    clip-path: circle(var(--vt-r) at var(--vt-x) var(--vt-y));
+    -webkit-clip-path: circle(var(--vt-r) at var(--vt-x) var(--vt-y));
+  }
+}
+
+@keyframes vt-fade {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
 @layer utilities {
   .container-app {
     width: 100%;
@@ -106,73 +139,25 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateZ(0);
 }
 
-html[data-theme-transition="morph"] body {
-  transition: filter 160ms var(--ease-out), transform 160ms var(--ease-out);
-  filter: blur(6px) saturate(0.95);
-  transform: scale(1.01);
-}
-
-html[data-theme-transition="glitch"] .theme-transition-overlay {
-  background:
-    radial-gradient(circle at var(--tt-x) var(--tt-y), rgba(255,255,255,0.18), transparent 55%),
-    repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 3px);
-  mix-blend-mode: overlay;
-  opacity: 0.9;
-  animation: tt-noise 140ms steps(2) infinite;
-}
-
-html[data-theme-transition="chroma"] .theme-transition-overlay {
-  background:
-    radial-gradient(circle at var(--tt-x) var(--tt-y), color-mix(in srgb, var(--tt-accent) 22%, transparent), transparent 60%),
-    conic-gradient(from 160deg at var(--tt-x) var(--tt-y),
-      color-mix(in srgb, var(--tt-accent) 16%, transparent),
-      transparent,
-      color-mix(in srgb, var(--tt-accent) 10%, transparent),
-      transparent);
-  mix-blend-mode: overlay;
-  opacity: 0.95;
-  animation: tt-chroma 220ms var(--ease-in-out) infinite;
-}
-
 html[data-theme-transition="wipe"] .theme-transition-overlay {
-  background: var(--tt-bg-base);
-  -webkit-mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 1%, transparent 2%);
-  mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 1%, transparent 2%);
-  animation: tt-wipe 420ms var(--ease-out) forwards;
+  background: var(--tt-to-bg-base);
+  clip-path: circle(0px at var(--tt-x) var(--tt-y));
+  -webkit-clip-path: circle(0px at var(--tt-x) var(--tt-y));
+  animation: tt-radial-wipe 680ms var(--ease-out) forwards;
 }
 
-@keyframes tt-noise {
-  0% { transform: translate3d(0,0,0); filter: hue-rotate(0deg) contrast(1.05); }
-  50% { transform: translate3d(1px,-1px,0); filter: hue-rotate(4deg) contrast(1.1); }
-  100% { transform: translate3d(-1px,1px,0); filter: hue-rotate(0deg) contrast(1.05); }
-}
-
-@keyframes tt-wipe {
+@keyframes tt-radial-wipe {
   0% {
-    -webkit-mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 1%, transparent 2%);
-    mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 1%, transparent 2%);
+    opacity: 1;
+  }
+  85% {
+    clip-path: circle(var(--tt-r) at var(--tt-x) var(--tt-y));
+    -webkit-clip-path: circle(var(--tt-r) at var(--tt-x) var(--tt-y));
     opacity: 1;
   }
   100% {
-    -webkit-mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 160%, transparent 180%);
-    mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 160%, transparent 180%);
+    clip-path: circle(var(--tt-r) at var(--tt-x) var(--tt-y));
+    -webkit-clip-path: circle(var(--tt-r) at var(--tt-x) var(--tt-y));
     opacity: 0;
-  }
-}
-
-@keyframes tt-chroma {
-  0% { transform: translate3d(0,0,0) scale(1); filter: hue-rotate(0deg) saturate(1.05); }
-  50% { transform: translate3d(0,0,0) scale(1.02); filter: hue-rotate(10deg) saturate(1.15); }
-  100% { transform: translate3d(0,0,0) scale(1); filter: hue-rotate(0deg) saturate(1.05); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html[data-theme-transition] body {
-    filter: none !important;
-    transform: none !important;
-    transition: none !important;
-  }
-  .theme-transition-overlay {
-    display: none !important;
   }
 }
