@@ -27,6 +27,7 @@ export function useThemeController() {
   const [origin, setOrigin] = useState({ x: 0, y: 0 });
   const [toTheme, setToTheme] = useState<ThemeName>("warm");
   const [radius, setRadius] = useState(0);
+  const [scroll, setScroll] = useState({ x: 0, y: 0 });
 
   const animatingRef = useRef(false);
 
@@ -48,6 +49,42 @@ export function useThemeController() {
       )
     );
   }, []);
+
+  const lockScroll = useCallback(() => {
+    const x = window.scrollX;
+    const y = window.scrollY;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    const { style } = document.body;
+    const prev = {
+      position: style.position,
+      top: style.top,
+      left: style.left,
+      right: style.right,
+      width: style.width,
+      paddingRight: style.paddingRight,
+    };
+
+    style.position = "fixed";
+    style.top = `-${y}px`;
+    style.left = `-${x}px`;
+    style.right = "0";
+    style.width = "100%";
+    style.paddingRight = scrollbarWidth > 0 ? `${scrollbarWidth}px` : "";
+
+    return { x, y, prev };
+  }, []);
+
+  const unlockScroll = useCallback((locked: ReturnType<typeof lockScroll>) => {
+    const { style } = document.body;
+    style.position = locked.prev.position;
+    style.top = locked.prev.top;
+    style.left = locked.prev.left;
+    style.right = locked.prev.right;
+    style.width = locked.prev.width;
+    style.paddingRight = locked.prev.paddingRight;
+    window.scrollTo(locked.x, locked.y);
+  }, [lockScroll]);
 
   useEffect(() => {
     const lsMode = readLocalStorageThemeMode();
@@ -110,21 +147,30 @@ export function useThemeController() {
 
       animatingRef.current = true;
 
+      setScroll({ x: window.scrollX, y: window.scrollY });
       setOrigin(nextOrigin);
       setToTheme(nextTheme);
       const r = computeRadius(nextOrigin);
       setRadius(r);
 
       const run = async () => {
-        setPhase("wipe");
-        await new Promise((r2) => setTimeout(r2, 680));
-        setMode("manual");
-        setTheme(nextTheme);
-        applyHtmlTheme(nextTheme, "manual");
-        await new Promise<void>((resolve) =>
-          requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-        );
-        setPhase("idle");
+        const locked = lockScroll();
+        let unlocked = false;
+        try {
+          setPhase("wipe");
+          await new Promise((r2) => setTimeout(r2, 680));
+          setMode("manual");
+          setTheme(nextTheme);
+          applyHtmlTheme(nextTheme, "manual");
+          unlockScroll(locked);
+          unlocked = true;
+          await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+          );
+          setPhase("idle");
+        } finally {
+          if (!unlocked) unlockScroll(locked);
+        }
       };
 
       try {
@@ -137,7 +183,7 @@ export function useThemeController() {
         animatingRef.current = false;
       }
     },
-    [applyHtmlTheme, computeRadius, mode, theme]
+    [applyHtmlTheme, computeRadius, lockScroll, mode, theme, unlockScroll]
   );
 
   const setSystemMode = useCallback(
@@ -157,21 +203,30 @@ export function useThemeController() {
 
       animatingRef.current = true;
 
+      setScroll({ x: window.scrollX, y: window.scrollY });
       setOrigin(nextOrigin);
       setToTheme(resolved);
       const r = computeRadius(nextOrigin);
       setRadius(r);
 
       const run = async () => {
-        setPhase("wipe");
-        await new Promise((r2) => setTimeout(r2, 680));
-        setMode("system");
-        setTheme(resolved);
-        applyHtmlTheme(resolved, "system");
-        await new Promise<void>((resolve) =>
-          requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-        );
-        setPhase("idle");
+        const locked = lockScroll();
+        let unlocked = false;
+        try {
+          setPhase("wipe");
+          await new Promise((r2) => setTimeout(r2, 680));
+          setMode("system");
+          setTheme(resolved);
+          applyHtmlTheme(resolved, "system");
+          unlockScroll(locked);
+          unlocked = true;
+          await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+          );
+          setPhase("idle");
+        } finally {
+          if (!unlocked) unlockScroll(locked);
+        }
       };
 
       try {
@@ -183,7 +238,7 @@ export function useThemeController() {
         animatingRef.current = false;
       }
     },
-    [applyHtmlTheme, computeRadius, mode, theme]
+    [applyHtmlTheme, computeRadius, lockScroll, mode, theme, unlockScroll]
   );
 
   return {
@@ -193,6 +248,7 @@ export function useThemeController() {
     origin,
     toTheme,
     radius,
+    scroll,
     setManualTheme,
     setSystemMode,
   };
