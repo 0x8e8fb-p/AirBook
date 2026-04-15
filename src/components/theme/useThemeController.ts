@@ -43,6 +43,7 @@ export function useThemeController() {
   const [scroll, setScroll] = useState({ x: 0, y: 0 });
 
   const animatingRef = useRef(false);
+  const lockedScrollRef = useRef<LockedScroll | null>(null);
 
   const applyHtmlTheme = useCallback((t: ThemeName, m: ThemeMode) => {
     const root = document.documentElement;
@@ -64,6 +65,9 @@ export function useThemeController() {
   }, []);
 
   const lockScroll = useCallback((): LockedScroll => {
+    lockedScrollRef.current?.cleanup();
+    lockedScrollRef.current = null;
+
     const x = window.scrollX;
     const y = window.scrollY;
     const lenis =
@@ -102,7 +106,7 @@ export function useThemeController() {
     window.addEventListener("touchmove", onTouchMove, { passive: false });
     window.addEventListener("keydown", onKeyDown, { passive: false });
 
-    return {
+    const locked: LockedScroll = {
       x,
       y,
       lenis,
@@ -111,15 +115,32 @@ export function useThemeController() {
         window.removeEventListener("wheel", onWheel);
         window.removeEventListener("touchmove", onTouchMove);
         window.removeEventListener("keydown", onKeyDown);
+        lenis?.start();
       },
     };
+
+    lockedScrollRef.current = locked;
+    return locked;
   }, []);
 
   const unlockScroll = useCallback((locked: LockedScroll) => {
     locked.cleanup();
     locked.lenis?.scrollTo?.(locked.y, { immediate: true, force: true });
     window.scrollTo(locked.x, locked.y);
-    locked.lenis?.start();
+    lockedScrollRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    if (phase !== "idle") return;
+    lockedScrollRef.current?.cleanup();
+    lockedScrollRef.current = null;
+  }, [phase]);
+
+  useEffect(() => {
+    return () => {
+      lockedScrollRef.current?.cleanup();
+      lockedScrollRef.current = null;
+    };
   }, []);
 
   useEffect(() => {
