@@ -7,14 +7,14 @@ import { createClient } from '@/utils/supabase/server'
 export async function updateProfile(formData: FormData) {
   const supabase = await createClient()
   
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
   
-  if (!user) {
+  if (!session?.user) {
     return redirect('/auth/login')
   }
 
   const updates = {
-    id: user.id,
+    id: session.user.id,
     full_name: (formData.get('full_name') as string)?.trim(),
     date_of_birth: formData.get('date_of_birth') as string || null,
     passport_number: (formData.get('passport_number') as string)?.trim() || null,

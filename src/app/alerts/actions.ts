@@ -6,14 +6,14 @@ import { redirect } from 'next/navigation'
 
 export async function getAlerts() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
   
-  if (!user) return []
+  if (!session?.user) return []
 
   const { data, error } = await supabase
     .from('price_alerts')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', session.user.id)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -26,9 +26,9 @@ export async function getAlerts() {
 
 export async function createAlert(formData: FormData) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
 
-  if (!user) {
+  if (!session?.user) {
     return redirect('/auth/login')
   }
 
@@ -37,7 +37,7 @@ export async function createAlert(formData: FormData) {
   const targetPrice = formData.get('targetPrice') as string
 
   const { error } = await supabase.from('price_alerts').insert({
-    user_id: user.id,
+    user_id: session.user.id,
     origin: origin.toUpperCase(),
     destination: destination.toUpperCase(),
     target_price: parseFloat(targetPrice),
@@ -53,15 +53,15 @@ export async function createAlert(formData: FormData) {
 
 export async function deleteAlert(id: string) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
 
-  if (!user) return
+  if (!session?.user) return
 
   const { error } = await supabase
     .from('price_alerts')
     .delete()
     .eq('id', id)
-    .eq('user_id', user.id)
+    .eq('user_id', session.user.id)
 
   if (error) {
     console.error('Delete alert error:', error.message)
@@ -72,15 +72,15 @@ export async function deleteAlert(id: string) {
 
 export async function toggleAlert(id: string, currentActive: boolean) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
 
-  if (!user) return
+  if (!session?.user) return
 
   const { error } = await supabase
     .from('price_alerts')
     .update({ is_active: !currentActive })
     .eq('id', id)
-    .eq('user_id', user.id)
+    .eq('user_id', session.user.id)
 
   if (error) {
     console.error('Toggle alert error:', error.message)

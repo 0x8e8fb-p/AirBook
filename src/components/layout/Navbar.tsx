@@ -14,23 +14,29 @@ const NAV_LINKS = [
   { href: "/alerts", label: "Alerts" },
 ];
 
-export function Navbar() {
+export function Navbar({ initialUser }: { initialUser?: User | null }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(initialUser ?? null);
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
+    let active = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      setUser(data.session?.user ?? null);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -65,6 +71,7 @@ export function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
+                  prefetch
                   className={cn(
                     "relative px-3.5 py-1.5 text-[13px] font-medium rounded-[var(--radius-md)] transition-colors",
                     active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
@@ -88,6 +95,7 @@ export function Navbar() {
             {user ? (
                <Link
                 href="/profile"
+                prefetch
                 className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                 >
                 <UserIcon className="w-4 h-4" />
@@ -96,12 +104,14 @@ export function Navbar() {
             ) : (
               <Link
                 href="/auth/login"
+                prefetch
                 className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium bg-[var(--accent-cta)] text-[var(--text-inverse)] rounded-[var(--radius-md)] hover:opacity-90 transition-opacity"
               >
                 Sign In
               </Link>
             )}
-          </div>          <button
+          </div>
+          <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className="md:hidden p-2 text-[var(--text-secondary)]"
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
@@ -122,6 +132,7 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch
                 onClick={() => setMobileOpen(false)}
                 className={cn(
                   "text-2xl font-semibold transition-colors",
@@ -134,6 +145,7 @@ export function Navbar() {
             {user ? (
               <Link
                 href="/profile"
+                prefetch
                 onClick={() => setMobileOpen(false)}
                 className={cn(
                   "text-2xl font-semibold transition-colors flex flex-col items-center gap-2 mt-4",
@@ -146,6 +158,7 @@ export function Navbar() {
             ) : (
                <Link
                 href="/auth/login"
+                prefetch
                 onClick={() => setMobileOpen(false)}
                 className={cn(
                   "text-2xl font-semibold transition-colors mt-4",

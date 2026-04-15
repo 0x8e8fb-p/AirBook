@@ -4,6 +4,7 @@ import "./globals.css";
 
 import { SmoothScrollProvider } from "@/lib/lenis";
 import { Navbar } from "@/components/layout/Navbar";
+import { createClient } from "@/utils/supabase/server";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -62,11 +63,14 @@ export const viewport: Viewport = {
   themeColor: "#09090B",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getSession();
+
   return (
     <html
       lang="en"
@@ -75,7 +79,7 @@ export default function RootLayout({
     >
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)]">
         <SmoothScrollProvider>
-          <Navbar />
+          <Navbar initialUser={data.session?.user ?? null} />
           <main className="flex-1 relative pt-14">
             {children}
           </main>

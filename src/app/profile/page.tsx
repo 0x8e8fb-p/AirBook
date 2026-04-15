@@ -11,9 +11,9 @@ export default async function ProfilePage({
 }) {
   const { message, error: profileErrorMsg } = await searchParams
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
 
-  if (!user) {
+  if (!session?.user) {
     redirect('/auth/login')
   }
 
@@ -21,7 +21,7 @@ export default async function ProfilePage({
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', user.id)
+    .eq('id', session.user.id)
     .single()
 
   return (
