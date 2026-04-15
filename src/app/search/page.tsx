@@ -35,9 +35,9 @@ function SkeletonCard() {
   return (
     <div className="border border-[var(--border-default)] rounded-[var(--radius-lg)] p-5 animate-pulse">
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-[var(--radius-md)] bg-white/[0.04]" />
-        <div className="flex-1 space-y-2"><div className="h-4 bg-white/[0.04] rounded w-28" /><div className="h-3 bg-white/[0.04] rounded w-20" /></div>
-        <div className="h-6 bg-white/[0.04] rounded w-20" />
+        <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--border-muted)]" />
+        <div className="flex-1 space-y-2"><div className="h-4 bg-[var(--border-muted)] rounded w-28" /><div className="h-3 bg-[var(--border-muted)] rounded w-20" /></div>
+        <div className="h-6 bg-[var(--border-muted)] rounded w-20" />
       </div>
     </div>
   );
@@ -55,7 +55,7 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
       transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.2) }}
     >
       <div className={`relative border rounded-[var(--radius-lg)] p-5 hover:border-[var(--border-strong)] transition-colors ${
-        isCheapest ? "border-[var(--text-muted)]/30 bg-white/[0.02]" : "border-[var(--border-default)]"
+        isCheapest ? "border-[var(--text-muted)]/30 bg-[var(--accent-primary-dim)]" : "border-[var(--border-default)]"
       }`}>
         {isCheapest && (
           <div className="absolute -top-2.5 left-4">
@@ -110,8 +110,8 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
           <div className="sm:w-36 flex flex-col sm:items-end shrink-0 border-t sm:border-t-0 sm:border-l border-[var(--border-muted)] pt-4 sm:pt-0 sm:pl-5">
             <div className="text-xl font-semibold font-mono-price mb-1">{formatPrice(flight.price)}</div>
             <div className="flex gap-1.5 mb-3">
-              {flight.baggage.checked.included && <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04] text-[var(--text-muted)] font-medium">Bag</span>}
-              {flight.refundable && <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04] text-[var(--text-muted)] font-medium">Refundable</span>}
+              {flight.baggage.checked.included && <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--accent-primary-dim)] text-[var(--text-muted)] font-medium">Bag</span>}
+              {flight.refundable && <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--accent-primary-dim)] text-[var(--text-muted)] font-medium">Refundable</span>}
             </div>
             <button
               onClick={() => router.push(`/checkout?id=${flight.id}`)}
@@ -200,7 +200,7 @@ function FilterPanel({ flights, onFilter, show, onClose }: { flights: FlightResu
       <div className="mb-6">
         <h4 className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-widest mb-3">Airlines</h4>
         {airlines.map(([code, count]) => (
-          <button key={code} onClick={() => toggleAirline(code)} className="w-full flex items-center justify-between p-2 rounded-[var(--radius-sm)] hover:bg-white/[0.03] transition-colors">
+          <button key={code} onClick={() => toggleAirline(code)} className="w-full flex items-center justify-between p-2 rounded-[var(--radius-sm)] hover:bg-[var(--accent-primary-dim)] transition-colors">
             <div className="flex items-center gap-2.5">
               <div className={`w-4 h-4 rounded-sm border flex items-center justify-center text-[8px] ${
                 selectedAirlines.includes(code) ? "bg-[var(--accent-cta)] border-transparent text-[var(--text-inverse)]" : "border-[var(--border-strong)]"
@@ -296,7 +296,7 @@ function SearchContent() {
       {/* Header */}
       <header className="bg-[var(--bg-base)]/90 backdrop-blur-xl border-b border-[var(--border-default)] sticky top-14 z-30">
         <div className="container-app py-3 flex items-center gap-3">
-          <button onClick={() => router.push("/")} className="w-8 h-8 rounded-[var(--radius-sm)] border border-[var(--border-default)] flex items-center justify-center hover:bg-white/[0.03]" aria-label="Back">
+          <button onClick={() => router.push("/")} className="w-8 h-8 rounded-[var(--radius-sm)] border border-[var(--border-default)] flex items-center justify-center hover:bg-[var(--accent-primary-dim)]" aria-label="Back">
             <ArrowLeft className="w-3.5 h-3.5" />
           </button>
           <div className="flex-1 min-w-0">
@@ -309,7 +309,7 @@ function SearchContent() {
               {date && new Date(date).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })} · {adults + children + infants} traveller{adults + children + infants > 1 ? "s" : ""}
             </div>
           </div>
-          <button onClick={() => setShowFilters(!showFilters)} className="lg:hidden p-2 rounded-[var(--radius-sm)] border border-[var(--border-default)] hover:bg-white/[0.03]" aria-label="Filters">
+          <button onClick={() => setShowFilters(!showFilters)} className="lg:hidden p-2 rounded-[var(--radius-sm)] border border-[var(--border-default)] hover:bg-[var(--accent-primary-dim)]" aria-label="Filters">
             <SlidersHorizontal className="w-3.5 h-3.5" />
           </button>
         </div>

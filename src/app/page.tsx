@@ -99,7 +99,7 @@ function AirportInput({
                 key={airport.iata}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleSelect(airport)}
-                className="w-full text-left px-4 py-3 hover:bg-white/[0.04] transition-colors flex items-center gap-3 border-b border-[var(--border-muted)] last:border-0"
+                className="w-full text-left px-4 py-3 hover:bg-[var(--accent-primary-dim)] transition-colors flex items-center gap-3 border-b border-[var(--border-muted)] last:border-0"
               >
                 <span className="text-[11px] font-mono font-semibold text-[var(--text-muted)] w-8">{airport.iata}</span>
                 <div className="flex-1 min-w-0">
@@ -214,7 +214,7 @@ function SearchPanel() {
             {returnDate && (
               <button
                 onClick={() => setReturnDate("")}
-                className="absolute right-0 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/[0.06] transition-colors"
+                className="absolute right-0 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-[var(--accent-primary-dim)] transition-colors"
                 aria-label="Clear return date"
                 type="button"
               >
@@ -258,9 +258,9 @@ function SearchPanel() {
                       <div className="text-[11px] text-[var(--text-muted)]">{sub}</div>
                     </div>
                     <div className="flex items-center gap-2.5">
-                      <button onClick={() => val > min && set(val - 1)} disabled={val <= min} className="w-7 h-7 rounded-full border border-[var(--border-strong)] flex items-center justify-center disabled:opacity-20 text-xs hover:bg-white/[0.04] transition-colors">−</button>
+                      <button onClick={() => val > min && set(val - 1)} disabled={val <= min} className="w-7 h-7 rounded-full border border-[var(--border-strong)] flex items-center justify-center disabled:opacity-20 text-xs hover:bg-[var(--accent-primary-dim)] transition-colors">−</button>
                       <span className="w-4 text-center font-mono text-sm">{val}</span>
-                      <button onClick={() => val < max && set(val + 1)} disabled={val >= max} className="w-7 h-7 rounded-full border border-[var(--border-strong)] flex items-center justify-center disabled:opacity-20 text-xs hover:bg-white/[0.04] transition-colors">+</button>
+                      <button onClick={() => val < max && set(val + 1)} disabled={val >= max} className="w-7 h-7 rounded-full border border-[var(--border-strong)] flex items-center justify-center disabled:opacity-20 text-xs hover:bg-[var(--accent-primary-dim)] transition-colors">+</button>
                     </div>
                   </div>
                 ))}

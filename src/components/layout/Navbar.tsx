@@ -21,6 +21,7 @@ export function Navbar({ initialUser }: { initialUser?: User | null }) {
   const [user, setUser] = useState<User | null>(initialUser ?? null);
 
   useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return;
     const supabase = createClient();
     let active = true;
 
@@ -81,7 +82,7 @@ export function Navbar({ initialUser }: { initialUser?: User | null }) {
                   {active && (
                     <motion.div
                       layoutId="nav-pill"
-                      className="absolute inset-0 bg-white/[0.06] rounded-[var(--radius-md)]"
+                      className="absolute inset-0 bg-[var(--accent-primary-dim)] rounded-[var(--radius-md)]"
                       style={{ zIndex: -1 }}
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />

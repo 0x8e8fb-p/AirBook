@@ -1,10 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { cookies } from "next/headers";
 
 import { SmoothScrollProvider } from "@/lib/lenis";
 import { Navbar } from "@/components/layout/Navbar";
+import { ThemeFab } from "@/components/theme/ThemeFab";
 import { createClient } from "@/utils/supabase/server";
+import type { ThemeMode, ThemeName } from "@/lib/theme/types";
+import type { User } from "@supabase/supabase-js";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -68,21 +72,54 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getSession();
+  const cookieStore = await cookies();
+  const themeModeCookie = cookieStore.get("airbook_theme_mode")?.value;
+  const themeCookie = cookieStore.get("airbook_theme")?.value;
+
+  const mode: ThemeMode = themeModeCookie === "manual" ? "manual" : "system";
+  const themeFromCookie =
+    themeCookie === "warm" ||
+    themeCookie === "white" ||
+    themeCookie === "matte" ||
+    themeCookie === "amoled"
+      ? (themeCookie satisfies ThemeName)
+      : null;
+
+  const initialTheme: ThemeName = mode === "manual" ? (themeFromCookie ?? "warm") : "warm";
+
+  const hasSupabaseEnv =
+    !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  let initialUser: User | null = null;
+  if (hasSupabaseEnv) {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getSession();
+    initialUser = data.session?.user ?? null;
+  }
 
   return (
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geist.variable} ${geistMono.variable} ${dmSans.variable} h-full antialiased dark`}
+      data-theme={initialTheme}
+      data-theme-mode={mode}
+      className={`${geist.variable} ${geistMono.variable} ${dmSans.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var d=document.documentElement;var m=d.dataset.themeMode;if(m==='system'){var dark=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;d.dataset.theme=dark?'matte':'warm';}}catch(e){}})();",
+          }}
+        />
+      </head>
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)]">
         <SmoothScrollProvider>
-          <Navbar initialUser={data.session?.user ?? null} />
+          <Navbar initialUser={initialUser} />
           <main className="flex-1 relative pt-14">
             {children}
           </main>
+          <ThemeFab />
         </SmoothScrollProvider>
       </body>
     </html>

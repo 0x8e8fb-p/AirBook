@@ -9,9 +9,9 @@ interface BadgeProps {
 }
 
 const variantStyles: Record<string, string> = {
-  default: "bg-white/[0.05] text-[var(--text-secondary)] border-[var(--border-default)]",
+  default: "bg-[var(--accent-primary-dim)] text-[var(--text-secondary)] border-[var(--border-default)]",
   success: "bg-[var(--accent-green)]/8 text-[var(--accent-green)] border-[var(--accent-green)]/15",
-  warning: "bg-white/[0.05] text-[var(--text-secondary)] border-[var(--border-default)]",
+  warning: "bg-[var(--accent-primary-dim)] text-[var(--text-secondary)] border-[var(--border-default)]",
   danger: "bg-[var(--accent-red)]/8 text-[var(--accent-red)] border-[var(--accent-red)]/15",
 };
 

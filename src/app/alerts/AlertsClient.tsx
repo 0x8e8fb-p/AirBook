@@ -143,7 +143,7 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: DBAlert[] }) {
                 <button
                   onClick={() => toggleAlert(alert.id, alert.is_active)}
                   className={`w-9 h-5 rounded-full relative transition-colors ${
-                    alert.is_active ? "bg-[var(--accent-green)]/30" : "bg-white/[0.06]"
+                    alert.is_active ? "bg-[var(--accent-green)]/30" : "bg-[var(--accent-primary-dim)]"
                   }`}
                 >
                   <div className={`absolute top-0.5 w-4 h-4 rounded-full transition-all ${
