@@ -18,18 +18,14 @@ import type { ThemeTransitionPhase } from "./ThemeTransitionOverlay";
 type LockedScroll = {
   x: number;
   y: number;
-  prev: {
-    position: string;
-    top: string;
-    left: string;
-    right: string;
-    width: string;
-    paddingRight: string;
-  };
-  htmlPrev: {
-    overflow: string;
-    paddingRight: string;
-  };
+  lenis: LenisLike | null;
+  cleanup: () => void;
+};
+
+type LenisLike = {
+  stop: () => void;
+  start: () => void;
+  scrollTo?: (target: number, options?: { immediate?: boolean; force?: boolean }) => void;
 };
 
 function getSystemScheme(): SystemScheme {
@@ -44,6 +40,7 @@ export function useThemeController() {
   const [origin, setOrigin] = useState({ x: 0, y: 0 });
   const [toTheme, setToTheme] = useState<ThemeName>("warm");
   const [radius, setRadius] = useState(0);
+  const [scroll, setScroll] = useState({ x: 0, y: 0 });
 
   const animatingRef = useRef(false);
 
@@ -69,51 +66,60 @@ export function useThemeController() {
   const lockScroll = useCallback((): LockedScroll => {
     const x = window.scrollX;
     const y = window.scrollY;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const lenis =
+      (window as unknown as { __airbookLenis?: LenisLike }).__airbookLenis ?? null;
+    lenis?.stop();
 
-    const { style } = document.body;
-    const prev = {
-      position: style.position,
-      top: style.top,
-      left: style.left,
-      right: style.right,
-      width: style.width,
-      paddingRight: style.paddingRight,
+    const keep = () => {
+      if (window.scrollX !== x || window.scrollY !== y) window.scrollTo(x, y);
     };
 
-    const htmlStyle = document.documentElement.style;
-    const htmlPrev = {
-      overflow: htmlStyle.overflow,
-      paddingRight: htmlStyle.paddingRight,
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
     };
 
-    htmlStyle.overflow = "hidden";
-    htmlStyle.paddingRight = scrollbarWidth > 0 ? `${scrollbarWidth}px` : "";
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+    };
 
-    style.position = "fixed";
-    style.top = `-${y}px`;
-    style.left = "0";
-    style.right = "0";
-    style.width = "100%";
-    style.paddingRight = prev.paddingRight;
+    const onKeyDown = (e: KeyboardEvent) => {
+      const k = e.key;
+      if (
+        k === " " ||
+        k === "PageUp" ||
+        k === "PageDown" ||
+        k === "Home" ||
+        k === "End" ||
+        k === "ArrowUp" ||
+        k === "ArrowDown"
+      ) {
+        e.preventDefault();
+      }
+    };
 
-    return { x, y, prev, htmlPrev };
+    window.addEventListener("scroll", keep, { passive: true });
+    window.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("keydown", onKeyDown, { passive: false });
+
+    return {
+      x,
+      y,
+      lenis,
+      cleanup: () => {
+        window.removeEventListener("scroll", keep);
+        window.removeEventListener("wheel", onWheel);
+        window.removeEventListener("touchmove", onTouchMove);
+        window.removeEventListener("keydown", onKeyDown);
+      },
+    };
   }, []);
 
   const unlockScroll = useCallback((locked: LockedScroll) => {
-    const { style } = document.body;
-    style.position = locked.prev.position;
-    style.top = locked.prev.top;
-    style.left = locked.prev.left;
-    style.right = locked.prev.right;
-    style.width = locked.prev.width;
-    style.paddingRight = locked.prev.paddingRight;
-
-    const htmlStyle = document.documentElement.style;
-    htmlStyle.overflow = locked.htmlPrev.overflow;
-    htmlStyle.paddingRight = locked.htmlPrev.paddingRight;
-
+    locked.cleanup();
+    locked.lenis?.scrollTo?.(locked.y, { immediate: true, force: true });
     window.scrollTo(locked.x, locked.y);
+    locked.lenis?.start();
   }, []);
 
   useEffect(() => {
@@ -177,6 +183,7 @@ export function useThemeController() {
 
       animatingRef.current = true;
 
+      setScroll({ x: window.scrollX, y: window.scrollY });
       setOrigin(nextOrigin);
       setToTheme(nextTheme);
       const r = computeRadius(nextOrigin);
@@ -234,6 +241,7 @@ export function useThemeController() {
 
       animatingRef.current = true;
 
+      setScroll({ x: window.scrollX, y: window.scrollY });
       setOrigin(nextOrigin);
       setToTheme(resolved);
       const r = computeRadius(nextOrigin);
@@ -280,6 +288,7 @@ export function useThemeController() {
     origin,
     toTheme,
     radius,
+    scroll,
     setManualTheme,
     setSystemMode,
   };

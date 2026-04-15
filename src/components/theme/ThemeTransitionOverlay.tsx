@@ -13,12 +13,14 @@ const THEME_SURFACES: Record<ThemeName, { bgBase: string; accent: string }> = {
 export function ThemeTransitionOverlay({
   phase,
   origin,
+  scroll,
   toTheme,
   radius,
   enabled,
 }: {
   phase: ThemeTransitionPhase;
   origin: { x: number; y: number };
+  scroll: { x: number; y: number };
   toTheme: ThemeName;
   radius: number;
   enabled: boolean;
@@ -53,22 +55,19 @@ export function ThemeTransitionOverlay({
     if (!shell) return;
 
     host.replaceChildren();
+    const cw = document.documentElement.clientWidth;
     const wrapper = document.createElement("div");
-    const bodyTop = document.body.style.top;
-    const bodyLeft = document.body.style.left;
-    const top = bodyTop || `-${window.scrollY}px`;
-    const left = bodyLeft || `-${window.scrollX}px`;
     wrapper.style.position = "absolute";
-    wrapper.style.top = top;
-    wrapper.style.left = left;
-    wrapper.style.width = "100%";
+    wrapper.style.top = `${-scroll.y}px`;
+    wrapper.style.left = `${-scroll.x}px`;
+    wrapper.style.width = `${cw}px`;
 
     const clone = shell.cloneNode(true) as HTMLElement;
     clone.setAttribute("data-theme", toTheme);
     clone.style.pointerEvents = "none";
     clone.style.userSelect = "none";
     clone.style.webkitUserSelect = "none";
-    clone.style.width = "100vw";
+    clone.style.width = `${cw}px`;
     clone.style.background = "var(--bg-base)";
     clone.style.color = "var(--text-primary)";
 
@@ -78,7 +77,7 @@ export function ThemeTransitionOverlay({
     return () => {
       host.replaceChildren();
     };
-  }, [enabled, phase, toTheme]);
+  }, [enabled, phase, scroll.x, scroll.y, toTheme]);
 
   if (!enabled || phase === "idle") return null;
 
