@@ -108,18 +108,16 @@ h1, h2, h3, h4, h5, h6 {
 
 html[data-theme-transition="wipe"] .theme-transition-overlay {
   background: var(--tt-to-bg-base);
-  clip-path: circle(0px at var(--tt-x) var(--tt-y));
-  -webkit-clip-path: circle(0px at var(--tt-x) var(--tt-y));
   animation: tt-radial-wipe 680ms var(--ease-out) forwards;
 }
 
 @keyframes tt-radial-wipe {
-  0% { opacity: 1; }
-  85% {
-    clip-path: circle(var(--tt-r) at var(--tt-x) var(--tt-y));
-    -webkit-clip-path: circle(var(--tt-r) at var(--tt-x) var(--tt-y));
+  from {
+    clip-path: circle(0px at var(--tt-x) var(--tt-y));
+    -webkit-clip-path: circle(0px at var(--tt-x) var(--tt-y));
+    opacity: 1;
   }
-  100% {
+  to {
     clip-path: circle(var(--tt-r) at var(--tt-x) var(--tt-y));
     -webkit-clip-path: circle(var(--tt-r) at var(--tt-x) var(--tt-y));
     opacity: 1;

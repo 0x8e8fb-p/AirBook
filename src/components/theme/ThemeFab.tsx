@@ -31,7 +31,6 @@ export function ThemeFab() {
   const [open, setOpen] = useState(false);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const btnRef = useRef<HTMLButtonElement>(null);
-  const pendingActionRef = useRef<null | (() => void)>(null);
 
   const posStyle = useMemo(() => {
     return {
@@ -67,13 +66,9 @@ export function ThemeFab() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const runAfterClose = (fn: () => void) => {
-    if (!open) {
-      fn();
-      return;
-    }
-    pendingActionRef.current = fn;
+  const closeAndRun = (fn: () => void) => {
     setOpen(false);
+    window.setTimeout(() => fn(), 80);
   };
 
   return (
@@ -87,14 +82,7 @@ export function ThemeFab() {
       />
 
       <div className="fixed z-[80]" style={posStyle}>
-        <AnimatePresence
-          initial={false}
-          onExitComplete={() => {
-            const fn = pendingActionRef.current;
-            pendingActionRef.current = null;
-            fn?.();
-          }}
-        >
+        <AnimatePresence initial={false}>
           {open && (
             <motion.div
               key="theme-menu"
@@ -110,9 +98,7 @@ export function ThemeFab() {
                   className="w-full text-left px-3 py-2 rounded-[var(--radius-md)] hover:bg-[var(--accent-primary-dim)] transition-colors text-[13px]"
                   onClick={(e) => {
                     const o = { x: e.clientX, y: e.clientY };
-                    runAfterClose(() => {
-                      void setSystemMode(o);
-                    });
+                    closeAndRun(() => void setSystemMode(o));
                   }}
                 >
                   Follow system {mode === "system" ? "•" : ""}
@@ -127,9 +113,7 @@ export function ThemeFab() {
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-[var(--radius-md)] hover:bg-[var(--accent-primary-dim)] transition-colors text-[13px]"
                     onClick={(e) => {
                       const o = { x: e.clientX, y: e.clientY };
-                      runAfterClose(() => {
-                        void setManualTheme(it.id, o);
-                      });
+                      closeAndRun(() => void setManualTheme(it.id, o));
                     }}
                   >
                     <it.icon className="w-4 h-4 opacity-80" />

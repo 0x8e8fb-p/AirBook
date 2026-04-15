@@ -58,7 +58,11 @@ export function ThemeTransitionOverlay({
     clone.style.pointerEvents = "none";
     clone.style.userSelect = "none";
     clone.style.webkitUserSelect = "none";
+    clone.style.width = "100vw";
+    clone.style.minHeight = "100vh";
     clone.style.height = "100%";
+    clone.style.background = "var(--bg-base)";
+    clone.style.color = "var(--text-primary)";
     host.appendChild(clone);
 
     return () => {
