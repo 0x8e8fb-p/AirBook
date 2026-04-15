@@ -30,7 +30,6 @@ export function ThemeFab() {
     origin,
     toTheme,
     radius,
-    supportsViewTransition,
     setManualTheme,
     setSystemMode,
   } = useThemeController();
@@ -89,7 +88,7 @@ export function ThemeFab() {
         origin={origin}
         toTheme={toTheme}
         radius={radius}
-        enabled={!supportsViewTransition}
+        enabled
       />
 
       <div className="fixed z-[80]" style={posStyle}>

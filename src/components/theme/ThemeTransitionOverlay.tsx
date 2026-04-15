@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import type { ThemeName } from "@/lib/theme/types";
 
 export type ThemeTransitionPhase = "idle" | "wipe";
@@ -23,6 +23,7 @@ export function ThemeTransitionOverlay({
   radius: number;
   enabled: boolean;
 }) {
+  const hostRef = useRef<HTMLDivElement>(null);
   const style = useMemo(() => {
     const to = THEME_SURFACES[toTheme];
     return {
@@ -43,9 +44,31 @@ export function ThemeTransitionOverlay({
     };
   }, [phase, enabled]);
 
+  useLayoutEffect(() => {
+    if (!enabled) return;
+    if (phase !== "wipe") return;
+    const host = hostRef.current;
+    if (!host) return;
+    const shell = document.getElementById("app-shell");
+    if (!shell) return;
+
+    host.replaceChildren();
+    const clone = shell.cloneNode(true) as HTMLElement;
+    clone.setAttribute("data-theme", toTheme);
+    clone.style.pointerEvents = "none";
+    clone.style.userSelect = "none";
+    clone.style.webkitUserSelect = "none";
+    clone.style.height = "100%";
+    host.appendChild(clone);
+
+    return () => {
+      host.replaceChildren();
+    };
+  }, [enabled, phase, toTheme]);
+
   if (!enabled || phase === "idle") return null;
 
   return (
-    <div aria-hidden="true" style={style} className="theme-transition-overlay" />
+    <div ref={hostRef} aria-hidden="true" style={style} className="theme-transition-overlay" />
   );
 }

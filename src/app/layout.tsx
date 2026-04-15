@@ -113,10 +113,12 @@ export default async function RootLayout({
       </head>
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)]">
         <SmoothScrollProvider>
-          <Navbar initialUser={initialUser} />
-          <main className="flex-1 relative pt-14">
-            {children}
-          </main>
+          <div id="app-shell" className="min-h-full flex flex-col">
+            <Navbar initialUser={initialUser} />
+            <main className="flex-1 relative pt-14">
+              {children}
+            </main>
+          </div>
           <ThemeFab />
         </SmoothScrollProvider>
       </body>

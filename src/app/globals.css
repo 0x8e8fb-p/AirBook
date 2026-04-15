@@ -18,7 +18,6 @@
 html {
   -webkit-tap-highlight-color: transparent;
   scroll-behavior: auto;
-  view-transition-name: root;
 }
 
 body {
@@ -83,38 +82,6 @@ h1, h2, h3, h4, h5, h6 {
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
-}
-
-@supports (view-transition-name: root) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none;
-    mix-blend-mode: normal;
-  }
-
-  ::view-transition-new(root) {
-    animation: vt-reveal 680ms var(--ease-out) both;
-  }
-
-  ::view-transition-old(root) {
-    animation: vt-fade 680ms var(--ease-out) both;
-  }
-}
-
-@keyframes vt-reveal {
-  from {
-    clip-path: circle(0px at var(--vt-x) var(--vt-y));
-    -webkit-clip-path: circle(0px at var(--vt-x) var(--vt-y));
-  }
-  to {
-    clip-path: circle(var(--vt-r) at var(--vt-x) var(--vt-y));
-    -webkit-clip-path: circle(var(--vt-r) at var(--vt-x) var(--vt-y));
-  }
-}
-
-@keyframes vt-fade {
-  from { opacity: 1; }
-  to { opacity: 0; }
 }
 
 @layer utilities {

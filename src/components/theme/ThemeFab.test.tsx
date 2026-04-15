@@ -11,7 +11,6 @@ vi.mock("./useThemeController", () => ({
     origin: { x: 0, y: 0 },
     toTheme: "warm",
     radius: 0,
-    supportsViewTransition: true,
     setManualTheme: vi.fn(),
     setSystemMode: vi.fn(),
   }),

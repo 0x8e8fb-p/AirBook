@@ -15,9 +15,6 @@ import {
 } from "@/lib/theme/storage";
 import type { ThemeTransitionPhase } from "./ThemeTransitionOverlay";
 
-type ViewTransitionLike = { finished: Promise<void> };
-type StartViewTransition = (updateCallback: () => void) => ViewTransitionLike;
-
 function getSystemScheme(): SystemScheme {
   if (typeof window === "undefined") return "light";
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -32,12 +29,6 @@ export function useThemeController() {
   const [radius, setRadius] = useState(0);
 
   const animatingRef = useRef(false);
-  const startViewTransition: StartViewTransition | null =
-    typeof document !== "undefined"
-      ? ((document as unknown as { startViewTransition?: StartViewTransition })
-          .startViewTransition ?? null)
-      : null;
-  const supportsViewTransition = !!startViewTransition;
 
   const applyHtmlTheme = useCallback((t: ThemeName, m: ThemeMode) => {
     const root = document.documentElement;
@@ -56,13 +47,6 @@ export function useThemeController() {
         Math.hypot(w - o.x, h - o.y)
       )
     );
-  }, []);
-
-  const setViewTransitionVars = useCallback((o: { x: number; y: number }, r: number) => {
-    const root = document.documentElement;
-    root.style.setProperty("--vt-x", `${o.x}px`);
-    root.style.setProperty("--vt-y", `${o.y}px`);
-    root.style.setProperty("--vt-r", `${r}px`);
   }, []);
 
   useEffect(() => {
@@ -120,25 +104,11 @@ export function useThemeController() {
       setRadius(r);
 
       const run = async () => {
-        if (supportsViewTransition) {
-          setViewTransitionVars(nextOrigin, r);
-          setMode("manual");
-          setTheme(nextTheme);
-
-          const vt = startViewTransition(() => {
-            applyHtmlTheme(nextTheme, "manual");
-          });
-
-          await vt.finished;
-          return;
-        }
-
         setPhase("wipe");
         await new Promise((r2) => setTimeout(r2, 680));
         setMode("manual");
         setTheme(nextTheme);
         applyHtmlTheme(nextTheme, "manual");
-        await new Promise((r2) => setTimeout(r2, 60));
         setPhase("idle");
       };
 
@@ -152,7 +122,7 @@ export function useThemeController() {
         animatingRef.current = false;
       }
     },
-    [applyHtmlTheme, computeRadius, setViewTransitionVars, startViewTransition, supportsViewTransition]
+    [applyHtmlTheme, computeRadius]
   );
 
   const setSystemMode = useCallback(
@@ -167,25 +137,11 @@ export function useThemeController() {
       setRadius(r);
 
       const run = async () => {
-        if (supportsViewTransition) {
-          setViewTransitionVars(nextOrigin, r);
-          setMode("system");
-          setTheme(resolved);
-
-          const vt = startViewTransition(() => {
-            applyHtmlTheme(resolved, "system");
-          });
-
-          await vt.finished;
-          return;
-        }
-
         setPhase("wipe");
         await new Promise((r2) => setTimeout(r2, 680));
         setMode("system");
         setTheme(resolved);
         applyHtmlTheme(resolved, "system");
-        await new Promise((r2) => setTimeout(r2, 60));
         setPhase("idle");
       };
 
@@ -198,7 +154,7 @@ export function useThemeController() {
         animatingRef.current = false;
       }
     },
-    [applyHtmlTheme, computeRadius, setViewTransitionVars, startViewTransition, supportsViewTransition]
+    [applyHtmlTheme, computeRadius]
   );
 
   return {
@@ -208,7 +164,6 @@ export function useThemeController() {
     origin,
     toTheme,
     radius,
-    supportsViewTransition,
     setManualTheme,
     setSystemMode,
   };
