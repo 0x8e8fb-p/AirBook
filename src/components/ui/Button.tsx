@@ -18,7 +18,7 @@ const variantStyles: Record<ButtonVariant, string> = {
   secondary:
     "bg-[var(--accent-primary-dim)] text-[var(--accent-primary)] border border-[var(--accent-primary)]/20 hover:bg-[var(--accent-primary)]/20",
   ghost:
-    "bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/5",
+    "bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-primary-dim)]",
   danger:
     "bg-[var(--accent-red)]/10 text-[var(--accent-red)] border border-[var(--accent-red)]/20 hover:bg-[var(--accent-red)]/20",
 };

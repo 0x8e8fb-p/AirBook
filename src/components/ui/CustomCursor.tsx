@@ -30,14 +30,12 @@ export function CustomCursor() {
 
   return (
     <div className="hidden [@media(pointer:fine)]:block">
-      {/* Tiny dot */}
       <div 
         ref={cursorRef} 
-        className="fixed top-0 left-0 w-1.5 h-1.5 bg-white rounded-full -ml-[3px] -mt-[3px] pointer-events-none z-[9999] mix-blend-difference"
+        className="fixed top-0 left-0 w-1.5 h-1.5 bg-[var(--text-primary)] rounded-full -ml-[3px] -mt-[3px] pointer-events-none z-[9999] opacity-80"
       />
-      {/* Trailing circle */}
       <motion.div
-        className="fixed top-0 left-0 w-8 h-8 rounded-full border border-white/40 pointer-events-none z-[9998] mix-blend-difference"
+        className="fixed top-0 left-0 w-8 h-8 rounded-full border border-[var(--text-primary)]/25 pointer-events-none z-[9998]"
         style={{
           x: springX,
           y: springY,

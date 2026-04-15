@@ -96,6 +96,18 @@ export function useThemeController() {
   const setManualTheme = useCallback(
     async (nextTheme: ThemeName, nextOrigin: { x: number; y: number }) => {
       if (animatingRef.current) return;
+
+      if (mode === "manual" && nextTheme === theme) return;
+      if (mode === "system" && nextTheme === theme) {
+        setMode("manual");
+        writeLocalStorageThemeMode("manual");
+        writeLocalStorageTheme(nextTheme);
+        writeCookie(THEME_MODE_COOKIE, "manual");
+        writeCookie(THEME_COOKIE, nextTheme);
+        applyHtmlTheme(nextTheme, "manual");
+        return;
+      }
+
       animatingRef.current = true;
 
       setOrigin(nextOrigin);
@@ -109,6 +121,9 @@ export function useThemeController() {
         setMode("manual");
         setTheme(nextTheme);
         applyHtmlTheme(nextTheme, "manual");
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+        );
         setPhase("idle");
       };
 
@@ -122,13 +137,24 @@ export function useThemeController() {
         animatingRef.current = false;
       }
     },
-    [applyHtmlTheme, computeRadius]
+    [applyHtmlTheme, computeRadius, mode, theme]
   );
 
   const setSystemMode = useCallback(
     async (nextOrigin: { x: number; y: number }) => {
       const resolved = resolveThemeFromSystem(getSystemScheme());
       if (animatingRef.current) return;
+
+      if (mode === "system" && resolved === theme) return;
+      if (mode === "manual" && resolved === theme) {
+        setMode("system");
+        writeLocalStorageThemeMode("system");
+        writeCookie(THEME_MODE_COOKIE, "system");
+        writeCookie(THEME_COOKIE, resolved);
+        applyHtmlTheme(resolved, "system");
+        return;
+      }
+
       animatingRef.current = true;
 
       setOrigin(nextOrigin);
@@ -142,6 +168,9 @@ export function useThemeController() {
         setMode("system");
         setTheme(resolved);
         applyHtmlTheme(resolved, "system");
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+        );
         setPhase("idle");
       };
 
@@ -154,7 +183,7 @@ export function useThemeController() {
         animatingRef.current = false;
       }
     },
-    [applyHtmlTheme, computeRadius]
+    [applyHtmlTheme, computeRadius, mode, theme]
   );
 
   return {

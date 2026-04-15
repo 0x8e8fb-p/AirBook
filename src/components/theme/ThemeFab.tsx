@@ -17,11 +17,6 @@ const ITEMS: Item[] = [
   { id: "matte", label: "Matte black", icon: Moon },
 ];
 
-function getCenter(el: HTMLElement) {
-  const r = el.getBoundingClientRect();
-  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-}
-
 export function ThemeFab() {
   const {
     mode,
@@ -113,11 +108,10 @@ export function ThemeFab() {
                 <button
                   type="button"
                   className="w-full text-left px-3 py-2 rounded-[var(--radius-md)] hover:bg-[var(--accent-primary-dim)] transition-colors text-[13px]"
-                  onClick={() => {
+                  onClick={(e) => {
+                    const o = { x: e.clientX, y: e.clientY };
                     runAfterClose(() => {
-                      const el = btnRef.current;
-                      if (!el) return;
-                      void setSystemMode(getCenter(el));
+                      void setSystemMode(o);
                     });
                   }}
                 >
@@ -131,11 +125,10 @@ export function ThemeFab() {
                     key={it.id}
                     type="button"
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-[var(--radius-md)] hover:bg-[var(--accent-primary-dim)] transition-colors text-[13px]"
-                    onClick={() => {
+                    onClick={(e) => {
+                      const o = { x: e.clientX, y: e.clientY };
                       runAfterClose(() => {
-                        const el = btnRef.current;
-                        if (!el) return;
-                        void setManualTheme(it.id, getCenter(el));
+                        void setManualTheme(it.id, o);
                       });
                     }}
                   >

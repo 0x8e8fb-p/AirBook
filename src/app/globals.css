@@ -114,17 +114,14 @@ html[data-theme-transition="wipe"] .theme-transition-overlay {
 }
 
 @keyframes tt-radial-wipe {
-  0% {
-    opacity: 1;
-  }
+  0% { opacity: 1; }
   85% {
     clip-path: circle(var(--tt-r) at var(--tt-x) var(--tt-y));
     -webkit-clip-path: circle(var(--tt-r) at var(--tt-x) var(--tt-y));
-    opacity: 1;
   }
   100% {
     clip-path: circle(var(--tt-r) at var(--tt-x) var(--tt-y));
     -webkit-clip-path: circle(var(--tt-r) at var(--tt-x) var(--tt-y));
-    opacity: 0;
+    opacity: 1;
   }
 }
