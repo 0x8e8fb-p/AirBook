@@ -79,9 +79,7 @@ export default async function RootLayout({
   const mode: ThemeMode = themeModeCookie === "manual" ? "manual" : "system";
   const themeFromCookie =
     themeCookie === "warm" ||
-    themeCookie === "white" ||
-    themeCookie === "matte" ||
-    themeCookie === "amoled"
+    themeCookie === "matte"
       ? (themeCookie satisfies ThemeName)
       : null;
 

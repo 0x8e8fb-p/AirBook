@@ -9,7 +9,7 @@ export const THEME_MODE_LS_KEY = "airbook:theme_mode";
 export function readLocalStorageTheme(): ThemeName | null {
   if (typeof window === "undefined") return null;
   const v = window.localStorage.getItem(THEME_LS_KEY);
-  if (v === "warm" || v === "white" || v === "matte" || v === "amoled") return v;
+  if (v === "warm" || v === "matte") return v;
   return null;
 }
 

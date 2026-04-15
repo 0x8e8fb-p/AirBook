@@ -121,11 +121,24 @@ html[data-theme-transition="glitch"] .theme-transition-overlay {
   animation: tt-noise 140ms steps(2) infinite;
 }
 
+html[data-theme-transition="chroma"] .theme-transition-overlay {
+  background:
+    radial-gradient(circle at var(--tt-x) var(--tt-y), color-mix(in srgb, var(--tt-accent) 22%, transparent), transparent 60%),
+    conic-gradient(from 160deg at var(--tt-x) var(--tt-y),
+      color-mix(in srgb, var(--tt-accent) 16%, transparent),
+      transparent,
+      color-mix(in srgb, var(--tt-accent) 10%, transparent),
+      transparent);
+  mix-blend-mode: overlay;
+  opacity: 0.95;
+  animation: tt-chroma 220ms var(--ease-in-out) infinite;
+}
+
 html[data-theme-transition="wipe"] .theme-transition-overlay {
-  background: var(--bg-base);
-  -webkit-mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 35%, transparent 60%);
-  mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 35%, transparent 60%);
-  animation: tt-wipe 360ms var(--ease-out) forwards;
+  background: var(--tt-bg-base);
+  -webkit-mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 1%, transparent 2%);
+  mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 1%, transparent 2%);
+  animation: tt-wipe 420ms var(--ease-out) forwards;
 }
 
 @keyframes tt-noise {
@@ -136,15 +149,21 @@ html[data-theme-transition="wipe"] .theme-transition-overlay {
 
 @keyframes tt-wipe {
   0% {
-    -webkit-mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 0%, transparent 0%);
-    mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 0%, transparent 0%);
+    -webkit-mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 1%, transparent 2%);
+    mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 1%, transparent 2%);
     opacity: 1;
   }
   100% {
-    -webkit-mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 140%, transparent 160%);
-    mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 140%, transparent 160%);
+    -webkit-mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 160%, transparent 180%);
+    mask-image: radial-gradient(circle at var(--tt-x) var(--tt-y), #000 0%, #000 160%, transparent 180%);
     opacity: 0;
   }
+}
+
+@keyframes tt-chroma {
+  0% { transform: translate3d(0,0,0) scale(1); filter: hue-rotate(0deg) saturate(1.05); }
+  50% { transform: translate3d(0,0,0) scale(1.02); filter: hue-rotate(10deg) saturate(1.15); }
+  100% { transform: translate3d(0,0,0) scale(1); filter: hue-rotate(0deg) saturate(1.05); }
 }
 
 @media (prefers-reduced-motion: reduce) {

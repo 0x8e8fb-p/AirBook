@@ -1,21 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SunMedium, Moon, Droplets, Sparkles } from "lucide-react";
+import { SunMedium, Moon } from "lucide-react";
 import { ThemeTransitionOverlay } from "./ThemeTransitionOverlay";
 import { useThemeController } from "./useThemeController";
 
 type Item = {
-  id: "warm" | "white" | "matte" | "amoled";
+  id: "warm" | "matte";
   label: string;
   icon: React.ComponentType<{ className?: string }>;
 };
 
 const ITEMS: Item[] = [
   { id: "warm", label: "Warm white", icon: SunMedium },
-  { id: "white", label: "Pure white", icon: Sparkles },
   { id: "matte", label: "Matte black", icon: Moon },
-  { id: "amoled", label: "AMOLED black", icon: Droplets },
 ];
 
 function getCenter(el: HTMLElement) {

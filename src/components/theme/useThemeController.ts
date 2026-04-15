@@ -52,9 +52,7 @@ export function useThemeController() {
     const cookieThemeRaw = readCookie(THEME_COOKIE);
     const cookieTheme: ThemeName | null =
       cookieThemeRaw === "warm" ||
-      cookieThemeRaw === "white" ||
-      cookieThemeRaw === "matte" ||
-      cookieThemeRaw === "amoled"
+      cookieThemeRaw === "matte"
         ? cookieThemeRaw
         : null;
 
@@ -107,14 +105,17 @@ export function useThemeController() {
         }
 
         setPhase("morph");
-        await new Promise((r) => setTimeout(r, 160));
+        await new Promise((r) => setTimeout(r, 140));
         setPhase("glitch");
-        await new Promise((r) => setTimeout(r, 160));
+        await new Promise((r) => setTimeout(r, 140));
+        setPhase("chroma");
+        await new Promise((r) => setTimeout(r, 140));
+        setPhase("wipe");
+        await new Promise((r) => setTimeout(r, 420));
         setMode("manual");
         setTheme(nextTheme);
         applyHtmlTheme(nextTheme, "manual");
-        setPhase("wipe");
-        await new Promise((r) => setTimeout(r, 360));
+        await new Promise((r) => setTimeout(r, 10));
         setPhase("idle");
       };
 
@@ -134,13 +135,48 @@ export function useThemeController() {
   const setSystemMode = useCallback(
     async (nextOrigin: { x: number; y: number }) => {
       const resolved = resolveThemeFromSystem(getSystemScheme());
-      await setManualTheme(resolved, nextOrigin);
-      setMode("system");
-      applyHtmlTheme(resolved, "system");
-      writeLocalStorageThemeMode("system");
-      writeCookie(THEME_MODE_COOKIE, "system");
+      if (animatingRef.current) return;
+      animatingRef.current = true;
+
+      setOrigin(nextOrigin);
+      setToTheme(resolved);
+
+      const run = async () => {
+        if (reduceMotion) {
+          setPhase("morph");
+          await new Promise((r) => setTimeout(r, 120));
+          setMode("system");
+          setTheme(resolved);
+          applyHtmlTheme(resolved, "system");
+          setPhase("idle");
+          return;
+        }
+
+        setPhase("morph");
+        await new Promise((r) => setTimeout(r, 140));
+        setPhase("glitch");
+        await new Promise((r) => setTimeout(r, 140));
+        setPhase("chroma");
+        await new Promise((r) => setTimeout(r, 140));
+        setPhase("wipe");
+        await new Promise((r) => setTimeout(r, 420));
+        setMode("system");
+        setTheme(resolved);
+        applyHtmlTheme(resolved, "system");
+        await new Promise((r) => setTimeout(r, 10));
+        setPhase("idle");
+      };
+
+      try {
+        await run();
+      } finally {
+        writeLocalStorageThemeMode("system");
+        writeCookie(THEME_MODE_COOKIE, "system");
+        writeCookie(THEME_COOKIE, resolved);
+        animatingRef.current = false;
+      }
     },
-    [applyHtmlTheme, setManualTheme]
+    [applyHtmlTheme, reduceMotion]
   );
 
   return {
