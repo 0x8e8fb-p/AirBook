@@ -15,6 +15,19 @@ import {
 } from "@/lib/theme/storage";
 import type { ThemeTransitionPhase } from "./ThemeTransitionOverlay";
 
+type LockedScroll = {
+  x: number;
+  y: number;
+  prev: {
+    position: string;
+    top: string;
+    left: string;
+    right: string;
+    width: string;
+    paddingRight: string;
+  };
+};
+
 function getSystemScheme(): SystemScheme {
   if (typeof window === "undefined") return "light";
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -50,7 +63,7 @@ export function useThemeController() {
     );
   }, []);
 
-  const lockScroll = useCallback(() => {
+  const lockScroll = useCallback((): LockedScroll => {
     const x = window.scrollX;
     const y = window.scrollY;
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
@@ -75,7 +88,7 @@ export function useThemeController() {
     return { x, y, prev };
   }, []);
 
-  const unlockScroll = useCallback((locked: ReturnType<typeof lockScroll>) => {
+  const unlockScroll = useCallback((locked: LockedScroll) => {
     const { style } = document.body;
     style.position = locked.prev.position;
     style.top = locked.prev.top;
@@ -84,7 +97,7 @@ export function useThemeController() {
     style.width = locked.prev.width;
     style.paddingRight = locked.prev.paddingRight;
     window.scrollTo(locked.x, locked.y);
-  }, [lockScroll]);
+  }, []);
 
   useEffect(() => {
     const lsMode = readLocalStorageThemeMode();
