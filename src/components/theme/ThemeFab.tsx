@@ -25,7 +25,6 @@ export function ThemeFab() {
     origin,
     toTheme,
     radius,
-    scroll,
     setManualTheme,
     setSystemMode,
   } = useThemeController();
@@ -77,7 +76,6 @@ export function ThemeFab() {
       <ThemeTransitionOverlay
         phase={phase}
         origin={origin}
-        scroll={scroll}
         toTheme={toTheme}
         radius={radius}
         enabled

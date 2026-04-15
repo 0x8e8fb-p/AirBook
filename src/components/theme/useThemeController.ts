@@ -40,7 +40,6 @@ export function useThemeController() {
   const [origin, setOrigin] = useState({ x: 0, y: 0 });
   const [toTheme, setToTheme] = useState<ThemeName>("warm");
   const [radius, setRadius] = useState(0);
-  const [scroll, setScroll] = useState({ x: 0, y: 0 });
 
   const animatingRef = useRef(false);
 
@@ -160,7 +159,6 @@ export function useThemeController() {
 
       animatingRef.current = true;
 
-      setScroll({ x: window.scrollX, y: window.scrollY });
       setOrigin(nextOrigin);
       setToTheme(nextTheme);
       const r = computeRadius(nextOrigin);
@@ -216,7 +214,6 @@ export function useThemeController() {
 
       animatingRef.current = true;
 
-      setScroll({ x: window.scrollX, y: window.scrollY });
       setOrigin(nextOrigin);
       setToTheme(resolved);
       const r = computeRadius(nextOrigin);
@@ -261,7 +258,6 @@ export function useThemeController() {
     origin,
     toTheme,
     radius,
-    scroll,
     setManualTheme,
     setSystemMode,
   };
