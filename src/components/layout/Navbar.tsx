@@ -5,8 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Plane, Bell, Search, Menu, X, User } from "lucide-react";
+import { Plane, Menu, X, User as UserIcon } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -17,7 +18,7 @@ export function Navbar() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -37,8 +38,6 @@ export function Navbar() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   return (
     <>
@@ -91,7 +90,7 @@ export function Navbar() {
                 href="/profile"
                 className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                 >
-                <User className="w-4 h-4" />
+                <UserIcon className="w-4 h-4" />
                 Profile
               </Link>
             ) : (
@@ -141,7 +140,7 @@ export function Navbar() {
                   pathname === "/profile" ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"
                 )}
               >
-                <User className="w-6 h-6" />
+                <UserIcon className="w-6 h-6" />
                 Profile
               </Link>
             ) : (

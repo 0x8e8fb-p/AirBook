@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { motion, useSpring } from "framer-motion";
 
 export function CustomCursor() {
@@ -27,11 +27,6 @@ export function CustomCursor() {
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [springX, springY]);
-
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => setIsMounted(true), []);
-  
-  if (!isMounted) return null;
 
   return (
     <div className="hidden [@media(pointer:fine)]:block">

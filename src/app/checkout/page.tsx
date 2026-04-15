@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plane, ShieldCheck, CreditCard, CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
+import { logBooking } from "./actions";
 
 function CheckoutContent() {
   const router = useRouter();
@@ -23,7 +24,6 @@ function CheckoutContent() {
   // [New] Persistence: Log the booking once confirmed
   useEffect(() => {
     if (step === 3 && !logged && flightId) {
-      const { logBooking } = require('./actions');
       logBooking(flightId, 0).then(() => setLogged(true));
     }
   }, [step, logged, flightId]);

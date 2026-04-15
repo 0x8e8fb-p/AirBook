@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Bell, Plus, Trash2, ArrowRight } from "lucide-react";
 import { createAlert, deleteAlert, toggleAlert } from "./actions";
 
@@ -117,7 +117,7 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: DBAlert[] }) {
             <p className="text-sm text-[var(--text-secondary)]">No alerts yet. Create one to get started.</p>
           </div>
         ) : (
-          initialAlerts.map((alert, i) => (
+          initialAlerts.map((alert) => (
             <motion.div
               layout
               key={alert.id}

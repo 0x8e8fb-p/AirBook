@@ -180,7 +180,7 @@ function FilterPanel({ flights, onFilter, show, onClose }: { flights: FlightResu
 
   const toggleAirline = (code: string) => setSelectedAirlines((p) => p.includes(code) ? p.filter((c) => c !== code) : [...p, code]);
 
-  const Content = () => (
+  const content = (
     <>
       <div className="mb-6">
         <h4 className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-widest mb-3">Stops</h4>
@@ -222,7 +222,7 @@ function FilterPanel({ flights, onFilter, show, onClose }: { flights: FlightResu
     <>
       <aside className="hidden lg:block w-64 shrink-0">
         <div className="sticky top-32 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-lg)] p-5">
-          <Content />
+          {content}
         </div>
       </aside>
 
@@ -235,7 +235,7 @@ function FilterPanel({ flights, onFilter, show, onClose }: { flights: FlightResu
                 <span className="font-semibold text-sm">Filters</span>
                 <button onClick={onClose}><X className="w-4 h-4 text-[var(--text-muted)]" /></button>
               </div>
-              <Content />
+              {content}
             </motion.div>
           </div>
         )}

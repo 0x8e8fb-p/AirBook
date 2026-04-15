@@ -4,7 +4,6 @@ import "./globals.css";
 
 import { SmoothScrollProvider } from "@/lib/lenis";
 import { Navbar } from "@/components/layout/Navbar";
-import { ScrollProgressBar } from "@/components/layout/ScrollProgressBar";
 
 const geist = Geist({
   subsets: ["latin"],

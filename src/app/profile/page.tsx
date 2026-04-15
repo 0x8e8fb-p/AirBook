@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { updateProfile } from './actions'
-import { User, Plane, MapPin, Search } from 'lucide-react'
+import { User, Plane, MapPin } from 'lucide-react'
 import { signout } from '../auth/actions'
 
 export default async function ProfilePage({

@@ -60,16 +60,6 @@ function mapCabinClass(cabin: CabinClass): string {
 }
 
 /**
- * Parse ISO 8601 duration to minutes (e.g., "PT2H30M" → 150)
- */
-function parseDuration(duration: string | undefined): number {
-  if (!duration) return 0;
-  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
-  if (!match) return 0;
-  return (parseInt(match[1] || '0') * 60) + parseInt(match[2] || '0');
-}
-
-/**
  * Convert Duffel amount to INR
  * In production, use a real FX rate API. For now, approximate.
  */

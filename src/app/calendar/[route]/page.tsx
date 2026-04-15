@@ -7,7 +7,6 @@ import { getAirportDisplay } from "@/lib/airports";
 import { formatPrice } from "@/lib/constants";
 import type { CalendarDay } from "@/lib/types";
 import {
-  Plane,
   ArrowLeft,
   ArrowRight,
   ChevronLeft,

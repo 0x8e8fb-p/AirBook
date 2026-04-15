@@ -1,15 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchStore } from "@/stores/search-store";
 import { searchAirports } from "@/lib/airports";
 import type { Airport } from "@/lib/types";
-import { POPULAR_ROUTES, formatPrice } from "@/lib/constants";
 import {
-  ArrowRightLeft, Calendar, Users, ChevronDown, X,
-  Search, ArrowRight, TrendingDown, Shield, Zap, Plane,
+  ArrowRightLeft, ChevronDown, X,
+  Search, TrendingDown, Shield, Zap, Plane,
 } from "lucide-react";
 
 import { Footer } from "@/components/layout/Footer";
@@ -25,20 +24,20 @@ function AirportInput({
 }) {
   const [suggestions, setSuggestions] = useState<Airport[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [displayValue, setDisplayValue] = useState("");
+  const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (value) {
-      const airport = searchAirports(value, 1)[0];
-      if (airport) setDisplayValue(`${airport.city} (${airport.iata})`);
-    }
+  const selectedLabel = useMemo(() => {
+    if (!value) return "";
+    const airport = searchAirports(value, 1)[0];
+    if (!airport) return value;
+    return `${airport.city} (${airport.iata})`;
   }, [value]);
 
   const handleSearch = useCallback((q: string) => {
-    setDisplayValue(q);
+    setQuery(q);
     if (q.length >= 1) {
       const results = searchAirports(q, 6);
       setSuggestions(results);
@@ -51,7 +50,7 @@ function AirportInput({
 
   const handleSelect = useCallback((airport: Airport) => {
     onChange(airport.iata);
-    setDisplayValue(`${airport.city} (${airport.iata})`);
+    setQuery("");
     setIsOpen(false);
     inputRef.current?.blur();
   }, [onChange]);
@@ -75,9 +74,9 @@ function AirportInput({
         ref={inputRef}
         id={id}
         type="text"
-        value={displayValue}
+        value={isFocused ? query : (selectedLabel || query)}
         onChange={(e) => handleSearch(e.target.value)}
-        onFocus={() => { setIsFocused(true); setDisplayValue(""); if (suggestions.length > 0) setIsOpen(true); }}
+        onFocus={() => { setIsFocused(true); setQuery(""); if (suggestions.length > 0) setIsOpen(true); }}
         onBlur={() => setIsFocused(false)}
         placeholder={placeholder}
         className="ghost-input w-full text-xl font-semibold placeholder:text-[var(--text-muted)]/40 truncate py-1 caret-[var(--text-secondary)]"
@@ -283,28 +282,6 @@ function SearchPanel() {
           <><Search className="w-4 h-4" />Search Flights</>
         )}
       </button>
-    </div>
-  );
-}
-
-/* ================================================================
-   ROUTE CARD
-   ================================================================ */
-function RouteCard({ route }: { route: typeof POPULAR_ROUTES[number] }) {
-  // Deterministic price from route label — avoids hydration mismatch
-  let hash = 0;
-  for (let i = 0; i < route.label.length; i++) {
-    hash = ((hash << 5) - hash + route.label.charCodeAt(i)) | 0;
-  }
-  const price = 2800 + Math.abs(hash % 4000);
-
-  return (
-    <div className="min-w-[220px] snap-start rounded-[var(--radius-lg)] p-4 bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] transition-colors group cursor-pointer">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-[13px] font-medium text-[var(--text-secondary)]">{route.label}</span>
-        <ArrowRight className="w-3 h-3 text-[var(--text-muted)] group-hover:translate-x-0.5 transition-transform" />
-      </div>
-      <span className="font-mono-price text-lg font-semibold">{formatPrice(price)}</span>
     </div>
   );
 }
