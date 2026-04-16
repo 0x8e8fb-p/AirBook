@@ -68,6 +68,7 @@ model User {
   name          String?
   email         String?   @unique
   emailVerified DateTime?
+  password      String?   // New field for email/password credentials login
   image         String?
   accounts      Account[]
   sessions      Session[]

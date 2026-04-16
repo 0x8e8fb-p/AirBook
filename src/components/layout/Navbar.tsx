@@ -5,8 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Plane, Menu, X, User as UserIcon, LogIn, LogOut } from "lucide-react";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { Plane, Menu, X, User as UserIcon, LogOut } from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -93,12 +93,12 @@ export function Navbar() {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => signIn('google', { callbackUrl: '/' })}
+              <Link
+                href="/login"
                 className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium bg-[var(--accent-cta)] text-[var(--text-inverse)] rounded-[var(--radius-md)] hover:opacity-90 transition-opacity"
               >
                 Sign In
-              </button>
+              </Link>
             )}
           </div>
           
@@ -154,14 +154,15 @@ export function Navbar() {
                 </button>
               </>
             ) : (
-               <button
-                onClick={() => { setMobileOpen(false); signIn('google', { callbackUrl: '/' }); }}
+               <Link
+                href="/login"
+                onClick={() => setMobileOpen(false)}
                 className={cn(
                   "text-2xl font-semibold transition-colors mt-4 text-[var(--text-muted)]"
                 )}
               >
                 Sign In
-              </button>
+              </Link>
             )}
           </div>
         </motion.div>
