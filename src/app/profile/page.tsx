@@ -84,7 +84,7 @@ function ProfileContent() {
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.id) return;
+    if (!(user as any)?.id) return;
     setIsSavingProfile(true);
     setProfileError("");
 
@@ -94,7 +94,7 @@ function ProfileContent() {
     formData.append("mobile", editForm.mobile);
     formData.append("dob", editForm.dob);
 
-    const res = await updateProfile(user.id, formData);
+    const res = await updateProfile((user as any).id, formData);
     if (res.success) {
       setIsEditingProfile(false);
       window.location.reload(); // Refresh to update session
