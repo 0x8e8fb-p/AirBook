@@ -7,6 +7,7 @@ import { cookies } from "next/headers";
 import { SmoothScrollProvider } from "@/lib/lenis";
 import { Navbar } from "@/components/layout/Navbar";
 import { ThemeFab } from "@/components/theme/ThemeFab";
+import { EnvWarningBanner } from "@/components/layout/EnvWarningBanner";
 import type { ThemeMode, ThemeName } from "@/lib/theme/types";
 
 const geist = Geist({
@@ -104,6 +105,7 @@ export default async function RootLayout({
         <Providers>
           <SmoothScrollProvider>
             <div id="app-shell" className="min-h-full flex flex-col">
+              <EnvWarningBanner />
               <Navbar />
               <main className="flex-1 relative pt-14">
                 {children}

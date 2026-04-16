@@ -94,7 +94,7 @@ export function Navbar() {
               </div>
             ) : (
               <button
-                onClick={() => signIn('google')}
+                onClick={() => signIn('google', { callbackUrl: '/' })}
                 className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium bg-[var(--accent-cta)] text-[var(--text-inverse)] rounded-[var(--radius-md)] hover:opacity-90 transition-opacity"
               >
                 Sign In
@@ -155,7 +155,7 @@ export function Navbar() {
               </>
             ) : (
                <button
-                onClick={() => { setMobileOpen(false); signIn('google'); }}
+                onClick={() => { setMobileOpen(false); signIn('google', { callbackUrl: '/' }); }}
                 className={cn(
                   "text-2xl font-semibold transition-colors mt-4 text-[var(--text-muted)]"
                 )}

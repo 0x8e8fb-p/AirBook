@@ -53,12 +53,6 @@ function ProfileContent() {
   }, [tabParam]);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.replace("/");
-    }
-  }, [status, router]);
-
-  useEffect(() => {
     if (status === "authenticated" && activeTab === "alerts") {
       setLoadingAlerts(true);
       getAlerts().then(res => {
@@ -73,6 +67,30 @@ function ProfileContent() {
     setAlerts(alerts.filter(a => a.id !== id));
   };
 
+  if (status === "loading") {
+    return (
+      <div className="min-h-[80dvh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-cta)]" />
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return (
+      <div className="min-h-[80dvh] flex flex-col items-center justify-center text-center px-4">
+        <div className="w-16 h-16 bg-[var(--bg-subtle)] rounded-full flex items-center justify-center mb-4">
+          <UserIcon className="w-8 h-8 text-[var(--text-muted)]" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">Sign in required</h2>
+        <p className="text-[var(--text-secondary)] mb-6 max-w-sm">
+          You need to be signed in to manage your profile, credit cards, and price drop alerts.
+        </p>
+      </div>
+    );
+  }
+
+  const user = session?.user;
+
   const handleTabChange = (tab: "account" | "wallet" | "alerts") => {
     setActiveTab(tab);
     router.replace(`/profile?tab=${tab}`, { scroll: false });
@@ -86,16 +104,6 @@ function ProfileContent() {
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
   };
-
-  if (status === "loading" || status === "unauthenticated") {
-    return (
-      <div className="min-h-[80dvh] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-cta)]" />
-      </div>
-    );
-  }
-
-  const user = session?.user;
 
   return (
     <div className="min-h-[100dvh] bg-[var(--bg-subtle)] pb-20 flex flex-col">

@@ -9,6 +9,9 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      // [Fix]: Prevent "Try signing in with a different account" error
+      // by allowing dangerous email account linking if an email already exists
+      allowDangerousEmailAccountLinking: true,
     }),
   ],
   session: {
