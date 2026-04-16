@@ -6,7 +6,7 @@
 import type { Airport } from './types';
 import { fuzzyMatch, transliterateHindi } from './utils';
 
-export const AIRPORTS: Airport[] = [
+const AIRPORTS: Airport[] = [
   // ═══════════════════════════════════════════════════════════════
   // INDIA — Complete Coverage
   // ═══════════════════════════════════════════════════════════════

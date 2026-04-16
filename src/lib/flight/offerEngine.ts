@@ -16,7 +16,7 @@ export interface FlightPriceDetails {
 
 const CONVENIENCE_FEE = 350; // Standard domestic convenience fee
 
-export const INDIAN_BANK_OFFERS: BankOffer[] = [
+const INDIAN_BANK_OFFERS: BankOffer[] = [
   // HDFC Bank
   { id: 'HDFC_CC_15', name: '15% off up to ₹1500 on HDFC Credit Cards', type: 'percentage', value: 0.15, maxCap: 1500, minBooking: 5000 },
   { id: 'HDFC_EMI_FLAT', name: 'Flat ₹2000 off on HDFC EMI', type: 'flat', value: 2000, minBooking: 10000 },

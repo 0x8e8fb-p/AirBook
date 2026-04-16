@@ -5,10 +5,10 @@
 import type { FlightResult } from "./types";
 
 /** Airline name to IATA code mapper */
-export const getIataCode = (airlineName: string): string => {
+const getIataCode = (airlineName: string): string => {
   // Direct matches
   const directMatch = Object.entries(AIRLINES).find(
-    ([_, data]) => data.name.toLowerCase() === airlineName.toLowerCase()
+    ([, data]) => data.name.toLowerCase() === airlineName.toLowerCase()
   );
   if (directMatch) return directMatch[0];
 
@@ -47,19 +47,6 @@ export const getIataCode = (airlineName: string): string => {
   return airlineName;
 };
 
-/** Get optimal logo URL */
-export const getAirlineLogo = (airlineName: string): string => {
-  const iata = getIataCode(airlineName);
-  
-  // If we found a 2-letter IATA code, use Kiwi's high quality CDN
-  if (iata.length === 2) {
-    return `https://images.kiwi.com/airlines/64/${iata}.png`;
-  }
-  
-  // Otherwise fallback to Clearbit Logo API using a guessed domain
-  const domainGuess = airlineName.toLowerCase().replace(/\s+/g, '') + '.com';
-  return `https://logo.clearbit.com/${domainGuess}`;
-};
 
 const isIataAirlineCode = (value: string | null | undefined): value is string =>
   !!value && /^[A-Z0-9]{2}$/i.test(value.trim());
@@ -140,14 +127,6 @@ export const SORT_OPTIONS = [
   { value: 'latest_departure', label: 'Latest', labelHi: 'सबसे बाद' },
 ] as const;
 
-/** Cabin class options */
-export const CABIN_CLASSES = [
-  { value: 'economy', label: 'Economy', labelHi: 'इकॉनमी' },
-  { value: 'premium_economy', label: 'Premium Economy', labelHi: 'प्रीमियम इकॉनमी' },
-  { value: 'business', label: 'Business', labelHi: 'बिज़नेस' },
-  { value: 'first', label: 'First', labelHi: 'फर्स्ट' },
-] as const;
-
 /** Indian holidays 2026 (for fare calendar overlay) */
 export const INDIAN_HOLIDAYS_2026 = [
   { date: '2026-01-26', name: 'Republic Day', nameHi: 'गणतंत्र दिवस', type: 'national' },
@@ -169,22 +148,6 @@ export const INDIAN_HOLIDAYS_2026 = [
   { date: '2026-11-14', name: "Children's Day", nameHi: 'बाल दिवस', type: 'national' },
   { date: '2026-11-30', name: 'Guru Nanak Jayanti', nameHi: 'गुरु नानक जयंती', type: 'national' },
   { date: '2026-12-25', name: 'Christmas', nameHi: 'क्रिसमस', type: 'national' },
-] as const;
-
-/** Popular domestic routes for trending section */
-export const POPULAR_ROUTES = [
-  { origin: 'DEL', destination: 'BOM', label: 'Delhi → Mumbai' },
-  { origin: 'DEL', destination: 'BLR', label: 'Delhi → Bangalore' },
-  { origin: 'BOM', destination: 'GOI', label: 'Mumbai → Goa' },
-  { origin: 'DEL', destination: 'GOI', label: 'Delhi → Goa' },
-  { origin: 'BLR', destination: 'DEL', label: 'Bangalore → Delhi' },
-  { origin: 'BOM', destination: 'BLR', label: 'Mumbai → Bangalore' },
-  { origin: 'DEL', destination: 'CCU', label: 'Delhi → Kolkata' },
-  { origin: 'BLR', destination: 'HYD', label: 'Bangalore → Hyderabad' },
-  { origin: 'DEL', destination: 'MAA', label: 'Delhi → Chennai' },
-  { origin: 'BOM', destination: 'HYD', label: 'Mumbai → Hyderabad' },
-  { origin: 'DEL', destination: 'JAI', label: 'Delhi → Jaipur' },
-  { origin: 'BOM', destination: 'DEL', label: 'Mumbai → Delhi' },
 ] as const;
 
 /** API configuration */

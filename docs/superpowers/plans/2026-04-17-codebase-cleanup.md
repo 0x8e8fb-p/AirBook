@@ -25,14 +25,14 @@
 - Delete: `test-prisma2.js`
 - Delete: `test-stats.js`
 
-- [ ] **Step 1: Delete the files**
+- [x] **Step 1: Delete the files**
 
 Run the following command to remove the throwaway scripts:
 ```bash
 rm -f debug-env.js fix-schema.js query-db.js query-schema.js test-log.js test-log.ts test-pooler.js test-prisma-local.js test-prisma.js test-prisma2.js test-stats.js
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add .
@@ -46,7 +46,7 @@ git commit -m "chore: remove throwaway root test and debug scripts"
 - Modify: `src/lib/airports.ts`
 - Modify: `src/lib/flight/offerEngine.ts`
 
-- [ ] **Step 1: Remove unused constants**
+- [x] **Step 1: Remove unused constants**
 Edit the files to remove the following exports:
 - `AIRPORTS` (from `src/lib/airports.ts`)
 - `getIataCode`, `getAirlineLogo`, `CABIN_CLASSES`, `POPULAR_ROUTES` (from `src/lib/constants.ts`)
