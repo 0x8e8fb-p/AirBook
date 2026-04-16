@@ -44,35 +44,6 @@ export function generateFlightId(
   return `${source}_${flightNumber}_${departureDate}`.replace(/\s+/g, '');
 }
 
-/** Delay utility for rate limiting */
-export function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/** Safe JSON parse */
-export function safeJsonParse<T>(json: string, fallback: T): T {
-  try {
-    return JSON.parse(json) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-/** Format time ago (e.g., "2 min ago", "1 hour ago") */
-export function timeAgo(date: string | Date): string {
-  const now = new Date();
-  const then = new Date(date);
-  const diffMs = now.getTime() - then.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
-}
-
 /** Simple transliteration map for Hindi airport search */
 const HINDI_TRANSLITERATION: Record<string, string> = {
   'दिल्ली': 'delhi',
@@ -154,14 +125,3 @@ export function fuzzyMatch(query: string, target: string): number {
   return (score / Math.max(q.length, t.length)) * 0.6;
 }
 
-/** Debounce function */
-export function debounce<T extends (...args: Parameters<T>) => ReturnType<T>>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: ReturnType<typeof setTimeout> | null = null;
-  return (...args: Parameters<T>) => {
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}
