@@ -165,36 +165,20 @@ export async function logBookingClick(route: string, airline: string, price: num
 
 export async function getPlatformStats() {
   try {
-    // Searches today
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    
-    const searchesToday = await prisma.searchHistory.count({
-      where: {
-        createdAt: {
-          gte: startOfDay
-        }
-      }
-    });
+    // We intentionally do not restrict searches to today, so the number 
+    // continually grows and represents total platform usage
+    const searchesTotal = await prisma.searchHistory.count();
 
-    // Money saved this month
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-
+    // We intentionally do not restrict savings to this month, so the number
+    // continually grows and represents total platform savings
     const savingsAgg = await prisma.bookingClick.aggregate({
-      where: {
-        createdAt: {
-          gte: startOfMonth
-        }
-      },
       _sum: {
         discountSaved: true
       }
     });
 
     return {
-      searchesToday: searchesToday || 0,
+      searchesToday: searchesTotal || 0,
       moneySavedMonth: savingsAgg._sum.discountSaved || 0
     };
   } catch (error) {

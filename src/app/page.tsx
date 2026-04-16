@@ -307,9 +307,10 @@ export default function HomePage() {
   }, []);
 
   const formatLakhs = (val: number) => {
+    if (val === 0) return "₹0";
     if (val >= 100000) return `₹${(val / 100000).toFixed(1)}L`;
     if (val >= 1000) return `₹${(val / 1000).toFixed(1)}K`;
-    return `₹${val}`;
+    return `₹${val.toFixed(0)}`;
   };
 
   return (
@@ -351,13 +352,13 @@ export default function HomePage() {
           {statsLoading ? (
             <span className="animate-pulse bg-[var(--border-strong)] w-32 h-4 rounded"></span>
           ) : (
-            <span>{stats.searchesToday.toLocaleString()} searches today</span>
+            <span>{stats.searchesToday.toLocaleString()} total searches</span>
           )}
           <span className="w-px h-3 bg-[var(--border-strong)]" />
           {statsLoading ? (
             <span className="animate-pulse bg-[var(--border-strong)] w-32 h-4 rounded"></span>
           ) : (
-            <span>{formatLakhs(stats.moneySavedMonth)} saved this month</span>
+            <span>{formatLakhs(stats.moneySavedMonth)} total savings</span>
           )}
         </motion.div>
       </section>
