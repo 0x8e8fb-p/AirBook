@@ -12,6 +12,14 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
       allowDangerousEmailAccountLinking: true,
+      profile(profile) {
+        return {
+          id: profile.sub,
+          name: profile.name,
+          email: profile.email,
+          image: profile.picture,
+        };
+      },
     }),
     CredentialsProvider({
       name: "Credentials",
@@ -51,8 +59,32 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
-    async signIn({ user, account, profile, email, credentials }) {
+    async signIn({ user, account, profile }) {
       console.log("[Auth] signIn callback:", { userEmail: user?.email, accountProvider: account?.provider });
+      
+      // If logging in with Google, ensure the user exists or is created properly
+      if (account?.provider === "google" && user.email) {
+        try {
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email }
+          });
+          
+          if (!existingUser) {
+            console.log("[Auth] Creating new user from Google profile:", user.email);
+            await prisma.user.create({
+              data: {
+                email: user.email,
+                name: user.name,
+                image: user.image,
+                emailVerified: new Date(),
+              }
+            });
+          }
+        } catch (error) {
+          console.error("[Auth] Error handling Google sign in:", error);
+          return false;
+        }
+      }
       return true;
     },
     async session({ session, token }) {

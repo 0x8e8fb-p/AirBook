@@ -3,12 +3,13 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { User as UserIcon, Wallet, Bell, LogOut, Loader2, CheckCircle2, Trash2 } from "lucide-react";
+import { User as UserIcon, Wallet, Bell, LogOut, Loader2, CheckCircle2, Trash2, KeyRound } from "lucide-react";
 import { Footer } from "@/components/layout/Footer";
 import { useUserStore } from "@/stores/user-store";
 import { syncWallet } from "@/app/actions/userActions";
 import { getAlerts, deleteAlert } from "@/app/actions/alertActions";
 import { formatPrice } from "@/lib/constants";
+import { sendPasswordResetEmail } from "@/app/actions/authActions";
 
 const BANKS = [
   { id: 'HDFC', name: 'HDFC Bank' },
@@ -45,6 +46,30 @@ function ProfileContent() {
 
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(false);
+
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState("");
+
+  const handlePasswordReset = async () => {
+    if (!session?.user?.email) return;
+    setResetLoading(true);
+    setResetError("");
+    setResetSent(false);
+
+    try {
+      const res = await sendPasswordResetEmail(session.user.email);
+      if (res.success) {
+        setResetSent(true);
+      } else {
+        setResetError(res.error || "Failed to send reset link.");
+      }
+    } catch (e) {
+      setResetError("An error occurred.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (tabParam && ["account", "wallet", "alerts"].includes(tabParam)) {
@@ -186,6 +211,37 @@ function ProfileContent() {
                       {user?.email}
                       <span className="text-[10px] bg-[var(--accent-green)]/10 text-[var(--accent-green)] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Verified</span>
                     </div>
+                  </div>
+                  <div className="pt-6 border-t border-[var(--border-default)]">
+                    <h3 className="text-sm font-semibold mb-4">Security</h3>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-[var(--radius-md)] bg-[var(--bg-subtle)] border border-[var(--border-default)]">
+                      <div>
+                        <div className="font-medium text-sm flex items-center gap-2">
+                          <KeyRound className="w-4 h-4 text-[var(--text-secondary)]" />
+                          Password
+                        </div>
+                        <div className="text-xs text-[var(--text-muted)] mt-1">Change your account password securely</div>
+                      </div>
+                      <button 
+                        onClick={handlePasswordReset}
+                        disabled={resetLoading || resetSent}
+                        className="px-4 py-2 bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm font-medium hover:bg-[var(--accent-primary-dim)] transition-colors disabled:opacity-50"
+                      >
+                        {resetLoading ? (
+                          <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Sending...</span>
+                        ) : resetSent ? (
+                          <span className="flex items-center gap-2 text-[var(--accent-green)]"><CheckCircle2 className="w-4 h-4" /> Link Sent to Email</span>
+                        ) : (
+                          "Reset Password"
+                        )}
+                      </button>
+                    </div>
+                    {resetError && <p className="text-xs text-[var(--accent-red)] mt-2">{resetError}</p>}
+                    {resetSent && !process.env.NEXT_PUBLIC_RESEND_API_KEY && (
+                      <p className="text-xs text-[var(--accent-cta)] mt-2 p-2 bg-[var(--accent-cta)]/10 rounded">
+                        <strong>Developer Note:</strong> Check your terminal logs for the password reset link since no Resend API key is configured.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
