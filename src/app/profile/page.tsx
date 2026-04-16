@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { User as UserIcon, Wallet, Bell, LogOut, Loader2, CheckCircle2, Trash2 } from "lucide-react";
 import { Footer } from "@/components/layout/Footer";
 import { useUserStore } from "@/stores/user-store";
@@ -32,10 +32,12 @@ const BANKS = [
   { id: 'MOBIKWIK', name: 'MobiKwik' },
 ];
 
-export default function ProfilePage() {
+function ProfileContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"account" | "wallet" | "alerts">("account");
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab') as "account" | "wallet" | "alerts" | null;
+  const [activeTab, setActiveTab] = useState<"account" | "wallet" | "alerts">(tabParam || "account");
   
   const { ownedCards, toggleCard } = useUserStore();
   const [isSaving, setIsSaving] = useState(false);
@@ -43,6 +45,12 @@ export default function ProfilePage() {
 
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(false);
+
+  useEffect(() => {
+    if (tabParam && ["account", "wallet", "alerts"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -63,6 +71,11 @@ export default function ProfilePage() {
   const handleDeleteAlert = async (id: string) => {
     await deleteAlert(id);
     setAlerts(alerts.filter(a => a.id !== id));
+  };
+
+  const handleTabChange = (tab: "account" | "wallet" | "alerts") => {
+    setActiveTab(tab);
+    router.replace(`/profile?tab=${tab}`, { scroll: false });
   };
 
   const handleSaveWallet = async () => {
@@ -111,7 +124,7 @@ export default function ProfilePage() {
           <div className="w-full lg:w-64 shrink-0">
             <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] p-2 shadow-sm flex flex-col gap-1">
               <button
-                onClick={() => setActiveTab("account")}
+                onClick={() => handleTabChange("account")}
                 className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] text-sm font-medium transition-colors text-left ${
                   activeTab === "account" ? "bg-[var(--accent-primary-dim)] text-[var(--text-primary)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
                 }`}
@@ -119,7 +132,7 @@ export default function ProfilePage() {
                 <UserIcon className="w-4 h-4" /> Account Details
               </button>
               <button
-                onClick={() => setActiveTab("wallet")}
+                onClick={() => handleTabChange("wallet")}
                 className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] text-sm font-medium transition-colors text-left ${
                   activeTab === "wallet" ? "bg-[var(--accent-primary-dim)] text-[var(--text-primary)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
                 }`}
@@ -127,7 +140,7 @@ export default function ProfilePage() {
                 <Wallet className="w-4 h-4" /> My Wallet
               </button>
               <button
-                onClick={() => setActiveTab("alerts")}
+                onClick={() => handleTabChange("alerts")}
                 className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] text-sm font-medium transition-colors text-left ${
                   activeTab === "alerts" ? "bg-[var(--accent-primary-dim)] text-[var(--text-primary)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
                 }`}
@@ -273,5 +286,17 @@ export default function ProfilePage() {
       
       <Footer />
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[80dvh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-cta)]" />
+      </div>
+    }>
+      <ProfileContent />
+    </Suspense>
   );
 }

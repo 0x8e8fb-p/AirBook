@@ -10,7 +10,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
-  { href: "/profile", label: "Alerts" },
+  { href: "/profile?tab=alerts", label: "Alerts" },
 ];
 
 export function Navbar() {
@@ -46,7 +46,7 @@ export function Navbar() {
 
           <div className="hidden md:flex items-center gap-0.5">
             {NAV_LINKS.map((link) => {
-              const active = pathname === link.href;
+              const active = pathname === (link.href.split('?')[0]);
               return (
                 <Link
                   key={link.href}
@@ -122,19 +122,19 @@ export function Navbar() {
           >
           <div className="flex flex-col items-center justify-center h-[calc(100vh-3.5rem)] gap-8 pb-10">
             {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                prefetch
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  "text-2xl font-semibold transition-colors",
-                  pathname === link.href ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  prefetch
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    "text-2xl font-semibold transition-colors",
+                    pathname === (link.href.split('?')[0]) ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))}
             
             {status === "loading" ? null : user ? (
               <>
