@@ -57,15 +57,15 @@
 
 html[data-theme="matte"],
 [data-theme="matte"] {
-  --bg-base:        #121212;
-  --bg-subtle:      #1A1A1A;
-  --bg-elevated:    #242424;
-  --bg-overlay:     #2A2A2A;
+  --bg-base:        #0A0A0A;
+  --bg-subtle:      #121212;
+  --bg-elevated:    #1A1A1A;
+  --bg-overlay:     #222222;
 
-  --border-default: rgba(255, 255, 255, 0.08);
-  --border-muted:   rgba(255, 255, 255, 0.05);
-  --border-strong:  rgba(255, 255, 255, 0.15);
-  --border-focus:   rgba(255, 255, 255, 0.30);
+  --border-default: rgba(255, 255, 255, 0.06);
+  --border-muted:   rgba(255, 255, 255, 0.04);
+  --border-strong:  rgba(255, 255, 255, 0.12);
+  --border-focus:   rgba(255, 255, 255, 0.25);
 
   --accent-primary:     #E4E4E7;
   --accent-primary-dim: rgba(228, 228, 231, 0.08);
