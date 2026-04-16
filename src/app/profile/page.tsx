@@ -247,8 +247,8 @@ function ProfileContent() {
     
     if (!userId) return;
     
-    const input = prompt(`To confirm deletion, please type your username (${userUsername || user.email}):`);
-    if (input && (input.toLowerCase() === userUsername?.toLowerCase() || input.toLowerCase() === user.email?.toLowerCase())) {
+    const input = prompt(`To confirm deletion, please type your username (${userUsername || user?.email}):`);
+    if (input && (input.toLowerCase() === userUsername?.toLowerCase() || input.toLowerCase() === user?.email?.toLowerCase())) {
       setIsDeleting(true);
       const res = await deleteAccount(userId);
       if (res.success) {
