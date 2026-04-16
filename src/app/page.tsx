@@ -352,13 +352,13 @@ export default function HomePage() {
           {statsLoading ? (
             <span className="animate-pulse bg-[var(--border-strong)] w-32 h-4 rounded"></span>
           ) : (
-            <span>{stats.searchesToday.toLocaleString()} total searches</span>
+            <span>{stats.searchesToday.toLocaleString()} live searches lifetime</span>
           )}
           <span className="w-px h-3 bg-[var(--border-strong)]" />
           {statsLoading ? (
             <span className="animate-pulse bg-[var(--border-strong)] w-32 h-4 rounded"></span>
           ) : (
-            <span>{formatLakhs(stats.moneySavedMonth)} total savings</span>
+            <span>{formatLakhs(stats.moneySavedMonth)} total savings lifetime</span>
           )}
         </motion.div>
       </section>
