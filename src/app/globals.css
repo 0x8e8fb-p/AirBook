@@ -1,5 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 @import "../styles/tokens.css";
+
+@layer base {
+  :root {
+    --font-body: 'Dubai', 'Outfit', system-ui, -apple-system, sans-serif;
+  }
+}
 
 @theme {
   --color-bg-base: var(--bg-base);
@@ -43,7 +50,7 @@ html[data-theme="matte"] body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-weight: 600;
   letter-spacing: -0.02em;
 }

@@ -26,7 +26,7 @@ export function Navbar() {
         <nav className="container-app flex items-center justify-between h-14" aria-label="Main navigation">
           <Link href="/" className="flex items-center gap-2 group" aria-label="AirBook Home">
             <Plane className="w-4 h-4 text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors" />
-            <span className="text-[15px] font-semibold tracking-tight">AirBook</span>
+            <span className="text-[15px] font-semibold tracking-tight" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>AirBook</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-0.5">

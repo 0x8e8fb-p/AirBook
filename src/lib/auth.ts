@@ -24,7 +24,7 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "email", placeholder: "jsmith@example.com" },
+        email: { label: "Email or Mobile", type: "text", placeholder: "Email or Mobile Number" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
@@ -32,11 +32,18 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Missing credentials");
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email.toLowerCase() }
+        const identifier = credentials.email.toLowerCase();
+
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: identifier },
+              { mobile: identifier },
+            ]
+          }
         });
 
-        console.log("[Auth] User found:", user?.email);
+        console.log("[Auth] User found:", user?.email || user?.mobile);
 
         if (!user || !user.password) {
           console.error("[Auth] No user found or no password hash");
@@ -70,6 +77,21 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user && token.sub) {
         (session.user as any).id = token.sub;
+        
+        // Fetch fresh user data so session always has latest username/mobile/dob
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.sub },
+            select: { username: true, mobile: true, dob: true }
+          });
+          if (dbUser) {
+            (session.user as any).username = dbUser.username;
+            (session.user as any).mobile = dbUser.mobile;
+            (session.user as any).dob = dbUser.dob;
+          }
+        } catch (e) {
+          console.error("Error fetching session user details:", e);
+        }
       }
       return session;
     },

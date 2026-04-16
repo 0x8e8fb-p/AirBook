@@ -10,7 +10,9 @@ import { signIn } from "next-auth/react";
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -24,7 +26,9 @@ export default function RegisterPage() {
 
     const formData = new FormData();
     formData.append("name", name);
+    formData.append("username", username);
     formData.append("email", email);
+    formData.append("mobile", mobile);
     formData.append("password", password);
 
     const res = await registerUser(formData);
@@ -86,6 +90,30 @@ export default function RegisterPage() {
                 required
                 className="w-full px-4 py-2.5 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] focus:outline-none focus:border-[var(--accent-cta)] transition-colors"
                 placeholder="John Doe"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Unique Username</label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="w-full px-4 py-2.5 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] focus:outline-none focus:border-[var(--accent-cta)] transition-colors"
+                placeholder="johndoe123"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Mobile Number</label>
+              <input
+                type="tel"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                required
+                className="w-full px-4 py-2.5 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] focus:outline-none focus:border-[var(--accent-cta)] transition-colors"
+                placeholder="9876543210"
               />
             </div>
             

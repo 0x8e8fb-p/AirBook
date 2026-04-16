@@ -9,10 +9,12 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function registerUser(formData: FormData) {
   const name = formData.get("name") as string;
+  const username = formData.get("username") as string;
   const email = formData.get("email") as string;
+  const mobile = formData.get("mobile") as string;
   const password = formData.get("password") as string;
 
-  if (!name || !email || !password) {
+  if (!name || !username || !email || !mobile || !password) {
     return { success: false, error: "All fields are required" };
   }
 
@@ -21,12 +23,25 @@ export async function registerUser(formData: FormData) {
   }
 
   try {
-    const existingUser = await prisma.user.findUnique({
+    const existingEmail = await prisma.user.findUnique({
       where: { email: email.toLowerCase() }
     });
-
-    if (existingUser) {
+    if (existingEmail) {
       return { success: false, error: "An account with this email already exists" };
+    }
+
+    const existingUsername = await prisma.user.findUnique({
+      where: { username: username.toLowerCase() }
+    });
+    if (existingUsername) {
+      return { success: false, error: "This username is already taken" };
+    }
+
+    const existingMobile = await prisma.user.findUnique({
+      where: { mobile }
+    });
+    if (existingMobile) {
+      return { success: false, error: "This mobile number is already registered" };
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -36,7 +51,9 @@ export async function registerUser(formData: FormData) {
     const user = await prisma.user.create({
       data: {
         name,
+        username: username.toLowerCase(),
         email: email.toLowerCase(),
+        mobile,
         password: hashedPassword,
       }
     });
@@ -176,6 +193,52 @@ export async function verifyEmail(formData: FormData) {
   } catch (error: any) {
     console.error("[Auth] Verify email error:", error);
     return { success: false, error: "Failed to verify email" };
+  }
+}
+
+export async function updateProfile(userId: string, formData: FormData) {
+  if (!userId) return { success: false, error: "Not authenticated" };
+
+  const name = formData.get("name") as string;
+  const username = formData.get("username") as string;
+  const mobile = formData.get("mobile") as string;
+  const dobString = formData.get("dob") as string;
+
+  try {
+    // Check uniqueness for username and mobile
+    if (username) {
+      const existingUser = await prisma.user.findFirst({
+        where: { username: username.toLowerCase(), NOT: { id: userId } }
+      });
+      if (existingUser) return { success: false, error: "Username is already taken" };
+    }
+
+    if (mobile) {
+      const existingUser = await prisma.user.findFirst({
+        where: { mobile, NOT: { id: userId } }
+      });
+      if (existingUser) return { success: false, error: "Mobile number is already registered" };
+    }
+
+    let dob: Date | null = null;
+    if (dobString) {
+      dob = new Date(dobString);
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name,
+        username: username ? username.toLowerCase() : null,
+        mobile,
+        dob
+      }
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("[Auth] Update profile error:", error);
+    return { success: false, error: "Failed to update profile" };
   }
 }
 

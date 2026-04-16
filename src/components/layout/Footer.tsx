@@ -23,7 +23,7 @@ export function Footer() {
       <div className="container-app py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           <div className="col-span-2 md:col-span-1">
-            <span className="text-sm font-semibold">AirBook</span>
+            <span className="text-sm font-semibold" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>AirBook</span>
             <p className="text-xs text-[var(--text-muted)] mt-2 leading-relaxed max-w-[180px]">
               Find the cheapest flights. Track prices.
             </p>

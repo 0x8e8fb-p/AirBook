@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
 }
 
 datasource db {
@@ -66,7 +66,10 @@ model Session {
 model User {
   id            String    @id @default(cuid())
   name          String?
+  username      String?   @unique
   email         String?   @unique
+  mobile        String?   @unique
+  dob           DateTime?
   emailVerified DateTime?
   password      String?   // New field for email/password credentials login
   image         String?
@@ -98,16 +101,18 @@ model SearchHistory {
   origin        String
   destination   String
   departureDate DateTime
-  adults        Int      @default(1)
-  cabinClass    String   @default("economy")
-  searchedAt    DateTime @default(now())
+  returnDate    DateTime?
+  passengers    Int      @default(1)
+  adults        Int?     @default(1)
+  cabinClass    String?
+  createdAt     DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
   identifier String
-  token      String   @unique
+  token      String
   expires    DateTime
 
   @@unique([identifier, token])

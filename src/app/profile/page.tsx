@@ -3,13 +3,13 @@
 import { useEffect, useState, Suspense, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { User as UserIcon, Wallet, Bell, LogOut, Loader2, CheckCircle2, Trash2, KeyRound, Camera } from "lucide-react";
+import { User as UserIcon, Wallet, Bell, LogOut, Loader2, CheckCircle2, Trash2, KeyRound, Camera, Edit2, Save } from "lucide-react";
 import { Footer } from "@/components/layout/Footer";
 import { useUserStore } from "@/stores/user-store";
 import { syncWallet } from "@/app/actions/userActions";
 import { getAlerts, deleteAlert, createAlert } from "@/app/actions/alertActions";
 import { formatPrice } from "@/lib/constants";
-import { sendPasswordResetEmail, deleteAccount, updateProfileImage } from "@/app/actions/authActions";
+import { sendPasswordResetEmail, deleteAccount, updateProfileImage, updateProfile } from "@/app/actions/authActions";
 
 const BANKS = [
   { id: 'HDFC', name: 'HDFC Bank' },
@@ -57,7 +57,51 @@ function ProfileContent() {
   
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  
+  const [editForm, setEditForm] = useState({
+    name: "",
+    username: "",
+    mobile: "",
+    dob: ""
+  });
+  
+  useEffect(() => {
+    if (user) {
+      setEditForm({
+        name: user.name || "",
+        username: (user as any).username || "",
+        mobile: (user as any).mobile || "",
+        dob: (user as any).dob ? new Date((user as any).dob).toISOString().split('T')[0] : ""
+      });
+    }
+  }, [user]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.id) return;
+    setIsSavingProfile(true);
+    setProfileError("");
+
+    const formData = new FormData();
+    formData.append("name", editForm.name);
+    formData.append("username", editForm.username);
+    formData.append("mobile", editForm.mobile);
+    formData.append("dob", editForm.dob);
+
+    const res = await updateProfile(user.id, formData);
+    if (res.success) {
+      setIsEditingProfile(false);
+      window.location.reload(); // Refresh to update session
+    } else {
+      setProfileError(res.error || "Failed to update profile");
+    }
+    setIsSavingProfile(false);
+  };
 
   const handlePasswordReset = async () => {
     if (!session?.user?.email) return;
@@ -200,8 +244,12 @@ function ProfileContent() {
 
   const handleDeleteAccount = async () => {
     const userId = (user as any)?.id;
+    const userUsername = (user as any)?.username;
+    
     if (!userId) return;
-    if (confirm("Are you sure you want to completely delete your account? This action cannot be undone.")) {
+    
+    const input = prompt(`To confirm deletion, please type your username (${userUsername || user.email}):`);
+    if (input && (input.toLowerCase() === userUsername?.toLowerCase() || input.toLowerCase() === user.email?.toLowerCase())) {
       setIsDeleting(true);
       const res = await deleteAccount(userId);
       if (res.success) {
@@ -210,6 +258,8 @@ function ProfileContent() {
         alert(res.error || "Failed to delete account");
         setIsDeleting(false);
       }
+    } else if (input !== null) {
+      alert("Username did not match. Account deletion cancelled.");
     }
   };
 
@@ -300,22 +350,133 @@ function ProfileContent() {
           <div className="flex-1">
             
             {activeTab === "account" && (
-              <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] p-6 shadow-sm">
-                <h2 className="text-xl font-bold mb-6">Account Details</h2>
+              <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] p-6 shadow-sm relative">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold">Account Details</h2>
+                  {!isEditingProfile && (
+                    <button 
+                      onClick={() => setIsEditingProfile(true)}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] transition-colors"
+                    >
+                      <Edit2 className="w-4 h-4" /> Edit Profile
+                    </button>
+                  )}
+                </div>
+
+                {profileError && (
+                  <div className="mb-6 p-3 rounded-[var(--radius-md)] bg-[var(--accent-red)]/10 border border-[var(--accent-red)]/20 text-[var(--accent-red)] text-sm">
+                    {profileError}
+                  </div>
+                )}
+
                 <div className="space-y-6 max-w-md">
-                  <div>
-                    <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">Full Name</label>
-                    <div className="px-4 py-3 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] font-medium">
-                      {user?.name}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">Email Address</label>
-                    <div className="px-4 py-3 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] font-medium flex items-center justify-between">
-                      {user?.email}
-                      <span className="text-[10px] bg-[var(--accent-green)]/10 text-[var(--accent-green)] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Verified</span>
-                    </div>
-                  </div>
+                  {isEditingProfile ? (
+                    <form id="profile-form" onSubmit={handleSaveProfile} className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">Full Name</label>
+                        <input
+                          type="text"
+                          value={editForm.name}
+                          onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                          className="w-full px-4 py-2.5 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] focus:outline-none focus:border-[var(--accent-cta)] transition-colors"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">Username</label>
+                        <input
+                          type="text"
+                          value={editForm.username}
+                          onChange={(e) => setEditForm({...editForm, username: e.target.value})}
+                          className="w-full px-4 py-2.5 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] focus:outline-none focus:border-[var(--accent-cta)] transition-colors"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">Mobile Number</label>
+                        <input
+                          type="tel"
+                          value={editForm.mobile}
+                          onChange={(e) => setEditForm({...editForm, mobile: e.target.value})}
+                          className="w-full px-4 py-2.5 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] focus:outline-none focus:border-[var(--accent-cta)] transition-colors"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">Date of Birth</label>
+                        <input
+                          type="date"
+                          value={editForm.dob}
+                          onChange={(e) => setEditForm({...editForm, dob: e.target.value})}
+                          className="w-full px-4 py-2.5 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] focus:outline-none focus:border-[var(--accent-cta)] transition-colors [color-scheme:dark]"
+                        />
+                      </div>
+
+                      <div className="pt-4 flex items-center gap-3">
+                        <button
+                          type="submit"
+                          disabled={isSavingProfile}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--text-primary)] text-[var(--bg-base)] rounded-[var(--radius-md)] font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                        >
+                          {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                          Save Changes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditingProfile(false);
+                            setProfileError("");
+                            // Revert form state
+                            if (user) {
+                              setEditForm({
+                                name: user.name || "",
+                                username: (user as any).username || "",
+                                mobile: (user as any).mobile || "",
+                                dob: (user as any).dob ? new Date((user as any).dob).toISOString().split('T')[0] : ""
+                              });
+                            }
+                          }}
+                          disabled={isSavingProfile}
+                          className="flex-1 px-4 py-2.5 bg-[var(--bg-subtle)] border border-[var(--border-default)] text-[var(--text-primary)] rounded-[var(--radius-md)] font-medium hover:bg-[var(--accent-primary-dim)] transition-colors disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">Full Name</label>
+                        <div className="px-4 py-3 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] font-medium">
+                          {user?.name || "Not set"}
+                        </div>
+                      </div>
+                      <div className="flex gap-4">
+                        <div className="flex-1">
+                          <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">Username</label>
+                          <div className="px-4 py-3 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] font-medium">
+                            {(user as any)?.username || "Not set"}
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">DOB</label>
+                          <div className="px-4 py-3 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] font-medium">
+                            {(user as any)?.dob ? new Date((user as any).dob).toLocaleDateString() : "Not set"}
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">Mobile Number</label>
+                        <div className="px-4 py-3 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] font-medium">
+                          {(user as any)?.mobile || "Not set"}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">Email Address</label>
+                        <div className="px-4 py-3 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] font-medium flex items-center justify-between">
+                          {user?.email}
+                          <span className="text-[10px] bg-[var(--accent-green)]/10 text-[var(--accent-green)] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Verified</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                   <div className="pt-6 border-t border-[var(--border-default)]">
                     <h3 className="text-sm font-semibold mb-4">Security</h3>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-[var(--radius-md)] bg-[var(--bg-subtle)] border border-[var(--border-default)]">
