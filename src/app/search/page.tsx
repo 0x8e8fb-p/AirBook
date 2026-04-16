@@ -537,7 +537,7 @@ function SearchContent() {
           setAllFlights(results || []);
           setFilteredFlights(results || []);
           
-          // Log the search quietly
+          // Log the search quietly based on the number of flights returned
           logSearchAction(from, to, date, results?.length || 1).catch(e => console.error(e));
         }
       } catch (err) { 

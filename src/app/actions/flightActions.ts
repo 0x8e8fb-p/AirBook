@@ -76,6 +76,9 @@ export async function getAndTrackFlights(origin: string, destination: string, da
       pricing: calculateBestEffectivePrice(flight.basePriceINR, userCards)
     }));
 
+    // Log the search action here since this is where flights are successfully fetched
+    logSearchAction(origin, destination, dateString, enrichedFlights.length).catch(e => console.error("Error logging search from getAndTrackFlights:", e));
+
     // 3. Find the lowest effective price from this batch
     const lowestFlight = enrichedFlights.reduce((prev, current) => 
       (prev.pricing.effectivePrice < current.pricing.effectivePrice) ? prev : current
@@ -132,12 +135,20 @@ export async function getAndTrackFlights(origin: string, destination: string, da
 
 export async function logSearchAction(origin: string, destination: string, dateString: string, count: number) {
   try {
-    const session = await getServerSession(authOptions);
+    let userId = null;
+    try {
+      const session = await getServerSession(authOptions);
+      if (session?.user && (session.user as any).id) {
+        userId = (session.user as any).id;
+      }
+    } catch (e) {
+      console.log("Could not get session in logSearchAction, proceeding anonymously");
+    }
     
     // We create multiple records at once based on the count of flights returned
     // This makes the "searches" number go up quickly by the number of flights found
     const records = Array.from({ length: Math.max(1, count) }).map(() => ({
-      userId: session?.user ? (session.user as any).id : null,
+      userId,
       origin,
       destination,
       departureDate: new Date(dateString)
@@ -157,10 +168,19 @@ export async function logSearchAction(origin: string, destination: string, dateS
 
 export async function logBookingClick(route: string, airline: string, price: number, discountSaved: number) {
   try {
-    const session = await getServerSession(authOptions);
+    let userId = null;
+    try {
+      const session = await getServerSession(authOptions);
+      if (session?.user && (session.user as any).id) {
+        userId = (session.user as any).id;
+      }
+    } catch (e) {
+      console.log("Could not get session in logBookingClick, proceeding anonymously");
+    }
+
     await prisma.bookingClick.create({
       data: {
-        userId: session?.user ? (session.user as any).id : null,
+        userId,
         route,
         airline,
         price,
