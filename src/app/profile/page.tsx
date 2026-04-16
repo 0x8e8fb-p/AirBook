@@ -35,6 +35,7 @@ const BANKS = [
 
 function ProfileContent() {
   const { data: session, status } = useSession();
+  const user = session?.user;
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab') as "account" | "wallet" | "alerts" | null;
@@ -184,8 +185,6 @@ function ProfileContent() {
       </div>
     );
   }
-
-  const user = session?.user;
 
   const handleTabChange = (tab: "account" | "wallet" | "alerts") => {
     setActiveTab(tab);
