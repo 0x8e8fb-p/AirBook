@@ -154,6 +154,13 @@ function SearchPanel() {
   };
 
   const totalTravellers = adults + childCount + infants;
+  const [isSwapping, setIsSwapping] = useState(false);
+
+  const handleSwap = () => {
+    setIsSwapping(true);
+    swapAirports();
+    setTimeout(() => setIsSwapping(false), 300); // Reset animation state
+  };
 
   return (
     <div className="bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-xl)] p-6 md:p-8 w-full max-w-4xl mx-auto">
@@ -163,11 +170,30 @@ function SearchPanel() {
 
         <div className="flex items-center justify-center md:px-4 z-10">
           <button
-            onClick={swapAirports}
-            className="w-8 h-8 rounded-full border border-[var(--border-strong)] bg-[var(--bg-base)] flex items-center justify-center shrink-0 hover:bg-[var(--bg-elevated)] transition-colors active:scale-95"
+            onClick={handleSwap}
+            className="w-8 h-8 rounded-full border border-[var(--border-strong)] bg-[var(--bg-base)] flex items-center justify-center shrink-0 hover:bg-[var(--bg-elevated)] transition-colors active:scale-95 group overflow-hidden relative"
             aria-label="Swap airports"
           >
-            <ArrowRightLeft className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+            <motion.div
+              animate={{ rotate: isSwapping ? 180 : 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="relative flex items-center justify-center"
+            >
+              <ArrowRightLeft className={`w-3.5 h-3.5 text-[var(--text-muted)] transition-colors group-hover:text-[var(--text-primary)] ${isSwapping ? 'opacity-50' : 'opacity-100'}`} />
+            </motion.div>
+            
+            {/* Ripple effect on click */}
+            <AnimatePresence>
+              {isSwapping && (
+                <motion.span
+                  initial={{ scale: 0, opacity: 0.5 }}
+                  animate={{ scale: 2, opacity: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="absolute inset-0 bg-[var(--accent-cta)] rounded-full pointer-events-none"
+                />
+              )}
+            </AnimatePresence>
           </button>
         </div>
 

@@ -145,13 +145,18 @@ export async function logSearchAction(origin: string, destination: string, dateS
       console.log("Could not get session in logSearchAction, proceeding anonymously");
     }
     
+    let parsedDate = new Date(dateString);
+    if (isNaN(parsedDate.getTime())) {
+      parsedDate = new Date(); // fallback to today if invalid
+    }
+    
     // Create one record in SearchHistory to represent the user's search
     await prisma.searchHistory.create({
       data: {
         userId,
         origin,
         destination,
-        departureDate: new Date(dateString)
+        departureDate: parsedDate
       }
     });
 

@@ -537,8 +537,12 @@ function SearchContent() {
           setAllFlights(results || []);
           setFilteredFlights(results || []);
           
-          // Log the search quietly based on the number of flights returned
-          logSearchAction(from, to, date, results?.length || 1).catch(e => console.error(e));
+          // Await the server action so it doesn't get cancelled by the browser
+          try {
+            await logSearchAction(from, to, date, results?.length || 1);
+          } catch (e) {
+            console.error("Failed to log search:", e);
+          }
         }
       } catch (err) { 
         if (isMounted) setError(err instanceof Error ? err.message : "Something went wrong."); 
