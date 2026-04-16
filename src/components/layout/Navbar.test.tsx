@@ -90,4 +90,15 @@ describe("Navbar", () => {
     render(<Navbar initialUser={null} />);
     expect(screen.getAllByText("Sign In").length).toBeGreaterThan(0);
   });
+
+  it("updates from Sign In to Profile when initialUser changes", () => {
+    const initialUser = { id: "u1", email: "a@b.com" } as unknown as User;
+    const view = render(<Navbar initialUser={null} />);
+
+    expect(screen.getAllByText("Sign In").length).toBeGreaterThan(0);
+
+    view.rerender(<Navbar initialUser={initialUser} />);
+
+    expect(screen.getByText("Profile")).toBeInTheDocument();
+  });
 });

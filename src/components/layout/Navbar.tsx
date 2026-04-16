@@ -21,6 +21,11 @@ export function Navbar({ initialUser }: { initialUser?: User | null }) {
   const [user, setUser] = useState<User | null>(initialUser ?? null);
 
   useEffect(() => {
+    if (initialUser === undefined) return;
+    setUser(initialUser);
+  }, [initialUser]);
+
+  useEffect(() => {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return;
     const supabase = createClient();
     let active = true;
