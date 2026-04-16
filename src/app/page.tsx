@@ -298,10 +298,9 @@ export default function HomePage() {
 
   useEffect(() => {
     getPlatformStats().then(data => {
-      // Provide a nice base number if it's too low, to look good, or just use real
       setStats({
-        searchesToday: data.searchesToday > 10 ? data.searchesToday : data.searchesToday + 12340,
-        moneySavedMonth: data.moneySavedMonth > 0 ? data.moneySavedMonth : data.moneySavedMonth + 8200000
+        searchesToday: data.searchesToday,
+        moneySavedMonth: data.moneySavedMonth
       });
       setStatsLoading(false);
     });
