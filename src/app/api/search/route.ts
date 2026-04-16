@@ -1,63 +1,46 @@
-// ============================================
-// AirBook — Flight Search API Route
-// ============================================
-
 import { NextResponse } from 'next/server';
-import { orchestrateSearch } from '@/lib/api/search-orchestrator';
-import { searchParamsSchema } from '@/lib/validators';
-import type { SearchParams } from '@/lib/types';
+import { prisma } from '@/lib/prisma';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 
-export const runtime = 'nodejs';
-export const maxDuration = 20; // seconds
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const origin = searchParams.get('origin');
+  const destination = searchParams.get('destination');
+  const date = searchParams.get('date');
+  const adults = parseInt(searchParams.get('adults') || '1', 10);
+  const cabin = searchParams.get('cabin') || 'economy';
 
-export async function POST(request: Request) {
+  if (!origin || !destination || !date) {
+    return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
+  }
+
   try {
-    const body = await request.json();
-
-    // Validate input
-    const parsed = searchParamsSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Invalid search parameters', details: parsed.error.flatten() },
-        { status: 400 }
-      );
+    const session = await getServerSession(authOptions);
+    if (session?.user && (session.user as any).id) {
+      await prisma.searchHistory.create({
+        data: {
+          userId: (session.user as any).id,
+          origin,
+          destination,
+          departureDate: new Date(date),
+          adults,
+          cabinClass: cabin
+        }
+      }).catch(err => console.error("Failed to log search history", err));
     }
 
-    const params: SearchParams = parsed.data;
-
-    // Execute parallel search
-    const results = await orchestrateSearch(params);
-
-    // [New] Persistence: Log search history if user is authenticated
-    try {
-      const { createClient } = await import('@/utils/supabase/server');
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user) {
-        await supabase.from('search_history').insert({
-          user_id: user.id,
-          origin: params.origin,
-          destination: params.destination,
-          departure_date: params.departureDate,
-          cabin_class: params.cabinClass
-        });
-      }
-    } catch (dbError) {
-      // Fail silently for DB logging to not block search results
-      console.error('[Search API] Logging error:', dbError);
-    }
-
-    return NextResponse.json(results, {
-      headers: {
-        'Cache-Control': 'private, max-age=900', // 15 min cache
-      },
+    // Since we now do actual searching via Server Actions (flightActions.ts),
+    // this API route is mainly for backward compatibility or simple history logging.
+    // For a real integration, we'd trigger the background search here or return a job ID.
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Search logged successfully. Note: Actual scraping is handled by Server Actions.' 
     });
+
   } catch (error) {
-    console.error('[Search API] Error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error during flight search' },
-      { status: 500 }
-    );
+    console.error('Search API Error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

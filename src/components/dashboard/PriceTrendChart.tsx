@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
-import { TrendingDown, TrendingUp, Minus } from "lucide-react";
+import { TrendingDown, TrendingUp, Minus, Bell, CheckCircle2, Loader2 } from "lucide-react";
 import { formatPrice } from "@/lib/constants";
+import { createAlert } from "@/app/actions/alertActions";
+import { useSession } from "next-auth/react";
+import { motion } from "framer-motion";
 
 interface PriceHistory {
   id: string;
@@ -15,8 +18,11 @@ interface PriceHistory {
 }
 
 export function PriceTrendChart({ origin, destination, date }: { origin: string, destination: string, date: string }) {
+  const { data: session } = useSession();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creatingAlert, setCreatingAlert] = useState(false);
+  const [alertSuccess, setAlertSuccess] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -55,8 +61,31 @@ export function PriceTrendChart({ origin, destination, date }: { origin: string,
   const isDrop = diff < 0;
   const isRise = diff > 0;
 
+  const handleCreateAlert = async () => {
+    if (!session?.user) {
+      alert("Please sign in to create price alerts.");
+      return;
+    }
+    setCreatingAlert(true);
+    // Target price is 5% lower than current lowest
+    const targetPrice = Math.floor(lastPrice * 0.95);
+    const res = await createAlert(origin, destination, targetPrice);
+    setCreatingAlert(false);
+    if (res.success) {
+      setAlertSuccess(true);
+      setTimeout(() => setAlertSuccess(false), 3000);
+    } else {
+      alert("Failed to create alert.");
+    }
+  };
+
   return (
-    <div className="bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-lg)] p-5 mb-6">
+    <motion.div 
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+      className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-lg)] p-5 mb-6 shadow-sm"
+    >
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-semibold flex items-center gap-2">
@@ -67,9 +96,24 @@ export function PriceTrendChart({ origin, destination, date }: { origin: string,
           </h3>
           <p className="text-[11px] text-[var(--text-muted)] mt-0.5">Historical lowest prices for this route and date.</p>
         </div>
-        <div className="text-right">
+        <div className="text-right flex flex-col items-end">
           <div className="text-xs text-[var(--text-muted)]">Current Lowest</div>
-          <div className="font-mono-price font-semibold">{formatPrice(lastPrice)}</div>
+          <div className="font-mono-price font-semibold mb-2">{formatPrice(lastPrice)}</div>
+          
+          {session?.user && (
+            <button 
+              onClick={handleCreateAlert}
+              disabled={creatingAlert || alertSuccess}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-[var(--radius-sm)] transition-colors ${
+                alertSuccess 
+                  ? "bg-[var(--accent-green)]/10 text-[var(--accent-green)]" 
+                  : "bg-[var(--bg-base)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--accent-cta)] hover:text-[var(--accent-cta)]"
+              }`}
+            >
+              {creatingAlert ? <Loader2 className="w-3 h-3 animate-spin" /> : alertSuccess ? <CheckCircle2 className="w-3 h-3" /> : <Bell className="w-3 h-3" />}
+              {alertSuccess ? "Alert Set" : "Alert me if it drops"}
+            </button>
+          )}
         </div>
       </div>
       
@@ -94,7 +138,7 @@ export function PriceTrendChart({ origin, destination, date }: { origin: string,
             <Tooltip 
               contentStyle={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-strong)', borderRadius: 'var(--radius-md)', fontSize: '12px' }}
               itemStyle={{ color: 'var(--text-primary)', fontWeight: 600 }}
-              formatter={(value: number) => [formatPrice(value), 'Price']}
+              formatter={(value: any) => [formatPrice(Number(value)), 'Price']}
               labelStyle={{ color: 'var(--text-muted)', marginBottom: '4px', fontSize: '10px' }}
             />
             <Area 
@@ -108,6 +152,6 @@ export function PriceTrendChart({ origin, destination, date }: { origin: string,
           </AreaChart>
         </ResponsiveContainer>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Plane, Menu, X, User as UserIcon, LogIn, LogOut } from "lucide-react";
 import { signIn, signOut, useSession } from "next-auth/react";
@@ -112,13 +112,15 @@ export function Navbar() {
         </nav>
       </motion.header>
 
-      {mobileOpen && (
-        <motion.div
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 z-40 bg-[var(--bg-base)] md:hidden"
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-40 bg-[var(--bg-base)] md:hidden pt-14"
         >
-          <div className="flex flex-col items-center justify-center h-full gap-8">
+          <div className="flex flex-col items-center justify-center h-[calc(100vh-3.5rem)] gap-8 pb-10">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
@@ -163,7 +165,8 @@ export function Navbar() {
             )}
           </div>
         </motion.div>
-      )}
+        )}
+      </AnimatePresence>
     </>
   );
 }

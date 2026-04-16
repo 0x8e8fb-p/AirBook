@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAndTrackFlights } from '@/app/actions/flightActions';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY || 're_mock');
 
 const POPULAR_ROUTES = [
   { origin: 'DEL', destination: 'BOM' },
@@ -35,11 +38,53 @@ export async function GET(request: Request) {
           console.log(`[Cron] Tracking ${route.origin}-${route.destination} for ${dateStr}`);
           // getAndTrackFlights handles the DB logging internally
           const flights = await getAndTrackFlights(route.origin, route.destination, dateStr);
+          const lowestPrice = flights.length > 0 ? Math.min(...flights.map(f => f.pricing.effectivePrice)) : null;
+
+          if (lowestPrice) {
+            // Check for any active alerts for this route that match the lowest price
+            const activeAlerts = await prisma.priceAlert.findMany({
+              where: {
+                origin: route.origin,
+                destination: route.destination,
+                active: true,
+                targetPrice: { gte: lowestPrice },
+                OR: [
+                  { lastNotified: null },
+                  { lastNotified: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } } // Only notify once per 24h
+                ]
+              },
+              include: { user: true }
+            });
+
+            for (const alert of activeAlerts) {
+              if (alert.user.email) {
+                console.log(`[Cron] Sending price drop alert to ${alert.user.email} for ${route.origin}-${route.destination}`);
+                try {
+                  if (process.env.RESEND_API_KEY) {
+                    await resend.emails.send({
+                      from: 'AirBook Alerts <alerts@updates.airbook.com>',
+                      to: alert.user.email,
+                      subject: `🚨 Price Drop: ${route.origin} to ${route.destination} is now ₹${lowestPrice}`,
+                      html: `<p>Good news! The flight from ${route.origin} to ${route.destination} has dropped to ₹${lowestPrice}, which is below your target of ₹${alert.targetPrice}.</p><p>Book now on AirBook!</p>`
+                    });
+                  }
+                  
+                  await prisma.priceAlert.update({
+                    where: { id: alert.id },
+                    data: { lastNotified: new Date() }
+                  });
+                } catch (e) {
+                  console.error(`[Cron] Failed to send email to ${alert.user.email}:`, e);
+                }
+              }
+            }
+          }
+
           results.push({
             route: `${route.origin}-${route.destination}`,
             date: dateStr,
             flightsFound: flights.length,
-            lowestPrice: flights.length > 0 ? Math.min(...flights.map(f => f.pricing.effectivePrice)) : null
+            lowestPrice
           });
         } catch (err) {
           console.error(`[Cron] Error tracking ${route.origin}-${route.destination} for ${dateStr}:`, err);

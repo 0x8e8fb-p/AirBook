@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { User as UserIcon, Wallet, Bell, LogOut, Loader2, CheckCircle2 } from "lucide-react";
+import { User as UserIcon, Wallet, Bell, LogOut, Loader2, CheckCircle2, Trash2 } from "lucide-react";
 import { Footer } from "@/components/layout/Footer";
 import { useUserStore } from "@/stores/user-store";
 import { syncWallet } from "@/app/actions/userActions";
+import { getAlerts, deleteAlert } from "@/app/actions/alertActions";
+import { formatPrice } from "@/lib/constants";
 
 const BANKS = [
   { id: 'HDFC', name: 'HDFC Bank' },
@@ -39,11 +41,29 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [loadingAlerts, setLoadingAlerts] = useState(false);
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace("/");
     }
   }, [status, router]);
+
+  useEffect(() => {
+    if (status === "authenticated" && activeTab === "alerts") {
+      setLoadingAlerts(true);
+      getAlerts().then(res => {
+        if (res.success) setAlerts(res.alerts || []);
+        setLoadingAlerts(false);
+      });
+    }
+  }, [status, activeTab]);
+
+  const handleDeleteAlert = async (id: string) => {
+    await deleteAlert(id);
+    setAlerts(alerts.filter(a => a.id !== id));
+  };
 
   const handleSaveWallet = async () => {
     setIsSaving(true);
@@ -198,14 +218,52 @@ export default function ProfilePage() {
             )}
 
             {activeTab === "alerts" && (
-              <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] p-6 shadow-sm text-center py-16">
-                <div className="w-16 h-16 bg-[var(--accent-primary-dim)] rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Bell className="w-8 h-8 text-[var(--accent-cta)]" />
+              <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-[var(--border-default)]">
+                  <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+                    <Bell className="w-5 h-5 text-[var(--accent-cta)]" />
+                    Price Drop Alerts
+                  </h2>
+                  <p className="text-sm text-[var(--text-secondary)]">We'll email you when the lowest price for these routes drops below your target.</p>
                 </div>
-                <h2 className="text-xl font-bold mb-2">Price Drop Alerts</h2>
-                <p className="text-[var(--text-secondary)] max-w-md mx-auto">
-                  Coming soon! You'll be able to set target prices for specific routes and receive WhatsApp/Email notifications when the price drops.
-                </p>
+                
+                <div className="p-6">
+                  {loadingAlerts ? (
+                    <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-[var(--accent-cta)]" /></div>
+                  ) : alerts.length === 0 ? (
+                    <div className="text-center py-16">
+                      <div className="w-16 h-16 bg-[var(--accent-primary-dim)] rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Bell className="w-8 h-8 text-[var(--accent-cta)] opacity-50" />
+                      </div>
+                      <h3 className="font-semibold mb-2">No active alerts</h3>
+                      <p className="text-sm text-[var(--text-secondary)] max-w-sm mx-auto mb-6">You can create price alerts from the flight search results page.</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4">
+                      {alerts.map(alert => (
+                        <div key={alert.id} className="flex items-center justify-between p-4 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-subtle)]">
+                          <div>
+                            <div className="font-semibold text-sm mb-1">{alert.origin} → {alert.destination}</div>
+                            <div className="text-xs text-[var(--text-muted)]">
+                              Target: <span className="font-mono-price font-medium text-[var(--text-primary)]">{formatPrice(alert.targetPrice)}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-[10px] bg-[var(--accent-green)]/10 text-[var(--accent-green)] px-2 py-1 rounded font-bold uppercase tracking-wider">
+                              Active
+                            </span>
+                            <button 
+                              onClick={() => handleDeleteAlert(alert.id)}
+                              className="p-2 text-[var(--text-muted)] hover:text-[var(--accent-red)] transition-colors rounded-md hover:bg-[var(--bg-base)]"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

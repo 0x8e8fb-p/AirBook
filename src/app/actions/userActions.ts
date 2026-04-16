@@ -7,13 +7,13 @@ import { authOptions } from "@/lib/auth";
 export async function syncWallet(ownedCards: string[]) {
   const session = await getServerSession(authOptions);
   
-  if (!session?.user?.id) {
+  if (!session?.user || !(session.user as any).id) {
     return { success: false, error: "Not authenticated" };
   }
 
   try {
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: (session.user as any).id },
       data: {
         savedCards: JSON.stringify(ownedCards)
       }
@@ -29,13 +29,13 @@ export async function syncWallet(ownedCards: string[]) {
 export async function getUserWallet() {
   const session = await getServerSession(authOptions);
   
-  if (!session?.user?.id) {
+  if (!session?.user || !(session.user as any).id) {
     return { success: false, error: "Not authenticated" };
   }
 
   try {
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: (session.user as any).id },
       select: { savedCards: true }
     });
 

@@ -61,14 +61,18 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
 
   const sourceName = sourceMap[flight.source] || 'Master API';
 
+  // Apply stagger to flight cards
+  const baseDelay = 0.3; // Base delay for the list to appear
+  const staggerDelay = Math.min(index * 0.08, 0.6); // Stagger them in quickly
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.2) }}
+      transition={{ duration: 0.4, delay: baseDelay + staggerDelay, ease: [0.16, 1, 0.3, 1] }}
     >
       <div className={`relative border rounded-[var(--radius-lg)] p-5 hover:border-[var(--border-strong)] transition-colors ${
-        isCheapest ? "border-[var(--accent-cta)]/30 bg-[var(--accent-primary-dim)]" : "border-[var(--border-default)]"
+        isCheapest ? "border-[var(--accent-cta)]/30 bg-[var(--accent-primary-dim)]" : "border-[var(--border-default)] bg-[var(--bg-base)]"
       }`}>
         {isCheapest && (
           <div className="absolute -top-2.5 left-4 flex items-center gap-1.5 bg-[var(--bg-base)] border border-[var(--accent-cta)] px-2.5 py-0.5 rounded-full">
@@ -568,7 +572,11 @@ function SearchContent() {
                 </button>
               </div>
             ) : (
-              <div className="max-w-3xl mx-auto">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="max-w-3xl mx-auto"
+              >
                 <PriceTrendChart origin={from} destination={to} date={date} />
                 <SortBar sortBy={sortBy} onSort={setSortBy} totalResults={sortedFlights.length} />
                 <div className="space-y-3">
@@ -576,7 +584,7 @@ function SearchContent() {
                     <FlightCard key={flight.id} flight={flight} index={i} isCheapest={i === 0 && sortBy === "cheapest"} />
                   ))}
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
