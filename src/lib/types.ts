@@ -2,6 +2,8 @@
 // AirBook — Core Type Definitions
 // ============================================
 
+import { BankOffer } from './flight/offerEngine';
+
 /** Supported data source identifiers */
 export type FlightSource =
   | 'duffel'
@@ -89,6 +91,9 @@ export interface FlightResult {
   price: number;           // In INR
   currency: string;        // Always 'INR' for now
   pricePerAdult: number;
+  basePrice?: number;
+  appliedOffer?: BankOffer | null;
+  carbonEmissions?: number;
   
   // Summary fields (derived)
   airline: string;         // Primary airline
