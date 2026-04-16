@@ -64,41 +64,29 @@ vi.mock("framer-motion", async () => {
         get: () => passthrough("div"),
       }
     ),
+    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   };
 });
 
-vi.mock("@/utils/supabase/client", () => ({
-  createClient: () => ({
-    auth: {
-      getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
-      getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
-      onAuthStateChange: vi.fn().mockReturnValue({
-        data: { subscription: { unsubscribe: vi.fn() } },
-      }),
-    },
-  }),
+vi.mock("next-auth/react", () => ({
+  useSession: vi.fn(() => ({ data: null, status: "unauthenticated" })),
+  signOut: vi.fn(),
 }));
 
 describe("Navbar", () => {
-  it("shows Profile immediately when initialUser exists", () => {
-    const initialUser = { id: "u1", email: "a@b.com" } as unknown as User;
-    render(<Navbar initialUser={initialUser} />);
+  it("shows Profile immediately when session exists", async () => {
+    const useSessionMock = await import("next-auth/react").then(m => m.useSession as any);
+    useSessionMock.mockReturnValue({ data: { user: { email: "a@b.com" } }, status: "authenticated" });
+    
+    render(<Navbar />);
     expect(screen.getByText("Profile")).toBeInTheDocument();
   });
 
-  it("shows Sign In when initialUser is null", () => {
-    render(<Navbar initialUser={null} />);
+  it("shows Sign In when session is null", async () => {
+    const useSessionMock = await import("next-auth/react").then(m => m.useSession as any);
+    useSessionMock.mockReturnValue({ data: null, status: "unauthenticated" });
+    
+    render(<Navbar />);
     expect(screen.getAllByText("Sign In").length).toBeGreaterThan(0);
-  });
-
-  it("updates from Sign In to Profile when initialUser changes", () => {
-    const initialUser = { id: "u1", email: "a@b.com" } as unknown as User;
-    const view = render(<Navbar initialUser={null} />);
-
-    expect(screen.getAllByText("Sign In").length).toBeGreaterThan(0);
-
-    view.rerender(<Navbar initialUser={initialUser} />);
-
-    expect(screen.getByText("Profile")).toBeInTheDocument();
   });
 });
