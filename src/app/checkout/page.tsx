@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCheckoutStore } from "@/stores/checkout-store";
 import { ArrowLeft, Plane, ShieldCheck, Briefcase, ExternalLink, TicketPercent, CheckCircle2 } from "lucide-react";
-import { formatPrice, formatDuration, formatTime, AIRLINES } from "@/lib/constants";
+import { formatPrice, formatDuration, formatTime, getAirlineLogoForFlight, getAirlineCodeFromFlight } from "@/lib/constants";
 import { getAirportDisplay } from "@/lib/airports";
 import { Footer } from "@/components/layout/Footer";
 
@@ -33,7 +33,8 @@ function CheckoutContent() {
   // Don't render until mounted AND we have a flight (prevents hydration mismatch)
   if (!isMounted || !selectedFlight) return null;
 
-  const airlineInfo = AIRLINES[selectedFlight.airline];
+  const logoUrl = getAirlineLogoForFlight(selectedFlight);
+  const code = getAirlineCodeFromFlight(selectedFlight);
 
   const handleProceed = () => {
     setIsRedirecting(true);
@@ -80,11 +81,19 @@ function CheckoutContent() {
             <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] overflow-hidden shadow-sm">
               <div className="p-5 border-b border-[var(--border-default)] bg-[var(--bg-subtle)] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded bg-[var(--border-strong)] flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: airlineInfo?.color || "#3F3F46" }}>
-                    {selectedFlight.airline}
+                  <div className="w-8 h-8 rounded bg-white flex items-center justify-center overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img 
+                      src={logoUrl} 
+                      alt={selectedFlight.airline}
+                      className="w-full h-full object-contain mix-blend-multiply"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://api.dicebear.com/9.x/initials/svg?seed=${selectedFlight.airline}&backgroundColor=000000`;
+                      }}
+                    />
                   </div>
                   <div>
-                    <div className="font-semibold text-sm">{selectedFlight.airlineName}</div>
+                    <div className="font-semibold text-sm">{selectedFlight.airline}</div>
                     <div className="text-xs text-[var(--text-muted)] font-mono">{selectedFlight.flightNumber}</div>
                   </div>
                 </div>
@@ -180,7 +189,7 @@ function CheckoutContent() {
                         <TicketPercent className="w-4 h-4" />
                         Bank Discount
                       </span>
-                      <div className="text-[10px] text-[var(--text-muted)] mt-0.5 max-w-[180px] leading-tight">
+                      <div className="text-[10px] text-[var(--text-muted)] mt-0.5 leading-tight">
                         {selectedFlight.appliedOffer.name}
                       </div>
                     </div>

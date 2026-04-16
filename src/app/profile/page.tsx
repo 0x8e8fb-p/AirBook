@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { User as UserIcon, Wallet, Bell, LogOut, Loader2, CheckCircle2, Trash2, KeyRound } from "lucide-react";
+import { User as UserIcon, Wallet, Bell, LogOut, Loader2, CheckCircle2, Trash2, KeyRound, Camera } from "lucide-react";
 import { Footer } from "@/components/layout/Footer";
 import { useUserStore } from "@/stores/user-store";
 import { syncWallet } from "@/app/actions/userActions";
-import { getAlerts, deleteAlert } from "@/app/actions/alertActions";
+import { getAlerts, deleteAlert, createAlert } from "@/app/actions/alertActions";
 import { formatPrice } from "@/lib/constants";
-import { sendPasswordResetEmail } from "@/app/actions/authActions";
+import { sendPasswordResetEmail, deleteAccount, updateProfileImage } from "@/app/actions/authActions";
 
 const BANKS = [
   { id: 'HDFC', name: 'HDFC Bank' },
@@ -46,10 +46,18 @@ function ProfileContent() {
 
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(false);
+  const [isCreatingAlert, setIsCreatingAlert] = useState(false);
+  const [newAlertOrigin, setNewAlertOrigin] = useState("");
+  const [newAlertDest, setNewAlertDest] = useState("");
+  const [newAlertPrice, setNewAlertPrice] = useState("");
 
   const [resetSent, setResetSent] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [resetError, setResetError] = useState("");
+  
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handlePasswordReset = async () => {
     if (!session?.user?.email) return;
@@ -92,6 +100,25 @@ function ProfileContent() {
     setAlerts(alerts.filter(a => a.id !== id));
   };
 
+  const handleCreateAlert = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAlertOrigin || !newAlertDest || !newAlertPrice) return;
+    
+    setIsCreatingAlert(true);
+    const res = await createAlert(newAlertOrigin.toUpperCase(), newAlertDest.toUpperCase(), parseInt(newAlertPrice));
+    
+    if (res.success) {
+      setNewAlertOrigin("");
+      setNewAlertDest("");
+      setNewAlertPrice("");
+      const alertsRes = await getAlerts();
+      if (alertsRes.success) setAlerts(alertsRes.alerts || []);
+    } else {
+      alert(res.error || "Failed to create alert");
+    }
+    setIsCreatingAlert(false);
+  };
+
   if (status === "loading") {
     return (
       <div className="min-h-[80dvh] flex items-center justify-center">
@@ -130,17 +157,94 @@ function ProfileContent() {
     setTimeout(() => setSavedSuccess(false), 3000);
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const userId = (user as any)?.id;
+    if (!file || !userId) return;
+    
+    setIsUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64 = event.target?.result as string;
+        
+        // Use an invisible canvas to compress the image
+        const img = new Image();
+        img.onload = async () => {
+          const canvas = document.createElement("canvas");
+          const MAX_WIDTH = 150;
+          const scaleSize = MAX_WIDTH / img.width;
+          canvas.width = MAX_WIDTH;
+          canvas.height = img.height * scaleSize;
+          
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+          const res = await updateProfileImage(userId, compressedBase64);
+          
+          if (res.success) {
+            // Update session locally to reflect immediately
+            window.location.reload();
+          }
+          setIsUploading(false);
+        };
+        img.src = base64;
+      };
+      reader.readAsDataURL(file);
+    } catch (e) {
+      console.error(e);
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const userId = (user as any)?.id;
+    if (!userId) return;
+    if (confirm("Are you sure you want to completely delete your account? This action cannot be undone.")) {
+      setIsDeleting(true);
+      const res = await deleteAccount(userId);
+      if (res.success) {
+        await signOut({ callbackUrl: "/" });
+      } else {
+        alert(res.error || "Failed to delete account");
+        setIsDeleting(false);
+      }
+    }
+  };
+
   return (
     <div className="min-h-[100dvh] bg-[var(--bg-subtle)] pb-20 flex flex-col">
       <header className="bg-transparent border-b border-[var(--border-default)]">
         <div className="container-app py-8 lg:py-12">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-transparent shadow-sm overflow-hidden bg-[var(--accent-primary-dim)] flex items-center justify-center">
-              {user?.image ? (
-                <img src={user.image} alt={user.name || "User"} className="w-full h-full object-cover" />
-              ) : (
-                <UserIcon className="w-8 h-8 sm:w-10 sm:h-10 text-[var(--text-muted)]" />
-              )}
+            <div className="relative group">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-transparent shadow-sm overflow-hidden bg-[var(--accent-primary-dim)] flex items-center justify-center relative z-10">
+                {isUploading ? (
+                  <Loader2 className="w-6 h-6 animate-spin text-[var(--text-muted)]" />
+                ) : user?.image ? (
+                  <img src={user.image} alt={user.name || "User"} className="w-full h-full object-cover" />
+                ) : (
+                  <UserIcon className="w-8 h-8 sm:w-10 sm:h-10 text-[var(--text-muted)]" />
+                )}
+              </div>
+              
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+              />
+              
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="absolute bottom-0 right-0 z-20 bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] rounded-full p-1.5 shadow-sm hover:bg-[var(--accent-primary-dim)] transition-colors"
+                title="Update Profile Picture"
+              >
+                <Camera className="w-3.5 h-3.5" />
+              </button>
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold">{user?.name}</h1>
@@ -243,6 +347,29 @@ function ProfileContent() {
                       </p>
                     )}
                   </div>
+                  <div className="pt-6 border-t border-[var(--border-default)]">
+                    <h3 className="text-sm font-semibold mb-4 text-[var(--accent-red)]">Danger Zone</h3>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-[var(--radius-md)] bg-[var(--accent-red)]/5 border border-[var(--accent-red)]/20">
+                      <div>
+                        <div className="font-medium text-sm flex items-center gap-2 text-[var(--accent-red)]">
+                          <Trash2 className="w-4 h-4" />
+                          Delete Account
+                        </div>
+                        <div className="text-xs text-[var(--text-muted)] mt-1">Permanently delete your account and all associated data</div>
+                      </div>
+                      <button 
+                        onClick={handleDeleteAccount}
+                        disabled={isDeleting}
+                        className="px-4 py-2 bg-[var(--accent-red)] text-white rounded-[var(--radius-md)] text-sm font-medium hover:bg-[var(--accent-red)]/90 transition-colors disabled:opacity-50"
+                      >
+                        {isDeleting ? (
+                          <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Deleting...</span>
+                        ) : (
+                          "Delete Account"
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -305,6 +432,46 @@ function ProfileContent() {
                 </div>
                 
                 <div className="p-6">
+                  <div className="mb-8 border-b border-[var(--border-default)] pb-8">
+                    <h3 className="text-sm font-semibold mb-4">Create New Alert</h3>
+                    <form onSubmit={handleCreateAlert} className="flex flex-col sm:flex-row gap-3">
+                      <input 
+                        type="text" 
+                        placeholder="Origin (e.g. DEL)" 
+                        value={newAlertOrigin}
+                        onChange={(e) => setNewAlertOrigin(e.target.value)}
+                        maxLength={3}
+                        required
+                        className="flex-1 px-3 py-2 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm focus:outline-none focus:border-[var(--accent-cta)] uppercase"
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="Dest (e.g. BOM)" 
+                        value={newAlertDest}
+                        onChange={(e) => setNewAlertDest(e.target.value)}
+                        maxLength={3}
+                        required
+                        className="flex-1 px-3 py-2 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm focus:outline-none focus:border-[var(--accent-cta)] uppercase"
+                      />
+                      <input 
+                        type="number" 
+                        placeholder="Target Price (₹)" 
+                        value={newAlertPrice}
+                        onChange={(e) => setNewAlertPrice(e.target.value)}
+                        min={100}
+                        required
+                        className="flex-1 px-3 py-2 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-sm focus:outline-none focus:border-[var(--accent-cta)]"
+                      />
+                      <button 
+                        type="submit"
+                        disabled={isCreatingAlert}
+                        className="px-4 py-2 bg-[var(--text-primary)] text-[var(--bg-base)] rounded-[var(--radius-md)] text-sm font-semibold hover:opacity-90 transition-opacity whitespace-nowrap disabled:opacity-50"
+                      >
+                        {isCreatingAlert ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add Alert"}
+                      </button>
+                    </form>
+                  </div>
+
                   {loadingAlerts ? (
                     <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-[var(--accent-cta)]" /></div>
                   ) : alerts.length === 0 ? (

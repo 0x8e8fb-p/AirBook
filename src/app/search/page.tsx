@@ -195,7 +195,7 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
             {flight.appliedOffer ? (
               <div className="mb-3 w-full sm:w-auto bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/20 text-[var(--accent-green)] text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1.5">
                 <TicketPercent className="w-3 h-3" />
-                <span className="truncate max-w-[150px]" title={flight.appliedOffer.name}>
+                <span title={flight.appliedOffer.name}>
                   {flight.appliedOffer.name}
                 </span>
               </div>

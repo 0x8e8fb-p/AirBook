@@ -13,12 +13,14 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setSuccessMsg("");
 
     const formData = new FormData();
     formData.append("name", name);
@@ -31,20 +33,9 @@ export default function RegisterPage() {
       setError(res.error || "Failed to register");
       setLoading(false);
     } else {
-      // Auto login after registration
-      const loginRes = await signIn("credentials", {
-        redirect: false,
-        email,
-        password,
-      });
-
-      if (loginRes?.error) {
-        setError("Account created, but failed to log in.");
-        setLoading(false);
-      } else {
-        router.push("/");
-        router.refresh();
-      }
+      setSuccessMsg(res.message || "Registration successful! Please check your email to verify your account.");
+      setLoading(false);
+      // We no longer auto-login here, the user must verify their email first.
     }
   };
 
@@ -70,52 +61,68 @@ export default function RegisterPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Full Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full px-4 py-2.5 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] focus:outline-none focus:border-[var(--accent-cta)] transition-colors"
-              placeholder="John Doe"
-            />
+        {successMsg ? (
+          <div className="text-center">
+            <div className="mb-6 p-4 rounded-[var(--radius-md)] bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/20 text-[var(--accent-green)] text-sm">
+              {successMsg}
+            </div>
+            {!process.env.NEXT_PUBLIC_RESEND_API_KEY && (
+              <p className="text-xs text-[var(--accent-cta)] mt-2 p-2 bg-[var(--accent-cta)]/10 rounded">
+                <strong>Developer Note:</strong> Check your terminal logs for the verification link since no Resend API key is configured.
+              </p>
+            )}
+            <Link href="/login" className="inline-block mt-4 py-2 px-4 bg-[var(--text-primary)] text-[var(--bg-base)] font-semibold rounded-[var(--radius-md)] hover:opacity-90 transition-opacity">
+              Go to Login
+            </Link>
           </div>
-          
-          <div>
-            <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-4 py-2.5 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] focus:outline-none focus:border-[var(--accent-cta)] transition-colors"
-              placeholder="you@example.com"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="w-full px-4 py-2.5 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] focus:outline-none focus:border-[var(--accent-cta)] transition-colors"
-              placeholder="••••••••"
-            />
-          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Full Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="w-full px-4 py-2.5 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] focus:outline-none focus:border-[var(--accent-cta)] transition-colors"
+                placeholder="John Doe"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-4 py-2.5 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] focus:outline-none focus:border-[var(--accent-cta)] transition-colors"
+                placeholder="you@example.com"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-4 py-2.5 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] focus:outline-none focus:border-[var(--accent-cta)] transition-colors"
+                placeholder="••••••••"
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 px-4 bg-[var(--text-primary)] text-[var(--bg-base)] font-semibold rounded-[var(--radius-md)] hover:opacity-90 transition-opacity flex items-center justify-center disabled:opacity-50"
-          >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Account"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 px-4 bg-[var(--text-primary)] text-[var(--bg-base)] font-semibold rounded-[var(--radius-md)] hover:opacity-90 transition-opacity flex items-center justify-center disabled:opacity-50"
+            >
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Account"}
+            </button>
+          </form>
+        )}
 
         <p className="text-center text-sm text-[var(--text-secondary)] mt-8">
           Already have an account?{" "}

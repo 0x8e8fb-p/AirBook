@@ -33,7 +33,7 @@ export async function registerUser(formData: FormData) {
 
     console.log("[Auth] Attempting to create user in database:", email);
 
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         name,
         email: email.toLowerCase(),
@@ -42,7 +42,38 @@ export async function registerUser(formData: FormData) {
     });
 
     console.log("[Auth] User created successfully");
-    return { success: true };
+
+    // Send verification email
+    const token = uuidv4();
+    const expires = new Date(Date.now() + 24 * 3600 * 1000); // 24 hours
+
+    await prisma.verificationToken.create({
+      data: {
+        identifier: email.toLowerCase(),
+        token,
+        expires,
+      }
+    });
+
+    const verifyLink = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
+
+    if (process.env.RESEND_API_KEY) {
+      await resend.emails.send({
+        from: "AirBook <noreply@resend.dev>",
+        to: email.toLowerCase(),
+        subject: "Verify your AirBook account",
+        html: `
+          <h1>Welcome to AirBook!</h1>
+          <p>Please click the link below to verify your email address and activate your account.</p>
+          <a href="${verifyLink}">Verify Email</a>
+          <p>This link will expire in 24 hours.</p>
+        `
+      });
+    } else {
+      console.log("No RESEND_API_KEY found. Verification link is:", verifyLink);
+    }
+
+    return { success: true, message: "Please check your email to verify your account before logging in." };
   } catch (error: any) {
     console.error("[Auth] Registration error details:", error);
     return { success: false, error: error?.message || "Something went wrong in the database" };
@@ -102,6 +133,80 @@ export async function sendPasswordResetEmail(email: string) {
   }
 }
 
+export async function verifyEmail(formData: FormData) {
+  const token = formData.get("token") as string;
+  const email = formData.get("email") as string;
+
+  if (!token || !email) {
+    return { success: false, error: "Missing required fields" };
+  }
+
+  try {
+    const verificationToken = await prisma.verificationToken.findFirst({
+      where: {
+        identifier: email.toLowerCase(),
+        token,
+      }
+    });
+
+    if (!verificationToken) {
+      return { success: false, error: "Invalid or expired verification link" };
+    }
+
+    if (new Date() > verificationToken.expires) {
+      return { success: false, error: "Verification link has expired" };
+    }
+
+    await prisma.user.update({
+      where: { email: email.toLowerCase() },
+      data: { emailVerified: new Date() }
+    });
+
+    // Delete token so it can't be reused
+    await prisma.verificationToken.delete({
+      where: {
+        identifier_token: {
+          identifier: email.toLowerCase(),
+          token,
+        }
+      }
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("[Auth] Verify email error:", error);
+    return { success: false, error: "Failed to verify email" };
+  }
+}
+
+export async function deleteAccount(userId: string) {
+  if (!userId) return { success: false, error: "Missing user ID" };
+
+  try {
+    await prisma.user.delete({
+      where: { id: userId }
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error("[Auth] Delete account error:", error);
+    return { success: false, error: "Failed to delete account" };
+  }
+}
+
+export async function updateProfileImage(userId: string, imageUrl: string) {
+  if (!userId || !imageUrl) return { success: false, error: "Missing parameters" };
+
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { image: imageUrl }
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error("[Auth] Update profile image error:", error);
+    return { success: false, error: "Failed to update profile image" };
+  }
+}
 export async function updatePassword(formData: FormData) {
   const token = formData.get("token") as string;
   const email = formData.get("email") as string;

@@ -59,14 +59,17 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-2">
             {user ? (
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium text-[var(--text-secondary)]">
+                <Link 
+                  href="/profile"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+                >
                   {user.image ? (
-                    <img src={user.image} alt={user.name || "User"} className="w-5 h-5 rounded-full" />
+                    <img src={user.image} alt={user.name || "User"} className="w-5 h-5 rounded-full object-cover" />
                   ) : (
                     <UserIcon className="w-4 h-4" />
                   )}
                   {user.name?.split(' ')[0] || 'Profile'}
-                </div>
+                </Link>
                 <button
                   onClick={() => signOut()}
                   className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
