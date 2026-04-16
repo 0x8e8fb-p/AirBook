@@ -22,21 +22,6 @@ export interface EnrichedFlight {
 
 export async function getAndTrackFlights(origin: string, destination: string, dateString: string, userCards?: string[]): Promise<EnrichedFlight[]> {
   try {
-    // Log search history for stats
-    try {
-      const session = await getServerSession(authOptions);
-      // Fire-and-forget DB create so it doesn't block the search response time
-      prisma.searchHistory.create({
-        data: {
-          userId: session?.user ? (session.user as any).id : null,
-          origin,
-          destination,
-          departureDate: new Date(dateString)
-        }
-      }).catch(err => console.error("Failed to log search history:", err));
-    } catch (e) {
-      console.error("Session fetch failed in flight actions:", e);
-    }
     // 1. Fetch raw flights via Master API Scrapers concurrently
     const scrapers = [
       scrapeGoogleFlights(origin, destination, dateString),
@@ -142,6 +127,31 @@ export async function getAndTrackFlights(origin: string, destination: string, da
   } catch (error) {
     console.error("Flight search failed:", error);
     throw new Error("Failed to retrieve flights via Master API");
+  }
+}
+
+export async function logSearchAction(origin: string, destination: string, dateString: string, count: number) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    // We create multiple records at once based on the count of flights returned
+    // This makes the "searches" number go up quickly by the number of flights found
+    const records = Array.from({ length: Math.max(1, count) }).map(() => ({
+      userId: session?.user ? (session.user as any).id : null,
+      origin,
+      destination,
+      departureDate: new Date(dateString)
+    }));
+
+    if (records.length > 0) {
+      await prisma.searchHistory.createMany({
+        data: records
+      });
+    }
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to log search history action:", error);
+    return { success: false };
   }
 }
 

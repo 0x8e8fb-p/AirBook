@@ -13,6 +13,7 @@ import { fetchLiveFlights } from "@/lib/api/live-flight-mapper";
 import { useUserStore } from "@/stores/user-store";
 import { useCheckoutStore } from "@/stores/checkout-store";
 import { syncWallet, getUserWallet } from "@/app/actions/userActions";
+import { logSearchAction } from "@/app/actions/flightActions";
 import { useSession } from "next-auth/react";
 
 import { Footer } from "@/components/layout/Footer";
@@ -535,6 +536,9 @@ function SearchContent() {
         if (isMounted) {
           setAllFlights(results || []);
           setFilteredFlights(results || []);
+          
+          // Log the search quietly
+          logSearchAction(from, to, date, results?.length || 1).catch(e => console.error(e));
         }
       } catch (err) { 
         if (isMounted) setError(err instanceof Error ? err.message : "Something went wrong."); 
