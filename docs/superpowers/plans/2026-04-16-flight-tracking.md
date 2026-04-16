@@ -283,7 +283,7 @@ git commit -m "feat(flight): implement tequila api client"
 **Files:**
 - Create: `src/app/actions/flightActions.ts`
 
-- [ ] **Step 1: Implement Server Action**
+- [x] **Step 1: Implement Server Action**
 
 Create: `src/app/actions/flightActions.ts`
 ```typescript
@@ -358,7 +358,7 @@ export async function getAndTrackFlights(origin: string, destination: string, da
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add src/app/actions/flightActions.ts
