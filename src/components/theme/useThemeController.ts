@@ -74,47 +74,51 @@ export function useThemeController() {
       (window as unknown as { __airbookLenis?: LenisLike }).__airbookLenis ?? null;
     lenis?.stop();
 
-    const keep = () => {
-      if (window.scrollX !== x || window.scrollY !== y) window.scrollTo(x, y);
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    const htmlStyle = document.documentElement.style;
+    const htmlPrev = {
+      overflow: htmlStyle.overflow,
+      paddingRight: htmlStyle.paddingRight,
     };
 
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
+    const bodyStyle = document.body.style;
+    const bodyPrev = {
+      position: bodyStyle.position,
+      top: bodyStyle.top,
+      left: bodyStyle.left,
+      right: bodyStyle.right,
+      width: bodyStyle.width,
+      overflow: bodyStyle.overflow,
     };
 
-    const onTouchMove = (e: TouchEvent) => {
-      e.preventDefault();
-    };
+    htmlStyle.overflow = "hidden";
+    htmlStyle.paddingRight = scrollbarWidth > 0 ? `${scrollbarWidth}px` : "";
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      const k = e.key;
-      if (
-        k === " " ||
-        k === "PageUp" ||
-        k === "PageDown" ||
-        k === "Home" ||
-        k === "End" ||
-        k === "ArrowUp" ||
-        k === "ArrowDown"
-      ) {
-        e.preventDefault();
-      }
-    };
-
-    window.addEventListener("scroll", keep, { passive: true });
-    window.addEventListener("wheel", onWheel, { passive: false });
-    window.addEventListener("touchmove", onTouchMove, { passive: false });
-    window.addEventListener("keydown", onKeyDown, { passive: false });
+    bodyStyle.position = "fixed";
+    bodyStyle.top = `-${y}px`;
+    bodyStyle.left = "0";
+    bodyStyle.right = "0";
+    bodyStyle.width = "100%";
+    bodyStyle.overflow = "hidden";
 
     const locked: LockedScroll = {
       x,
       y,
       lenis,
       cleanup: () => {
-        window.removeEventListener("scroll", keep);
-        window.removeEventListener("wheel", onWheel);
-        window.removeEventListener("touchmove", onTouchMove);
-        window.removeEventListener("keydown", onKeyDown);
+        bodyStyle.position = bodyPrev.position;
+        bodyStyle.top = bodyPrev.top;
+        bodyStyle.left = bodyPrev.left;
+        bodyStyle.right = bodyPrev.right;
+        bodyStyle.width = bodyPrev.width;
+        bodyStyle.overflow = bodyPrev.overflow;
+
+        htmlStyle.overflow = htmlPrev.overflow;
+        htmlStyle.paddingRight = htmlPrev.paddingRight;
+
+        window.scrollTo(x, y);
+        lenis?.scrollTo?.(y, { immediate: true, force: true });
         lenis?.start();
       },
     };
@@ -125,8 +129,6 @@ export function useThemeController() {
 
   const unlockScroll = useCallback((locked: LockedScroll) => {
     locked.cleanup();
-    locked.lenis?.scrollTo?.(locked.y, { immediate: true, force: true });
-    window.scrollTo(locked.x, locked.y);
     lockedScrollRef.current = null;
   }, []);
 

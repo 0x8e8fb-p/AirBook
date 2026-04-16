@@ -2,6 +2,7 @@
 
 import { ReactNode, useEffect, useRef } from "react";
 import Lenis from "lenis";
+import "lenis/dist/lenis.css";
 
 export function SmoothScrollProvider({ children }: { children: ReactNode }) {
   const lenisRef = useRef<Lenis | null>(null);
@@ -16,6 +17,7 @@ export function SmoothScrollProvider({ children }: { children: ReactNode }) {
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Smooth custom easing
       orientation: "vertical",
       gestureOrientation: "vertical",
+      allowNestedScroll: true,
       smoothWheel: true,
       touchMultiplier: 2,
     });
