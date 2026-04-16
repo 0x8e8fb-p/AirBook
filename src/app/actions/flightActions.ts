@@ -1,6 +1,6 @@
 'use server';
 
-import { searchFlights } from '@/lib/flight/tequilaClient';
+import { scrapeIxigoFlights } from '@/lib/flight/scrapers/ixigoScraper';
 import { calculateBestEffectivePrice, FlightPriceDetails } from '@/lib/flight/offerEngine';
 import { prisma } from '@/lib/prisma';
 
@@ -15,8 +15,9 @@ export interface EnrichedFlight {
 
 export async function getAndTrackFlights(origin: string, destination: string, dateString: string): Promise<EnrichedFlight[]> {
   try {
-    // 1. Fetch raw flights
-    const rawFlights = await searchFlights(origin, destination, dateString);
+    // 1. Fetch raw flights via Master API Scraper (Ixigo)
+    // Note: We can easily add Promise.all([scrapeIxigoFlights(), scrapeCleartripFlights()]) here later
+    const rawFlights = await scrapeIxigoFlights(origin, destination, dateString);
     
     if (rawFlights.length === 0) return [];
 
@@ -35,10 +36,9 @@ export async function getAndTrackFlights(origin: string, destination: string, da
       (prev.pricing.effectivePrice < current.pricing.effectivePrice) ? prev : current
     );
 
-    // 4. Log to database asynchronously (don't block response)
+    // 4. Log to database asynchronously
     const departureDate = new Date(dateString);
     
-    // Fire and forget DB logging
     Promise.resolve().then(async () => {
       try {
         const route = await prisma.flightRoute.upsert({
@@ -64,6 +64,6 @@ export async function getAndTrackFlights(origin: string, destination: string, da
     return enrichedFlights;
   } catch (error) {
     console.error("Flight search failed:", error);
-    throw new Error("Failed to retrieve flights");
+    throw new Error("Failed to retrieve flights via Master API");
   }
 }
