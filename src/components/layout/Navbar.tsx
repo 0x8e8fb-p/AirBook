@@ -32,8 +32,8 @@ export function Navbar() {
       <motion.header
         initial={false}
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-          scrolled
+          "fixed top-0 left-0 right-0 z-[60] transition-all duration-300",
+          scrolled || mobileOpen
             ? "bg-[var(--bg-base)]/90 backdrop-blur-xl"
             : "bg-transparent"
         )}
@@ -115,11 +115,11 @@ export function Navbar() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-40 bg-[var(--bg-base)] md:hidden pt-14"
-        >
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[55] bg-[var(--bg-base)] md:hidden pt-14"
+          >
           <div className="flex flex-col items-center justify-center h-[calc(100vh-3.5rem)] gap-8 pb-10">
             {NAV_LINKS.map((link) => (
               <Link

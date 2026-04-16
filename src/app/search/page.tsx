@@ -46,6 +46,53 @@ function SkeletonCard() {
   );
 }
 
+/* ─── Loading Skeleton ──── */
+function FlightCardSkeleton() {
+  return (
+    <div className="relative border border-[var(--border-default)] bg-[var(--bg-base)] rounded-[var(--radius-lg)] p-5 overflow-hidden">
+      {/* Shimmer overlay */}
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-[var(--bg-subtle)] to-transparent" />
+      
+      <div className="flex flex-col sm:flex-row gap-5 sm:gap-6 w-full">
+        {/* Left: Airline & Times */}
+        <div className="flex-1 flex flex-col justify-center">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded bg-[var(--bg-subtle)]" />
+            <div className="space-y-1.5">
+              <div className="w-24 h-3 bg-[var(--bg-subtle)] rounded" />
+              <div className="w-16 h-2.5 bg-[var(--bg-subtle)] rounded" />
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between gap-4">
+            <div className="text-left space-y-2">
+              <div className="w-12 h-5 bg-[var(--bg-subtle)] rounded" />
+              <div className="w-8 h-3 bg-[var(--bg-subtle)] rounded" />
+            </div>
+            
+            <div className="flex-1 flex flex-col items-center px-2">
+              <div className="w-12 h-3 bg-[var(--bg-subtle)] rounded mb-1" />
+              <div className="w-full h-px bg-[var(--border-default)]" />
+            </div>
+            
+            <div className="text-right space-y-2 flex flex-col items-end">
+              <div className="w-12 h-5 bg-[var(--bg-subtle)] rounded" />
+              <div className="w-8 h-3 bg-[var(--bg-subtle)] rounded" />
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Price & Button */}
+        <div className="sm:w-[180px] shrink-0 flex flex-col justify-end items-end sm:border-l sm:border-[var(--border-default)] sm:pl-6 pt-4 sm:pt-0 border-t sm:border-t-0 mt-4 sm:mt-0">
+          <div className="w-20 h-6 bg-[var(--bg-subtle)] rounded mb-3" />
+          <div className="w-16 h-3 bg-[var(--bg-subtle)] rounded mb-4" />
+          <div className="w-full h-9 bg-[var(--bg-subtle)] rounded-[var(--radius-md)]" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Flight Card ──────── */
 function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index: number; isCheapest: boolean }) {
   const router = useRouter();
@@ -372,7 +419,7 @@ function WalletModal({ show, onClose }: { show: boolean; onClose: () => void }) 
   return (
     <AnimatePresence>
       {show && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
           <motion.div 
             initial={{ opacity: 0, scale: 0.95, y: 20 }} 
@@ -540,9 +587,8 @@ function SearchContent() {
 
           <div className="flex-1 min-w-0">
             {isLoading ? (
-              <div className="max-w-3xl mx-auto">
-                <SearchingAnimation />
-                <div className="space-y-3"><SkeletonCard /><SkeletonCard /><SkeletonCard /></div>
+              <div className="max-w-3xl mx-auto flex flex-col gap-4 pt-10">
+                {[1, 2, 3, 4].map(i => <FlightCardSkeleton key={i} />)}
               </div>
             ) : error ? (
               <div className="max-w-md mx-auto text-center py-16">
