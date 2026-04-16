@@ -22,7 +22,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-[60] transition-all duration-300 bg-transparent border-b border-transparent">
+      <header className="fixed top-0 left-0 right-0 z-[60] transition-all duration-300 bg-[var(--bg-base)]/60 backdrop-blur-xl border-b border-[var(--border-default)]/40">
         <nav className="container-app flex items-center justify-between h-14" aria-label="Main navigation">
           <Link href="/" className="flex items-center gap-2 group" aria-label="AirBook Home">
             <Plane className="w-4 h-4 text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors" />
