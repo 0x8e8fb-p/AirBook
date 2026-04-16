@@ -29,15 +29,7 @@ export function Navbar() {
 
   return (
     <>
-      <motion.header
-        initial={false}
-        className={cn(
-          "fixed top-0 left-0 right-0 z-[60] transition-all duration-300",
-          scrolled || mobileOpen
-            ? "bg-[var(--bg-base)]/90 backdrop-blur-xl border-b border-[var(--border-default)]"
-            : "bg-transparent border-b border-transparent"
-        )}
-      >
+      <header className="sticky top-0 left-0 right-0 z-[60] bg-[var(--bg-base)] border-b border-[var(--border-default)]">
         <nav className="container-app flex items-center justify-between h-14" aria-label="Main navigation">
           <Link href="/" className="flex items-center gap-2 group" aria-label="AirBook Home">
             <Plane className="w-4 h-4 text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors" />
@@ -108,7 +100,7 @@ export function Navbar() {
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </nav>
-      </motion.header>
+      </header>
 
       <AnimatePresence>
         {mobileOpen && (

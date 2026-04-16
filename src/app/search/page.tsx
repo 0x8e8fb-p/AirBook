@@ -7,7 +7,7 @@ import { useSearchStore } from "@/stores/search-store";
 import type { FlightResult, SortOption, CabinClass } from "@/lib/types";
 import { sortFlights } from "@/lib/api/search-orchestrator";
 import { getAirportDisplay } from "@/lib/airports";
-import { AIRLINES, SORT_OPTIONS, formatPrice, formatDuration, formatTime, getAirlineLogo } from "@/lib/constants";
+import { AIRLINES, SORT_OPTIONS, formatPrice, formatDuration, formatTime, getAirlineCodeFromFlight, getAirlineLogoForFlight } from "@/lib/constants";
 import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent, Wallet, Frown } from "lucide-react";
 import { fetchLiveFlights } from "@/lib/api/live-flight-mapper";
 import { useUserStore } from "@/stores/user-store";
@@ -97,15 +97,12 @@ function FlightCardSkeleton() {
 function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index: number; isCheapest: boolean }) {
   const router = useRouter();
   
-  // Try to find known airline data, or fallback to dynamic resolution
-  const knownAirline = Object.values(AIRLINES).find(a => a.name.toLowerCase() === flight.airline.toLowerCase()) 
-    || AIRLINES[flight.airline];
-    
-  const airlineInfo = knownAirline || {
-    name: flight.airline,
-    logo: getAirlineLogo(flight.airline),
-    color: '#888888'
-  };
+  const airlineCode = getAirlineCodeFromFlight(flight);
+  const airlineName =
+    flight.airlineName ||
+    (airlineCode ? AIRLINES[airlineCode]?.name : undefined) ||
+    flight.airline;
+  const airlineLogo = getAirlineLogoForFlight(flight);
   const { setSelectedFlight } = useCheckoutStore();
 
   // Apply stagger to flight cards
@@ -133,18 +130,18 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
           <div className="flex items-center gap-3 sm:w-40 shrink-0">
             <div className="w-8 h-8 rounded shrink-0 overflow-hidden">
               <img
-                src={airlineInfo.logo} 
-                alt={airlineInfo.name}
+                  src={airlineLogo}
+                  alt={airlineName}
                 width={32}
                 height={32}
                 className="w-full h-full object-contain"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = `https://api.dicebear.com/9.x/initials/svg?seed=${airlineInfo.name}&backgroundColor=000000`;
+                    (e.target as HTMLImageElement).src = `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(airlineName)}&backgroundColor=000000`;
                 }}
               />
             </div>
             <div className="min-w-0">
-              <div className="text-sm font-medium truncate">{airlineInfo.name}</div>
+                <div className="text-sm font-medium truncate">{airlineName}</div>
               <div className="text-[11px] text-[var(--text-muted)] font-mono flex items-center gap-1.5">
                 <span>{flight.flightNumber}</span>
               </div>

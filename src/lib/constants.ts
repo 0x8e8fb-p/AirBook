@@ -2,6 +2,8 @@
 // AirBook — Application Constants
 // ============================================
 
+import type { FlightResult } from "./types";
+
 /** Airline name to IATA code mapper */
 export const getIataCode = (airlineName: string): string => {
   // Direct matches
@@ -29,7 +31,9 @@ export const getIataCode = (airlineName: string): string => {
   if (name.includes('british')) return 'BA';
   if (name.includes('airasia') || name.includes('air asia')) return 'AK';
   if (name.includes('malaysia')) return 'MH';
-  if (name.includes('sri lankan')) return 'UL';
+  if (name.includes('sri lankan') || name.includes('srilankan')) return 'UL';
+  if (name.includes('virgin atlantic') || name.includes('virginatlantic')) return 'VS';
+  if (name === 'klm' || name.includes('klm royal dutch')) return 'KL';
   if (name.includes('oman')) return 'WY';
   if (name.includes('saudi')) return 'SV';
   if (name.includes('gulf')) return 'GF';
@@ -55,6 +59,45 @@ export const getAirlineLogo = (airlineName: string): string => {
   // Otherwise fallback to Clearbit Logo API using a guessed domain
   const domainGuess = airlineName.toLowerCase().replace(/\s+/g, '') + '.com';
   return `https://logo.clearbit.com/${domainGuess}`;
+};
+
+const isIataAirlineCode = (value: string | null | undefined): value is string =>
+  !!value && /^[A-Z0-9]{2}$/i.test(value.trim());
+
+const extractIataFromFlightNumber = (flightNumber?: string | null): string | null => {
+  if (!flightNumber) return null;
+  const raw = flightNumber.trim().toUpperCase();
+  const match = raw.match(/^([A-Z0-9]{2})\s*[-]?\s*\d+/);
+  return match?.[1] ?? null;
+};
+
+export const getAirlineCodeFromFlight = (
+  flight: Pick<FlightResult, "airline" | "airlineName" | "flightNumber" | "segments" | "airlineLogo">
+): string | null => {
+  if (isIataAirlineCode(flight.airline)) return flight.airline.trim().toUpperCase();
+  if (flight.segments?.[0] && isIataAirlineCode(flight.segments[0].airline)) return flight.segments[0].airline.trim().toUpperCase();
+
+  const fromFlightNumber = extractIataFromFlightNumber(flight.flightNumber) ?? extractIataFromFlightNumber(flight.segments?.[0]?.flightNumber);
+  if (fromFlightNumber) return fromFlightNumber;
+
+  const fromName = getIataCode(flight.airlineName || flight.airline);
+  if (isIataAirlineCode(fromName)) return fromName;
+
+  return null;
+};
+
+export const getAirlineLogoForFlight = (
+  flight: Pick<FlightResult, "airline" | "airlineName" | "flightNumber" | "segments" | "airlineLogo">
+): string => {
+  if (flight.airlineLogo?.startsWith("http")) return flight.airlineLogo;
+  const segLogo = flight.segments?.[0]?.airlineLogo;
+  if (segLogo?.startsWith("http")) return segLogo;
+
+  const iata = getAirlineCodeFromFlight(flight);
+  if (iata) return `https://images.kiwi.com/airlines/64/${iata}.png`;
+
+  const seed = encodeURIComponent(flight.airlineName || flight.airline || "Airline");
+  return `https://api.dicebear.com/9.x/initials/svg?seed=${seed}&backgroundColor=000000`;
 };
 export const AIRLINES: Record<string, { name: string; logo: string; color: string }> = {
   '6E': { name: 'IndiGo', logo: 'https://images.kiwi.com/airlines/64/6E.png', color: '#0033A0' },

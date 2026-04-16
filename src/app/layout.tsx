@@ -107,7 +107,7 @@ export default async function RootLayout({
             <div id="app-shell" className="min-h-full flex flex-col">
               <EnvWarningBanner />
               <Navbar />
-              <main className="flex-1 relative pt-14">
+              <main className="flex-1 relative">
                 {children}
               </main>
             </div>
