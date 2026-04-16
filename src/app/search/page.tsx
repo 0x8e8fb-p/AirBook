@@ -99,7 +99,7 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
   // Using Kiwi's airline logo CDN to fetch any missing airlines dynamically by their carrier code
   const airlineInfo = AIRLINES[flight.airline] || {
     name: flight.airline,
-    logo: `https://images.kiwi.com/airlines/128/${flight.airline}.png`,
+    logo: `https://images.kiwi.com/airlines/64/${flight.airline}.png`,
     color: '#888888'
   };
   const { setSelectedFlight } = useCheckoutStore();
@@ -125,15 +125,18 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
         )}
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-          {/* Airline */}
+          {/* Airline Info */}
           <div className="flex items-center gap-3 sm:w-40 shrink-0">
             <div className="w-8 h-8 rounded bg-white flex items-center justify-center p-1 shrink-0 shadow-sm border border-[var(--border-default)]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
                 src={airlineInfo.logo} 
                 alt={airlineInfo.name}
-                className="w-full h-full object-contain"
+                width={32}
+                height={32}
+                className="w-full h-full object-contain mix-blend-multiply"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://images.kiwi.com/airlines/128/default.png';
+                  (e.target as HTMLImageElement).src = "https://images.kiwi.com/airlines/64/default.png";
                 }}
               />
             </div>

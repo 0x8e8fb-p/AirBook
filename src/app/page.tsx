@@ -295,7 +295,7 @@ export default function HomePage() {
   return (
     <div className="min-h-[100dvh]">
       {/* HERO */}
-      <section className="container-app pt-20 pb-12 flex flex-col items-center min-h-[80dvh] justify-center">
+      <section className="container-app pt-32 pb-12 flex flex-col items-center min-h-[80dvh] justify-center">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
