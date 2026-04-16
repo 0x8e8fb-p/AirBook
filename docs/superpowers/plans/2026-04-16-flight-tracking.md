@@ -195,7 +195,7 @@ git commit -m "feat(flight): implement smart-price offer engine"
 **Files:**
 - Create: `src/lib/flight/tequilaClient.ts`
 
-- [ ] **Step 1: Create Tequila Client**
+- [x] **Step 1: Create Tequila Client**
 
 Create: `src/lib/flight/tequilaClient.ts`
 ```typescript
@@ -269,7 +269,7 @@ export async function searchFlights(origin: string, destination: string, dateFro
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add src/lib/flight/tequilaClient.ts
