@@ -8,7 +8,7 @@ import type { FlightResult, SortOption, CabinClass } from "@/lib/types";
 import { sortFlights } from "@/lib/api/search-orchestrator";
 import { getAirportDisplay } from "@/lib/airports";
 import { AIRLINES, SORT_OPTIONS, formatPrice, formatDuration, formatTime } from "@/lib/constants";
-import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent, Wallet } from "lucide-react";
+import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent, Wallet, Frown } from "lucide-react";
 import { fetchLiveFlights } from "@/lib/api/live-flight-mapper";
 import { useUserStore } from "@/stores/user-store";
 import { useCheckoutStore } from "@/stores/checkout-store";
@@ -548,11 +548,24 @@ function SearchContent() {
                 <button onClick={() => router.push("/")} className="px-5 py-2 rounded-[var(--radius-md)] bg-[var(--accent-cta)] text-[var(--text-inverse)] text-sm font-medium">New Search</button>
               </div>
             ) : sortedFlights.length === 0 ? (
-              <div className="max-w-md mx-auto text-center py-16">
-                <Plane className="w-10 h-10 text-[var(--text-muted)] mx-auto mb-4" />
-                <h3 className="font-semibold mb-2">No flights found</h3>
-                <p className="text-sm text-[var(--text-secondary)] mb-6">Try different dates or airports.</p>
-                <button onClick={() => router.push("/")} className="px-5 py-2 rounded-[var(--radius-md)] bg-[var(--accent-cta)] text-[var(--text-inverse)] text-sm font-medium">New Search</button>
+              <div className="flex flex-col items-center justify-center py-20 px-4 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-xl)] text-center">
+                <div className="w-16 h-16 bg-[var(--accent-primary-dim)] rounded-full flex items-center justify-center mb-4">
+                  <Frown className="w-8 h-8 text-[var(--text-muted)]" />
+                </div>
+                <h3 className="text-lg font-bold mb-2">No flights found</h3>
+                <p className="text-[var(--text-secondary)] text-sm max-w-md">
+                  We couldn't find any flights matching your criteria. Try adjusting your filters or searching for different dates.
+                </p>
+                <button 
+                  onClick={() => {
+                    setFilteredFlights(allFlights);
+                    // In a real app we'd also reset the FilterPanel state here, 
+                    // but re-setting filteredFlights is a good fallback
+                  }}
+                  className="mt-6 px-4 py-2 bg-[var(--accent-cta)] text-[var(--text-inverse)] text-sm font-semibold rounded-[var(--radius-md)] hover:opacity-90 transition-opacity"
+                >
+                  Clear all filters
+                </button>
               </div>
             ) : (
               <div className="max-w-3xl mx-auto">
@@ -560,7 +573,7 @@ function SearchContent() {
                 <SortBar sortBy={sortBy} onSort={setSortBy} totalResults={sortedFlights.length} />
                 <div className="space-y-3">
                   {sortedFlights.map((flight, i) => (
-                    <FlightCard key={flight.id} flight={flight} index={i} isCheapest={i === 0} />
+                    <FlightCard key={flight.id} flight={flight} index={i} isCheapest={i === 0 && sortBy === "cheapest"} />
                   ))}
                 </div>
               </div>

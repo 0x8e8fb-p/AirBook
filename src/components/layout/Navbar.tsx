@@ -10,7 +10,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
-  { href: "/alerts", label: "Alerts" },
+  { href: "/profile", label: "Alerts" },
 ];
 
 export function Navbar() {
