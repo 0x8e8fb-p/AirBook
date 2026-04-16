@@ -1,14 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Providers } from "@/components/Providers";
 import { cookies } from "next/headers";
 
 import { SmoothScrollProvider } from "@/lib/lenis";
 import { Navbar } from "@/components/layout/Navbar";
 import { ThemeFab } from "@/components/theme/ThemeFab";
-import { createClient } from "@/utils/supabase/server";
 import type { ThemeMode, ThemeName } from "@/lib/theme/types";
-import type { User } from "@supabase/supabase-js";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -85,16 +84,6 @@ export default async function RootLayout({
 
   const initialTheme: ThemeName = mode === "manual" ? (themeFromCookie ?? "warm") : "warm";
 
-  const hasSupabaseEnv =
-    !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  let initialUser: User | null = null;
-  if (hasSupabaseEnv) {
-    const supabase = await createClient();
-    const { data } = await supabase.auth.getSession();
-    initialUser = data.session?.user ?? null;
-  }
-
   return (
     <html
       lang="en"
@@ -112,15 +101,17 @@ export default async function RootLayout({
         />
       </head>
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)]">
-        <SmoothScrollProvider>
-          <div id="app-shell" className="min-h-full flex flex-col">
-            <Navbar initialUser={initialUser} />
-            <main className="flex-1 relative pt-14">
-              {children}
-            </main>
-          </div>
-          <ThemeFab />
-        </SmoothScrollProvider>
+        <Providers>
+          <SmoothScrollProvider>
+            <div id="app-shell" className="min-h-full flex flex-col">
+              <Navbar />
+              <main className="flex-1 relative pt-14">
+                {children}
+              </main>
+            </div>
+            <ThemeFab />
+          </SmoothScrollProvider>
+        </Providers>
       </body>
     </html>
   );

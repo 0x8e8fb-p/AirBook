@@ -5,45 +5,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Plane, Menu, X, User as UserIcon } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import { Plane, Menu, X, User as UserIcon, LogIn, LogOut } from "lucide-react";
+import { signIn, signOut, useSession } from "next-auth/react";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/alerts", label: "Alerts" },
 ];
 
-export function Navbar({ initialUser }: { initialUser?: User | null }) {
+export function Navbar() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(initialUser ?? null);
-
-  useEffect(() => {
-    if (initialUser === undefined) return;
-    setUser(initialUser);
-  }, [initialUser]);
-
-  useEffect(() => {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return;
-    const supabase = createClient();
-    let active = true;
-
-    supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
-      setUser(data.session?.user ?? null);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => {
-      active = false;
-      subscription.unsubscribe();
-    };
-  }, []);
+  
+  const { data: session, status } = useSession();
+  const user = session?.user;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -96,25 +72,36 @@ export function Navbar({ initialUser }: { initialUser?: User | null }) {
           </div>
 
           <div className="hidden md:flex items-center gap-2">
-            {user ? (
-               <Link
-                href="/profile"
-                prefetch
-                className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            {status === "loading" ? (
+              <div className="w-16 h-8 animate-pulse bg-[var(--bg-subtle)] rounded-[var(--radius-md)]" />
+            ) : user ? (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium text-[var(--text-secondary)]">
+                  {user.image ? (
+                    <img src={user.image} alt={user.name || "User"} className="w-5 h-5 rounded-full" />
+                  ) : (
+                    <UserIcon className="w-4 h-4" />
+                  )}
+                  {user.name?.split(' ')[0] || 'Profile'}
+                </div>
+                <button
+                  onClick={() => signOut()}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                  title="Sign Out"
                 >
-                <UserIcon className="w-4 h-4" />
-                Profile
-              </Link>
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
             ) : (
-              <Link
-                href="/auth/login"
-                prefetch
+              <button
+                onClick={() => signIn('google')}
                 className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium bg-[var(--accent-cta)] text-[var(--text-inverse)] rounded-[var(--radius-md)] hover:opacity-90 transition-opacity"
               >
                 Sign In
-              </Link>
+              </button>
             )}
           </div>
+          
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className="md:hidden p-2 text-[var(--text-secondary)]"
@@ -146,31 +133,33 @@ export function Navbar({ initialUser }: { initialUser?: User | null }) {
                 {link.label}
               </Link>
             ))}
-            {user ? (
-              <Link
-                href="/profile"
-                prefetch
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  "text-2xl font-semibold transition-colors flex flex-col items-center gap-2 mt-4",
-                  pathname === "/profile" ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"
-                )}
-              >
-                <UserIcon className="w-6 h-6" />
-                Profile
-              </Link>
+            
+            {status === "loading" ? null : user ? (
+              <>
+                <div className="text-2xl font-semibold transition-colors flex flex-col items-center gap-2 mt-4 text-[var(--text-primary)]">
+                  {user.image ? (
+                    <img src={user.image} alt={user.name || "User"} className="w-8 h-8 rounded-full" />
+                  ) : (
+                    <UserIcon className="w-6 h-6" />
+                  )}
+                  {user.name}
+                </div>
+                <button
+                  onClick={() => { setMobileOpen(false); signOut(); }}
+                  className="text-xl font-semibold text-[var(--accent-red)] transition-colors mt-2"
+                >
+                  Sign Out
+                </button>
+              </>
             ) : (
-               <Link
-                href="/auth/login"
-                prefetch
-                onClick={() => setMobileOpen(false)}
+               <button
+                onClick={() => { setMobileOpen(false); signIn('google'); }}
                 className={cn(
-                  "text-2xl font-semibold transition-colors mt-4",
-                  pathname === "/auth/login" ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"
+                  "text-2xl font-semibold transition-colors mt-4 text-[var(--text-muted)]"
                 )}
               >
                 Sign In
-              </Link>
+              </button>
             )}
           </div>
         </motion.div>

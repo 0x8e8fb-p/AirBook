@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCheckoutStore } from "@/stores/checkout-store";
 import { ArrowLeft, Plane, ShieldCheck, Briefcase, ExternalLink, TicketPercent, CheckCircle2 } from "lucide-react";
@@ -8,18 +8,30 @@ import { formatPrice, formatDuration, formatTime, AIRLINES } from "@/lib/constan
 import { getAirportDisplay } from "@/lib/airports";
 import { Footer } from "@/components/layout/Footer";
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const router = useRouter();
   const { selectedFlight } = useCheckoutStore();
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    if (!selectedFlight) {
-      router.push("/");
-    }
-  }, [selectedFlight, router]);
+    setIsMounted(true);
+  }, []);
 
-  if (!selectedFlight) return null;
+  // Delay the redirect check slightly to allow Zustand to hydrate from localStorage
+  useEffect(() => {
+    if (isMounted) {
+      const timer = setTimeout(() => {
+        if (!selectedFlight) {
+          router.replace("/");
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedFlight, router, isMounted]);
+
+  // Don't render until mounted AND we have a flight (prevents hydration mismatch)
+  if (!isMounted || !selectedFlight) return null;
 
   const airlineInfo = AIRLINES[selectedFlight.airline];
 
@@ -217,5 +229,13 @@ export default function CheckoutPage() {
       
       <Footer />
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={null}>
+      <CheckoutContent />
+    </Suspense>
   );
 }

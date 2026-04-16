@@ -12,6 +12,8 @@ import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, Alert
 import { fetchLiveFlights } from "@/lib/api/live-flight-mapper";
 import { useUserStore } from "@/stores/user-store";
 import { useCheckoutStore } from "@/stores/checkout-store";
+import { syncWallet, getUserWallet } from "@/app/actions/userActions";
+import { useSession } from "next-auth/react";
 
 import { Footer } from "@/components/layout/Footer";
 import { PriceTrendChart } from "@/components/dashboard/PriceTrendChart";
@@ -329,6 +331,17 @@ function FilterPanel({ flights, onFilter, show, onClose }: { flights: FlightResu
 /* ─── Wallet Modal ──── */
 function WalletModal({ show, onClose }: { show: boolean; onClose: () => void }) {
   const { ownedCards, toggleCard } = useUserStore();
+  const { data: session } = useSession();
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (session?.user) {
+      setIsSaving(true);
+      await syncWallet(ownedCards);
+      setIsSaving(false);
+    }
+    onClose();
+  };
 
   const banks = [
     { id: 'HDFC', name: 'HDFC Bank' },
@@ -394,13 +407,17 @@ function WalletModal({ show, onClose }: { show: boolean; onClose: () => void }) 
               </div>
             </div>
 
-            <div className="p-5 border-t border-[var(--border-muted)] bg-[var(--bg-subtle)]">
+            <div className="p-5 border-t border-[var(--border-muted)] bg-[var(--bg-subtle)] flex flex-col gap-2">
               <button 
-                onClick={onClose}
-                className="w-full py-3 bg-[var(--accent-cta)] text-[var(--text-inverse)] font-semibold rounded-[var(--radius-md)] hover:opacity-90 transition-opacity"
+                onClick={handleSave}
+                disabled={isSaving}
+                className="w-full py-3 bg-[var(--accent-cta)] text-[var(--text-inverse)] font-semibold rounded-[var(--radius-md)] hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center justify-center"
               >
-                Save & Update Prices
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save & Update Prices"}
               </button>
+              {!session?.user && (
+                <p className="text-[10px] text-center text-[var(--text-muted)]">Sign in to save these cards across your devices.</p>
+              )}
             </div>
           </motion.div>
         </div>
@@ -432,7 +449,19 @@ function SearchContent() {
   const [showFilters, setShowFilters] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
 
-  const { ownedCards } = useUserStore();
+  const { ownedCards, setCards } = useUserStore();
+  const { data: session } = useSession();
+
+  // Load user wallet from DB if logged in
+  useEffect(() => {
+    if (session?.user) {
+      getUserWallet().then(res => {
+        if (res.success && res.cards) {
+          setCards(res.cards);
+        }
+      });
+    }
+  }, [session, setCards]);
 
   useEffect(() => { if (from) setOrigin(from); if (to) setDestination(to); }, [from, to, setOrigin, setDestination]);
 
