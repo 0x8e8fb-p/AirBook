@@ -7,7 +7,7 @@ import { useSearchStore } from "@/stores/search-store";
 import type { FlightResult, SortOption, CabinClass } from "@/lib/types";
 import { sortFlights } from "@/lib/api/search-orchestrator";
 import { getAirportDisplay } from "@/lib/airports";
-import { AIRLINES, SORT_OPTIONS, formatPrice, formatDuration, formatTime } from "@/lib/constants";
+import { AIRLINES, SORT_OPTIONS, formatPrice, formatDuration, formatTime, getAirlineLogo } from "@/lib/constants";
 import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent, Wallet, Frown } from "lucide-react";
 import { fetchLiveFlights } from "@/lib/api/live-flight-mapper";
 import { useUserStore } from "@/stores/user-store";
@@ -96,10 +96,14 @@ function FlightCardSkeleton() {
 /* ─── Flight Card ──────── */
 function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index: number; isCheapest: boolean }) {
   const router = useRouter();
-  // Using Kiwi's airline logo CDN to fetch any missing airlines dynamically by their carrier code
-  const airlineInfo = AIRLINES[flight.airline] || {
+  
+  // Try to find known airline data, or fallback to dynamic resolution
+  const knownAirline = Object.values(AIRLINES).find(a => a.name.toLowerCase() === flight.airline.toLowerCase()) 
+    || AIRLINES[flight.airline];
+    
+  const airlineInfo = knownAirline || {
     name: flight.airline,
-    logo: `https://images.kiwi.com/airlines/64/${flight.airline}.png`,
+    logo: getAirlineLogo(flight.airline),
     color: '#888888'
   };
   const { setSelectedFlight } = useCheckoutStore();
@@ -136,8 +140,9 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
                 height={32}
                 className="w-full h-full object-contain mix-blend-multiply"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = "https://images.kiwi.com/airlines/64/default.png";
-                }}
+                    // Fallback to a dicebear avatar based on the airline name if all else fails
+                    (e.target as HTMLImageElement).src = `https://api.dicebear.com/9.x/initials/svg?seed=${airlineInfo.name}&backgroundColor=000000`;
+                  }}
               />
             </div>
             <div className="min-w-0">

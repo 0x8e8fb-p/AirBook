@@ -16,6 +16,7 @@ const nextConfig: NextConfig = {
 
   images: {
     remotePatterns: [
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
       { protocol: "https", hostname: "**.supabase.co" },
       { protocol: "https", hostname: "images.unsplash.com" },
       {
@@ -24,6 +25,14 @@ const nextConfig: NextConfig = {
         port: "",
         pathname: "/airlines/**",
       },
+      {
+        protocol: "https",
+        hostname: "logo.clearbit.com",
+      },
+      {
+        protocol: "https",
+        hostname: "api.dicebear.com",
+      }
     ],
   },
 

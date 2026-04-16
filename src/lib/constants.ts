@@ -2,7 +2,60 @@
 // AirBook — Application Constants
 // ============================================
 
-/** Indian airline data with logos */
+/** Airline name to IATA code mapper */
+export const getIataCode = (airlineName: string): string => {
+  // Direct matches
+  const directMatch = Object.entries(AIRLINES).find(
+    ([_, data]) => data.name.toLowerCase() === airlineName.toLowerCase()
+  );
+  if (directMatch) return directMatch[0];
+
+  // Common partial matches
+  const name = airlineName.toLowerCase();
+  if (name.includes('indigo')) return '6E';
+  if (name.includes('air india express')) return 'IX';
+  if (name.includes('air india')) return 'AI';
+  if (name.includes('spicejet')) return 'SG';
+  if (name.includes('akasa')) return 'QP';
+  if (name.includes('vistara')) return 'UK';
+  if (name.includes('alliance')) return '9I';
+  if (name.includes('star air')) return 'S5';
+  if (name.includes('emirates')) return 'EK';
+  if (name.includes('etihad')) return 'EY';
+  if (name.includes('singapore')) return 'SQ';
+  if (name.includes('thai')) return 'TG';
+  if (name.includes('qatar')) return 'QR';
+  if (name.includes('lufthansa')) return 'LH';
+  if (name.includes('british')) return 'BA';
+  if (name.includes('airasia') || name.includes('air asia')) return 'AK';
+  if (name.includes('malaysia')) return 'MH';
+  if (name.includes('sri lankan')) return 'UL';
+  if (name.includes('oman')) return 'WY';
+  if (name.includes('saudi')) return 'SV';
+  if (name.includes('gulf')) return 'GF';
+  if (name.includes('kuwait')) return 'KU';
+  if (name.includes('vietnam')) return 'MH';
+  
+  // Fallback: If it's already exactly 2 characters, assume it's an IATA code
+  if (airlineName.length === 2) return airlineName.toUpperCase();
+  
+  // Return the original name if no mapping found
+  return airlineName;
+};
+
+/** Get optimal logo URL */
+export const getAirlineLogo = (airlineName: string): string => {
+  const iata = getIataCode(airlineName);
+  
+  // If we found a 2-letter IATA code, use Kiwi's high quality CDN
+  if (iata.length === 2) {
+    return `https://images.kiwi.com/airlines/64/${iata}.png`;
+  }
+  
+  // Otherwise fallback to Clearbit Logo API using a guessed domain
+  const domainGuess = airlineName.toLowerCase().replace(/\s+/g, '') + '.com';
+  return `https://logo.clearbit.com/${domainGuess}`;
+};
 export const AIRLINES: Record<string, { name: string; logo: string; color: string }> = {
   '6E': { name: 'IndiGo', logo: 'https://images.kiwi.com/airlines/64/6E.png', color: '#0033A0' },
   'AI': { name: 'Air India', logo: 'https://images.kiwi.com/airlines/64/AI.png', color: '#E31837' },
