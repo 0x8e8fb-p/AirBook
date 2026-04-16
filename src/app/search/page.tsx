@@ -131,18 +131,16 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
         <div className="flex flex-col sm:flex-row sm:items-center gap-5">
           {/* Airline Info */}
           <div className="flex items-center gap-3 sm:w-40 shrink-0">
-            <div className="w-8 h-8 rounded bg-white flex items-center justify-center p-1 shrink-0 shadow-sm border border-[var(--border-default)]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
+            <div className="w-8 h-8 rounded shrink-0 overflow-hidden">
+              <img
                 src={airlineInfo.logo} 
                 alt={airlineInfo.name}
                 width={32}
                 height={32}
-                className="w-full h-full object-contain mix-blend-multiply"
+                className="w-full h-full object-contain"
                 onError={(e) => {
-                    // Fallback to a dicebear avatar based on the airline name if all else fails
-                    (e.target as HTMLImageElement).src = `https://api.dicebear.com/9.x/initials/svg?seed=${airlineInfo.name}&backgroundColor=000000`;
-                  }}
+                  (e.target as HTMLImageElement).src = `https://api.dicebear.com/9.x/initials/svg?seed=${airlineInfo.name}&backgroundColor=000000`;
+                }}
               />
             </div>
             <div className="min-w-0">

@@ -72,9 +72,7 @@ export function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-2">
-            {status === "loading" ? (
-              <div className="w-16 h-8 animate-pulse bg-[var(--bg-subtle)] rounded-[var(--radius-md)]" />
-            ) : user ? (
+            {user ? (
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium text-[var(--text-secondary)]">
                   {user.image ? (
@@ -136,7 +134,7 @@ export function Navbar() {
                 </Link>
               ))}
             
-            {status === "loading" ? null : user ? (
+            {user ? (
               <>
                 <div className="text-2xl font-semibold transition-colors flex flex-col items-center gap-2 mt-4 text-[var(--text-primary)]">
                   {user.image ? (
