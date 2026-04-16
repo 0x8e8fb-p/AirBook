@@ -15,14 +15,28 @@ const NAV_LINKS = [
 
 export function Navbar() {
   const pathname = usePathname();
+  const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   
   const { data: session, status } = useSession();
   const user = session?.user;
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <>
-      <header className="sticky top-0 left-0 right-0 z-[60] bg-[var(--bg-base)] border-b border-[var(--border-default)]">
+      <header 
+        className={cn(
+          "fixed top-0 left-0 right-0 z-[60] transition-all duration-300",
+          scrolled || mobileOpen
+            ? "bg-[var(--bg-base)]/80 backdrop-blur-xl border-b border-[var(--border-default)]"
+            : "bg-transparent border-b border-transparent"
+        )}
+      >
         <nav className="container-app flex items-center justify-between h-14" aria-label="Main navigation">
           <Link href="/" className="flex items-center gap-2 group" aria-label="AirBook Home">
             <Plane className="w-4 h-4 text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors" />
