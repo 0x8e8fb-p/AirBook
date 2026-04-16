@@ -3,8 +3,8 @@ import type { ThemeMode, ThemeName } from "./types";
 export const THEME_COOKIE = "airbook_theme";
 export const THEME_MODE_COOKIE = "airbook_theme_mode";
 
-export const THEME_LS_KEY = "airbook:theme";
-export const THEME_MODE_LS_KEY = "airbook:theme_mode";
+const THEME_LS_KEY = "airbook:theme";
+const THEME_MODE_LS_KEY = "airbook:theme_mode";
 
 export function readLocalStorageTheme(): ThemeName | null {
   if (typeof window === "undefined") return null;

@@ -22,9 +22,6 @@ export type FlightSource =
 /** Cabin class options */
 export type CabinClass = 'economy' | 'premium_economy' | 'business' | 'first';
 
-/** Passenger type */
-export type PassengerType = 'adult' | 'child' | 'infant';
-
 /** Airport information */
 export interface Airport {
   iata: string;
@@ -176,41 +173,3 @@ export interface CalendarDay {
   priceLevel: 'cheap' | 'average' | 'expensive' | null;
 }
 
-/** Price history data point */
-export interface PriceHistoryPoint {
-  date: string;
-  price: number;
-  source: FlightSource;
-  airline: string;
-}
-
-/** Indian holiday */
-export interface IndianHoliday {
-  date: string;
-  name: string;
-  type: 'national' | 'regional' | 'restricted';
-  states?: string[];
-}
-
-/** User profile */
-export interface UserProfile {
-  id: string;
-  email: string;
-  phone?: string;
-  displayName: string;
-  homeAirport: string;
-  subscriptionTier: 'free' | 'pro' | 'premium';
-  createdAt: string;
-  updatedAt: string;
-}
-
-/** Trending route for homepage */
-export interface TrendingRoute {
-  origin: string;
-  originCity: string;
-  destination: string;
-  destinationCity: string;
-  cheapestPrice: number;
-  airline: string;
-  imageUrl?: string;
-}

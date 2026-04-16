@@ -66,13 +66,13 @@ git commit -m "refactor: remove unused constants and airport data"
 - Modify: `src/lib/flight/tequilaClient.ts`
 - Modify: `src/lib/utils.ts`
 
-- [ ] **Step 1: Remove unused functions**
+- [x] **Step 1: Remove unused functions**
 Edit the files to remove the following exports:
 - `orchestrateSearch` (from `src/lib/api/search-orchestrator.ts`)
 - `searchFlights` (from `src/lib/flight/tequilaClient.ts`)
 - `delay`, `safeJsonParse`, `timeAgo`, `debounce` (from `src/lib/utils.ts`)
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add src/lib/api/search-orchestrator.ts src/lib/flight/tequilaClient.ts src/lib/utils.ts
@@ -86,14 +86,14 @@ git commit -m "refactor: remove unused utility and api functions"
 - Modify: `src/lib/types.ts`
 - Modify: `src/lib/theme/storage.ts`
 
-- [ ] **Step 1: Remove unused Zod schemas and Types**
+- [x] **Step 1: Remove unused Zod schemas and Types**
 Edit the files to remove the following exports:
 - `iataCodeSchema`, `dateStringSchema`, `passengerCountSchema`, `cabinClassSchema`, `searchParamsSchema`, `airportSearchSchema` (from `src/lib/validators.ts`)
 - `SearchParamsInput`, `AirportSearchInput`, `CalendarRequestInput` (from `src/lib/validators.ts`)
 - `PassengerType`, `PriceHistoryPoint`, `IndianHoliday`, `UserProfile`, `TrendingRoute` (from `src/lib/types.ts`)
 - `THEME_LS_KEY`, `THEME_MODE_LS_KEY` (from `src/lib/theme/storage.ts`)
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add src/lib/validators.ts src/lib/types.ts src/lib/theme/storage.ts
