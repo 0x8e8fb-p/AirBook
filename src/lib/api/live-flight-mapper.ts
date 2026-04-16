@@ -22,8 +22,16 @@ export async function fetchLiveFlights(origin: string, destination: string, date
       // Calculate duration in minutes (approximation based on departure/arrival strings)
       const dep = new Date(flight.departureTime);
       const arr = new Date(flight.arrivalTime);
-      const durationMinutes = Math.round((arr.getTime() - dep.getTime()) / 60000);
+      let durationMinutes = Math.round((arr.getTime() - dep.getTime()) / 60000);
+      
+      // Handle overnight flights where arrival might be next day but date string is messed up
+      if (durationMinutes < 0) {
+        durationMinutes += 24 * 60;
+      }
+      
       const finalDuration = durationMinutes > 0 ? durationMinutes : 120; // fallback to 2h if parsing fails
+
+      let source = flight.source || 'master_api' as any;
 
       const segment: FlightSegment = {
         airline: flight.airline,
@@ -41,7 +49,7 @@ export async function fetchLiveFlights(origin: string, destination: string, date
 
       return {
         id: flight.id,
-        source: 'amadeus', // using a valid FlightSource
+        source: source,
         segments: [segment],
         
         // Price

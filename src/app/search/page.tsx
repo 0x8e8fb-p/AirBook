@@ -8,7 +8,7 @@ import type { FlightResult, SortOption, CabinClass } from "@/lib/types";
 import { sortFlights } from "@/lib/api/search-orchestrator";
 import { getAirportDisplay } from "@/lib/airports";
 import { AIRLINES, SORT_OPTIONS, formatPrice, formatDuration, formatTime } from "@/lib/constants";
-import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2 } from "lucide-react";
+import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent } from "lucide-react";
 import { fetchLiveFlights } from "@/lib/api/live-flight-mapper";
 
 import { Footer } from "@/components/layout/Footer";
@@ -46,6 +46,15 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
   const router = useRouter();
   const airlineInfo = AIRLINES[flight.airline];
 
+  const sourceMap: Record<string, string> = {
+    'google_flights': 'Google Flights',
+    'ixigo': 'Ixigo',
+    'makemytrip': 'MakeMyTrip',
+    'cleartrip': 'Cleartrip'
+  };
+
+  const sourceName = sourceMap[flight.source] || 'Master API';
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -53,11 +62,12 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
       transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.2) }}
     >
       <div className={`relative border rounded-[var(--radius-lg)] p-5 hover:border-[var(--border-strong)] transition-colors ${
-        isCheapest ? "border-[var(--text-muted)]/30 bg-[var(--accent-primary-dim)]" : "border-[var(--border-default)]"
+        isCheapest ? "border-[var(--accent-cta)]/30 bg-[var(--accent-primary-dim)]" : "border-[var(--border-default)]"
       }`}>
         {isCheapest && (
-          <div className="absolute -top-2.5 left-4">
-            <span className="text-[10px] font-semibold uppercase tracking-widest bg-[var(--bg-base)] border border-[var(--border-strong)] px-2.5 py-0.5 rounded-full text-[var(--text-secondary)]">Best Price</span>
+          <div className="absolute -top-2.5 left-4 flex items-center gap-1.5 bg-[var(--bg-base)] border border-[var(--accent-cta)] px-2.5 py-0.5 rounded-full">
+            <Sparkles className="w-3 h-3 text-[var(--accent-cta)]" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--accent-cta)]">Lowest Price</span>
           </div>
         )}
 
@@ -105,39 +115,46 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
           </div>
 
           {/* Price */}
-          <div className="sm:w-48 flex flex-col sm:items-end shrink-0 border-t sm:border-t-0 sm:border-l border-[var(--border-muted)] pt-4 sm:pt-0 sm:pl-5">
-            {flight.appliedOffer && flight.basePrice && (
-              <div className="text-[10px] text-[var(--text-muted)] line-through mb-0.5">
-                {formatPrice(flight.basePrice + 350)} {/* base + standard convenience */}
+          <div className="sm:w-56 flex flex-col sm:items-end shrink-0 border-t sm:border-t-0 sm:border-l border-[var(--border-muted)] pt-4 sm:pt-0 sm:pl-5">
+            <div className="flex flex-col items-end mb-1">
+              {flight.appliedOffer && flight.basePrice && (
+                <div className="text-[11px] text-[var(--text-muted)] line-through flex items-center gap-1">
+                  {formatPrice(flight.basePrice + 350)} {/* base + standard convenience */}
+                </div>
+              )}
+              <div className="text-2xl font-bold font-mono-price text-[var(--text-primary)]">
+                {formatPrice(flight.price)}
               </div>
-            )}
-            <div className="text-xl font-semibold font-mono-price mb-1">
-              {formatPrice(flight.price)}
+              <div className="text-[9px] text-[var(--text-muted)] mt-0.5 flex items-center gap-1">
+                Found via <span className="font-semibold text-[var(--text-secondary)]">{sourceName}</span>
+              </div>
             </div>
             
             {flight.appliedOffer && (
-              <div className="mb-2 bg-[var(--accent-green)]/10 text-[var(--accent-green)] text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider text-right">
-                {flight.appliedOffer.name}
+              <div className="mb-3 w-full sm:w-auto bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/20 text-[var(--accent-green)] text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1.5">
+                <TicketPercent className="w-3 h-3" />
+                <span className="truncate max-w-[150px]">{flight.appliedOffer.name}</span>
               </div>
             )}
 
-            <div className="flex gap-1.5 mb-3 justify-end">
-              {flight.baggage.checked.included && <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--accent-primary-dim)] text-[var(--text-muted)] font-medium">Bag</span>}
-              {flight.refundable && <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--accent-primary-dim)] text-[var(--text-muted)] font-medium">Refundable</span>}
+            <div className="flex gap-1.5 mb-3 justify-end w-full">
+              {flight.baggage.checked.included && <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--bg-subtle)] border border-[var(--border-default)] text-[var(--text-muted)] font-medium">15kg Bag</span>}
+              {flight.refundable && <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--bg-subtle)] border border-[var(--border-default)] text-[var(--text-muted)] font-medium">Refundable</span>}
             </div>
             <button
               onClick={() => router.push(`/checkout?id=${flight.id}`)}
-              className="px-4 py-2 rounded-[var(--radius-md)] bg-[var(--accent-cta)] text-[var(--text-inverse)] text-xs font-semibold hover:opacity-90 transition-opacity flex items-center gap-1 w-full justify-center sm:w-auto"
+              className="px-4 py-2.5 rounded-[var(--radius-md)] bg-[var(--accent-cta)] text-[var(--text-inverse)] text-xs font-semibold hover:opacity-90 transition-opacity flex items-center gap-1 w-full justify-center sm:w-auto"
             >
-              Select <ExternalLink className="w-3 h-3 opacity-50" />
+              Book Now <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
         {flight.seatsRemaining && flight.seatsRemaining <= 4 && (
           <div className="mt-3 pt-3 border-t border-[var(--border-muted)]">
-            <span className="text-[11px] text-[var(--accent-red)] font-medium">
-              {flight.seatsRemaining} seat{flight.seatsRemaining > 1 ? "s" : ""} left
+            <span className="text-[11px] text-[var(--accent-red)] font-medium flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              Only {flight.seatsRemaining} seat{flight.seatsRemaining > 1 ? "s" : ""} left at this price
             </span>
           </div>
         )}
@@ -176,6 +193,7 @@ function SortBar({ sortBy, onSort, totalResults }: { sortBy: SortOption; onSort:
 function FilterPanel({ flights, onFilter, show, onClose }: { flights: FlightResult[]; onFilter: (f: FlightResult[]) => void; show: boolean; onClose: () => void }) {
   const [maxStops, setMaxStops] = useState<number | null>(null);
   const [selectedAirlines, setSelectedAirlines] = useState<string[]>([]);
+  const [selectedBank, setSelectedBank] = useState<string | null>(null);
 
   const airlines = useMemo(() => {
     const map = new Map<string, number>();
@@ -183,12 +201,27 @@ function FilterPanel({ flights, onFilter, show, onClose }: { flights: FlightResu
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
   }, [flights]);
 
+  const banks = useMemo(() => {
+    const set = new Set<string>();
+    flights.forEach((f) => {
+      if (f.appliedOffer) {
+        // Extract the bank name from the offer ID or Name (e.g., HDFC_CC_15 -> HDFC)
+        const bankCode = f.appliedOffer.id.split('_')[0];
+        set.add(bankCode);
+      }
+    });
+    return Array.from(set).sort();
+  }, [flights]);
+
   useEffect(() => {
     let filtered = [...flights];
     if (maxStops !== null) filtered = filtered.filter((f) => f.stops <= maxStops);
     if (selectedAirlines.length > 0) filtered = filtered.filter((f) => selectedAirlines.includes(f.airline));
+    if (selectedBank) {
+      filtered = filtered.filter(f => f.appliedOffer?.id.startsWith(selectedBank));
+    }
     onFilter(filtered);
-  }, [maxStops, selectedAirlines, flights, onFilter]);
+  }, [maxStops, selectedAirlines, selectedBank, flights, onFilter]);
 
   const toggleAirline = (code: string) => setSelectedAirlines((p) => p.includes(code) ? p.filter((c) => c !== code) : [...p, code]);
 
@@ -209,6 +242,36 @@ function FilterPanel({ flights, onFilter, show, onClose }: { flights: FlightResu
         </div>
       </div>
 
+      {banks.length > 0 && (
+        <div className="mb-6">
+          <h4 className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-widest mb-3 flex items-center gap-1.5">
+            <CreditCard className="w-3.5 h-3.5" />
+            Bank Offers
+          </h4>
+          <div className="flex flex-col gap-2">
+            <button 
+              onClick={() => setSelectedBank(null)}
+              className={`text-left text-[13px] px-2.5 py-1.5 rounded-[var(--radius-sm)] transition-colors ${
+                selectedBank === null ? 'bg-[var(--accent-primary-dim)] text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-base)]'
+              }`}
+            >
+              All Available Offers
+            </button>
+            {banks.map(bank => (
+              <button 
+                key={bank} 
+                onClick={() => setSelectedBank(bank)}
+                className={`text-left text-[13px] px-2.5 py-1.5 rounded-[var(--radius-sm)] transition-colors ${
+                  selectedBank === bank ? 'bg-[var(--accent-primary-dim)] text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-base)]'
+                }`}
+              >
+                {bank} Cards
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mb-6">
         <h4 className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-widest mb-3">Airlines</h4>
         {airlines.map(([code, count]) => (
@@ -224,7 +287,7 @@ function FilterPanel({ flights, onFilter, show, onClose }: { flights: FlightResu
         ))}
       </div>
 
-      <button onClick={() => { setMaxStops(null); setSelectedAirlines([]); }}
+      <button onClick={() => { setMaxStops(null); setSelectedAirlines([]); setSelectedBank(null); }}
         className="text-[11px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] w-full text-center py-2 border border-[var(--border-default)] rounded-[var(--radius-sm)] transition-colors"
       >Reset</button>
     </>

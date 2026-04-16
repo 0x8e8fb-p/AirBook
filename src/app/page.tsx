@@ -271,17 +271,19 @@ function SearchPanel() {
       </div>
 
       {/* CTA */}
-      <button
-        onClick={handleSearch}
-        disabled={!origin || !destination || !departureDate || isSearching}
-        className="w-full py-3.5 bg-[var(--accent-cta)] text-[var(--text-inverse)] font-semibold rounded-[var(--radius-md)] hover:opacity-90 disabled:opacity-30 transition-opacity flex items-center justify-center gap-2 text-[15px] active:scale-[0.99]"
-      >
-        {isSearching ? (
-          <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Searching...</>
-        ) : (
-          <><Search className="w-4 h-4" />Search Flights</>
-        )}
-      </button>
+      <div className="mt-8">
+        <button
+          onClick={handleSearch}
+          disabled={!origin || !destination || !departureDate || isSearching}
+          className="w-full py-3.5 bg-[var(--accent-cta)] text-[var(--text-inverse)] font-semibold rounded-[var(--radius-md)] hover:opacity-90 disabled:opacity-30 transition-opacity flex items-center justify-center gap-2 text-[15px] active:scale-[0.99]"
+        >
+          {isSearching ? (
+            <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Searching...</>
+          ) : (
+            <><Search className="w-4 h-4" />Search Flights</>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
@@ -304,7 +306,7 @@ export default function HomePage() {
             Find the cheapest<br />flights, instantly.
           </h1>
           <p className="text-[var(--text-secondary)] text-base sm:text-lg max-w-md mx-auto leading-relaxed">
-            Compare fares across airlines. Track prices. Never overpay.
+            Compare fares across Google Flights, MakeMyTrip, Cleartrip & Ixigo. Apply all Indian credit card offers automatically.
           </p>
         </motion.div>
 
@@ -321,7 +323,7 @@ export default function HomePage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="flex items-center gap-6 mt-10 text-[var(--text-muted)] text-xs font-mono"
+          className="flex items-center justify-center gap-6 mt-10 text-[var(--text-muted)] text-xs font-mono"
         >
           <span>12,340 searches today</span>
           <span className="w-px h-3 bg-[var(--border-strong)]" />
@@ -357,7 +359,7 @@ export default function HomePage() {
             { icon: Zap, title: "Real-time", desc: "Prices updated every 15 minutes." },
             { icon: Shield, title: "No hidden fees", desc: "What you see is what you pay." },
             { icon: TrendingDown, title: "Price history", desc: "Know if now is the right time to book." },
-            { icon: Plane, title: "All airlines", desc: "IndiGo, Air India, SpiceJet, and more." },
+            { icon: Plane, title: "All airlines", desc: "IndiGo, Air India, Akasa Air, Vistara and more." },
           ].map((item) => (
             <div key={item.title} className="p-4 rounded-[var(--radius-lg)] bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] transition-colors">
               <item.icon className="w-4 h-4 text-[var(--text-muted)] mb-2.5" />

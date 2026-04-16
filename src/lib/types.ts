@@ -12,7 +12,12 @@ export type FlightSource =
   | 'amadeus'
   | 'scrape_indigo'
   | 'scrape_airindia'
-  | 'scrape_spicejet';
+  | 'scrape_spicejet'
+  | 'google_flights'
+  | 'ixigo'
+  | 'makemytrip'
+  | 'cleartrip'
+  | 'master_api';
 
 /** Cabin class options */
 export type CabinClass = 'economy' | 'premium_economy' | 'business' | 'first';
