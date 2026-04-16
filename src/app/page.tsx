@@ -293,9 +293,12 @@ function SearchPanel() {
    ================================================================ */
 export default function HomePage() {
   return (
-    <div className="min-h-[100dvh]">
+    <div className="min-h-[100dvh] relative">
+      {/* Decorative ambient background for the entire page */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[var(--accent-cta)]/5 rounded-full blur-[100px] pointer-events-none opacity-50 z-0" />
+
       {/* HERO */}
-      <section className="container-app pt-32 pb-12 flex flex-col items-center min-h-[80dvh] justify-center">
+      <section className="container-app pt-32 pb-12 flex flex-col items-center min-h-[80dvh] justify-center bg-transparent relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -334,7 +337,7 @@ export default function HomePage() {
 
 
       {/* HOW IT WORKS */}
-      <section className="container-app py-16 border-t border-[var(--border-muted)]">
+      <section className="container-app py-16 border-t border-[var(--border-muted)] relative z-10">
         <h2 className="text-lg font-semibold tracking-tight mb-8">How it works</h2>
 
         <div className="grid md:grid-cols-3 gap-8">
@@ -353,7 +356,7 @@ export default function HomePage() {
       </section>
 
       {/* WHY */}
-      <section className="container-app py-16 border-t border-[var(--border-muted)]">
+      <section className="container-app py-16 border-t border-[var(--border-muted)] relative z-10">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { icon: Zap, title: "Real-time", desc: "Prices updated every 15 minutes." },
