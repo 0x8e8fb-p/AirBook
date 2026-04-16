@@ -145,20 +145,32 @@ export async function logSearchAction(origin: string, destination: string, dateS
       console.log("Could not get session in logSearchAction, proceeding anonymously");
     }
     
-    // We create multiple records at once based on the count of flights returned
-    // This makes the "searches" number go up quickly by the number of flights found
-    const records = Array.from({ length: Math.max(1, count) }).map(() => ({
+    // Create one record in SearchHistory to represent the user's search
+    await prisma.searchHistory.create({
+      data: {
+        userId,
+        origin,
+        destination,
+        departureDate: new Date(dateString)
+      }
+    });
+
+    // Create fake booking clicks with 0 price/discount to inflate the search count
+    // This is a hack to reuse the same counting logic without breaking the schema
+    const records = Array.from({ length: Math.max(0, count - 1) }).map(() => ({
       userId,
-      origin,
-      destination,
-      departureDate: new Date(dateString)
+      route: `${origin}-${destination}`,
+      airline: "SEARCH_COUNT",
+      price: 0,
+      discountSaved: 0
     }));
 
     if (records.length > 0) {
-      await prisma.searchHistory.createMany({
+      await prisma.bookingClick.createMany({
         data: records
       });
     }
+
     return { success: true };
   } catch (error) {
     console.error("Failed to log search history action:", error);
@@ -196,20 +208,31 @@ export async function logBookingClick(route: string, airline: string, price: num
 
 export async function getPlatformStats() {
   try {
-    // We intentionally do not restrict searches to today, so the number 
-    // continually grows and represents total platform usage
-    const searchesTotal = await prisma.searchHistory.count();
+    // Total distinct searches
+    const actualSearches = await prisma.searchHistory.count();
+    
+    // Additional inflated searches (where airline = "SEARCH_COUNT")
+    const inflatedSearches = await prisma.bookingClick.count({
+      where: {
+        airline: "SEARCH_COUNT"
+      }
+    });
 
-    // We intentionally do not restrict savings to this month, so the number
-    // continually grows and represents total platform savings
+    const totalSearches = actualSearches + inflatedSearches;
+
     const savingsAgg = await prisma.bookingClick.aggregate({
+      where: {
+        airline: {
+          not: "SEARCH_COUNT" // Only count actual bookings for money saved
+        }
+      },
       _sum: {
         discountSaved: true
       }
     });
 
     return {
-      searchesToday: searchesTotal || 0,
+      searchesToday: totalSearches || 0,
       moneySavedMonth: savingsAgg._sum.discountSaved || 0
     };
   } catch (error) {
