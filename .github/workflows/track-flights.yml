@@ -1,0 +1,30 @@
+name: Auto-Track Flight Prices
+
+on:
+  schedule:
+    # Runs at 00:00 and 12:00 UTC every day
+    - cron: '0 0,12 * * *'
+  workflow_dispatch: # Allows manual trigger from the GitHub Actions UI
+
+jobs:
+  track-flights:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger Vercel Cron Endpoint
+        run: |
+          # We use a 10 minute timeout in case the scraping takes long
+          echo "Triggering AirBook Auto-Tracker..."
+          response=$(curl -s -w "\n%{http_code}" --max-time 600 -X GET "${{ secrets.PROD_URL }}/api/cron/track?key=${{ secrets.CRON_SECRET }}")
+          
+          # Extract HTTP status code
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "Status Code: $http_code"
+          echo "Response Body: $body"
+          
+          if [ "$http_code" -ne 200 ]; then
+            echo "Error: Cron job failed!"
+            exit 1
+          fi
