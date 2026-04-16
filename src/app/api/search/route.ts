@@ -17,18 +17,17 @@ export async function GET(request: Request) {
 
   try {
     const session = await getServerSession(authOptions);
-    if (session?.user && (session.user as any).id) {
-      await prisma.searchHistory.create({
-        data: {
-          userId: (session.user as any).id,
-          origin,
-          destination,
-          departureDate: new Date(date),
-          adults,
-          cabinClass: cabin
-        }
-      }).catch(err => console.error("Failed to log search history", err));
-    }
+    // Log search regardless of whether user is logged in
+    await prisma.searchHistory.create({
+      data: {
+        userId: session?.user ? (session.user as any).id : null,
+        origin,
+        destination,
+        departureDate: new Date(date),
+        adults,
+        cabinClass: cabin
+      }
+    }).catch(err => console.error("Failed to log search history", err));
 
     // Since we now do actual searching via Server Actions (flightActions.ts),
     // this API route is mainly for backward compatibility or simple history logging.

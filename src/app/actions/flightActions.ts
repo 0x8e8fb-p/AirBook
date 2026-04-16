@@ -6,6 +6,8 @@ import { scrapeMMTFlights } from '@/lib/flight/scrapers/mmtScraper';
 import { scrapeCleartripFlights } from '@/lib/flight/scrapers/cleartripScraper';
 import { calculateBestEffectivePrice, FlightPriceDetails } from '@/lib/flight/offerEngine';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 import { StandardizedFlight } from '@/lib/flight/tequilaClient';
 
 export interface EnrichedFlight {
@@ -20,6 +22,20 @@ export interface EnrichedFlight {
 
 export async function getAndTrackFlights(origin: string, destination: string, dateString: string, userCards?: string[]): Promise<EnrichedFlight[]> {
   try {
+    // Log search history for stats
+    try {
+      const session = await getServerSession(authOptions);
+      await prisma.searchHistory.create({
+        data: {
+          userId: session?.user ? (session.user as any).id : null,
+          origin,
+          destination,
+          departureDate: new Date(dateString)
+        }
+      });
+    } catch (e) {
+      console.error("Failed to log search history in flight actions:", e);
+    }
     // 1. Fetch raw flights via Master API Scrapers concurrently
     const scrapers = [
       scrapeGoogleFlights(origin, destination, dateString),
@@ -125,5 +141,64 @@ export async function getAndTrackFlights(origin: string, destination: string, da
   } catch (error) {
     console.error("Flight search failed:", error);
     throw new Error("Failed to retrieve flights via Master API");
+  }
+}
+
+export async function logBookingClick(route: string, airline: string, price: number, discountSaved: number) {
+  try {
+    const session = await getServerSession(authOptions);
+    await prisma.bookingClick.create({
+      data: {
+        userId: session?.user ? (session.user as any).id : null,
+        route,
+        airline,
+        price,
+        discountSaved
+      }
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to log booking click:", error);
+    return { success: false };
+  }
+}
+
+export async function getPlatformStats() {
+  try {
+    // Searches today
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const searchesToday = await prisma.searchHistory.count({
+      where: {
+        createdAt: {
+          gte: startOfDay
+        }
+      }
+    });
+
+    // Money saved this month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const savingsAgg = await prisma.bookingClick.aggregate({
+      where: {
+        createdAt: {
+          gte: startOfMonth
+        }
+      },
+      _sum: {
+        discountSaved: true
+      }
+    });
+
+    return {
+      searchesToday: searchesToday || 0,
+      moneySavedMonth: savingsAgg._sum.discountSaved || 0
+    };
+  } catch (error) {
+    console.error("Failed to get platform stats:", error);
+    return { searchesToday: 0, moneySavedMonth: 0 };
   }
 }

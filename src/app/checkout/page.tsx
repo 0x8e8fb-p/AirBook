@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCheckoutStore } from "@/stores/checkout-store";
 import { ArrowLeft, Plane, ShieldCheck, Briefcase, ExternalLink, TicketPercent, CheckCircle2 } from "lucide-react";
 import { formatPrice, formatDuration, formatTime, getAirlineLogoForFlight, getAirlineCodeFromFlight } from "@/lib/constants";
+import { logBookingClick } from "@/app/actions/flightActions";
 import { getAirportDisplay } from "@/lib/airports";
 import { Footer } from "@/components/layout/Footer";
 
@@ -36,8 +37,22 @@ function CheckoutContent() {
   const logoUrl = getAirlineLogoForFlight(selectedFlight);
   const code = getAirlineCodeFromFlight(selectedFlight);
 
-  const handleProceed = () => {
+  const convenienceFee = 350;
+  const baseFare = selectedFlight.basePrice || selectedFlight.price;
+  const totalBeforeDiscount = baseFare + convenienceFee;
+  const discountAmount = totalBeforeDiscount - selectedFlight.price;
+
+  const handleProceed = async () => {
     setIsRedirecting(true);
+    
+    // Log the click and money saved
+    await logBookingClick(
+      `${selectedFlight.origin}-${selectedFlight.destination}`,
+      selectedFlight.airline,
+      selectedFlight.price,
+      discountAmount > 0 ? discountAmount : 0
+    );
+
     // In a real app, this would be a deep link to the OTA or airline
     // For now, we simulate a redirect delay and open a generic booking page
     setTimeout(() => {
@@ -50,11 +65,6 @@ function CheckoutContent() {
       setIsRedirecting(false);
     }, 1500);
   };
-
-  const convenienceFee = 350;
-  const baseFare = selectedFlight.basePrice || selectedFlight.price;
-  const totalBeforeDiscount = baseFare + convenienceFee;
-  const discountAmount = totalBeforeDiscount - selectedFlight.price;
 
   return (
     <div className="min-h-[100dvh] bg-[var(--bg-subtle)] pb-20">

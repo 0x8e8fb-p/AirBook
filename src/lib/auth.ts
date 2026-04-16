@@ -58,7 +58,9 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
-        if (!user.emailVerified) {
+        // If they registered with a mobile number and no email, emailVerified will be null.
+        // We only want to block login if they actually HAVE an email but haven't verified it yet.
+        if (user.email && !user.emailVerified) {
           throw new Error("Please verify your email address before logging in");
         }
 

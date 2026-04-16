@@ -16,6 +16,7 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [countryCode, setCountryCode] = useState("+91");
 
   useEffect(() => {
     if (urlError) {
@@ -23,19 +24,35 @@ function LoginForm() {
     }
   }, [urlError]);
 
+  useEffect(() => {
+    // Auto-detect country code based on IP
+    fetch('https://ipapi.co/json/')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.country_calling_code) {
+          setCountryCode(data.country_calling_code);
+        }
+      })
+      .catch(err => console.log('Could not detect country code'));
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
+    // If input looks like a phone number (just digits), prepend the country code
+    const isMobile = /^\d{10}$/.test(email.trim());
+    const finalEmail = isMobile ? `${countryCode}${email.trim()}` : email.trim();
+
     const res = await signIn("credentials", {
       redirect: false,
-      email,
+      email: finalEmail,
       password,
     });
 
     if (res?.error) {
-      setError("Invalid email or password");
+      setError(res.error || "Invalid credentials");
       setLoading(false);
     } else {
       router.push("/");
@@ -74,14 +91,29 @@ function LoginForm() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
           <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Email or Mobile Number</label>
-          <input
-            type="text"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full px-4 py-2.5 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] focus:outline-none focus:border-[var(--accent-cta)] transition-colors"
-            placeholder="you@example.com or 9876543210"
-          />
+          <div className="flex gap-2">
+            {/^\d+$/.test(email) || email === "" ? (
+              <select
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                className="w-[100px] px-3 py-2.5 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] focus:outline-none focus:border-[var(--accent-cta)] transition-colors text-sm appearance-none"
+              >
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+44">🇬🇧 +44</option>
+                <option value="+61">🇦🇺 +61</option>
+                <option value="+91">🇮🇳 +91</option>
+                <option value="+971">🇦🇪 +971</option>
+              </select>
+            ) : null}
+            <input
+              type="text"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="flex-1 px-4 py-2.5 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] focus:outline-none focus:border-[var(--accent-cta)] transition-colors"
+              placeholder="you@example.com or 9876543210"
+            />
+          </div>
         </div>
           
           <div>
