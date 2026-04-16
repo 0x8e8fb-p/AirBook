@@ -106,7 +106,7 @@ function ProfileContent() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[var(--bg-base)] pb-20 flex flex-col">
+    <div className="min-h-[100dvh] bg-[var(--bg-subtle)] pb-20 flex flex-col">
       <header className="bg-transparent border-b border-[var(--border-default)]">
         <div className="container-app py-8 lg:py-12">
           <div className="flex items-center gap-5">
@@ -130,11 +130,11 @@ function ProfileContent() {
           
           {/* Sidebar */}
           <div className="w-full lg:w-64 shrink-0">
-            <div className="sticky top-24 bg-transparent flex flex-col gap-1">
+            <div className="sticky top-20 flex flex-col gap-1">
               <button
                 onClick={() => handleTabChange("account")}
                 className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] text-sm font-medium transition-colors text-left ${
-                  activeTab === "account" ? "bg-[var(--accent-primary-dim)] text-[var(--text-primary)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
+                  activeTab === "account" ? "bg-[var(--bg-base)] text-[var(--text-primary)] shadow-sm border border-[var(--border-default)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-base)] border border-transparent"
                 }`}
               >
                 <UserIcon className="w-4 h-4" /> Account Details
@@ -142,7 +142,7 @@ function ProfileContent() {
               <button
                 onClick={() => handleTabChange("wallet")}
                 className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] text-sm font-medium transition-colors text-left ${
-                  activeTab === "wallet" ? "bg-[var(--accent-primary-dim)] text-[var(--text-primary)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
+                  activeTab === "wallet" ? "bg-[var(--bg-base)] text-[var(--text-primary)] shadow-sm border border-[var(--border-default)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-base)] border border-transparent"
                 }`}
               >
                 <Wallet className="w-4 h-4" /> My Wallet
@@ -150,7 +150,7 @@ function ProfileContent() {
               <button
                 onClick={() => handleTabChange("alerts")}
                 className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] text-sm font-medium transition-colors text-left ${
-                  activeTab === "alerts" ? "bg-[var(--accent-primary-dim)] text-[var(--text-primary)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
+                  activeTab === "alerts" ? "bg-[var(--bg-base)] text-[var(--text-primary)] shadow-sm border border-[var(--border-default)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-base)] border border-transparent"
                 }`}
               >
                 <Bell className="w-4 h-4" /> Price Alerts
@@ -160,7 +160,7 @@ function ProfileContent() {
               
               <button
                 onClick={() => signOut({ callbackUrl: '/' })}
-                className="flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] text-sm font-medium text-[var(--accent-red)] hover:bg-[var(--accent-red)]/10 transition-colors text-left"
+                className="flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] text-sm font-medium text-[var(--accent-red)] hover:bg-[var(--accent-red)]/10 border border-transparent transition-colors text-left"
               >
                 <LogOut className="w-4 h-4" /> Sign Out
               </button>
@@ -171,7 +171,7 @@ function ProfileContent() {
           <div className="flex-1">
             
             {activeTab === "account" && (
-              <div className="bg-transparent border border-[var(--border-default)] rounded-[var(--radius-xl)] p-6">
+              <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] p-6 shadow-sm">
                 <h2 className="text-xl font-bold mb-6">Account Details</h2>
                 <div className="space-y-6 max-w-md">
                   <div>
@@ -192,7 +192,7 @@ function ProfileContent() {
             )}
 
             {activeTab === "wallet" && (
-              <div className="bg-transparent border border-[var(--border-default)] rounded-[var(--radius-xl)] overflow-hidden">
+              <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-[var(--border-default)]">
                   <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
                     <Wallet className="w-5 h-5 text-[var(--accent-cta)]" />
@@ -239,7 +239,7 @@ function ProfileContent() {
             )}
 
             {activeTab === "alerts" && (
-              <div className="bg-transparent border border-[var(--border-default)] rounded-[var(--radius-xl)] overflow-hidden">
+              <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-[var(--border-default)]">
                   <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
                     <Bell className="w-5 h-5 text-[var(--accent-cta)]" />
