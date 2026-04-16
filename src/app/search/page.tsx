@@ -8,10 +8,8 @@ import type { FlightResult, SortOption, CabinClass } from "@/lib/types";
 import { sortFlights } from "@/lib/api/search-orchestrator";
 import { getAirportDisplay } from "@/lib/airports";
 import { AIRLINES, SORT_OPTIONS, formatPrice, formatDuration, formatTime } from "@/lib/constants";
-import {
-  Plane, ArrowLeft, ArrowRight, SlidersHorizontal,
-  X, ExternalLink, AlertCircle, Loader2,
-} from "lucide-react";
+import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2 } from "lucide-react";
+import { fetchLiveFlights } from "@/lib/api/live-flight-mapper";
 
 import { Footer } from "@/components/layout/Footer";
 
@@ -107,15 +105,29 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
           </div>
 
           {/* Price */}
-          <div className="sm:w-36 flex flex-col sm:items-end shrink-0 border-t sm:border-t-0 sm:border-l border-[var(--border-muted)] pt-4 sm:pt-0 sm:pl-5">
-            <div className="text-xl font-semibold font-mono-price mb-1">{formatPrice(flight.price)}</div>
-            <div className="flex gap-1.5 mb-3">
+          <div className="sm:w-48 flex flex-col sm:items-end shrink-0 border-t sm:border-t-0 sm:border-l border-[var(--border-muted)] pt-4 sm:pt-0 sm:pl-5">
+            {flight.appliedOffer && flight.basePrice && (
+              <div className="text-[10px] text-[var(--text-muted)] line-through mb-0.5">
+                {formatPrice(flight.basePrice + 350)} {/* base + standard convenience */}
+              </div>
+            )}
+            <div className="text-xl font-semibold font-mono-price mb-1">
+              {formatPrice(flight.price)}
+            </div>
+            
+            {flight.appliedOffer && (
+              <div className="mb-2 bg-[var(--accent-green)]/10 text-[var(--accent-green)] text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider text-right">
+                {flight.appliedOffer.name}
+              </div>
+            )}
+
+            <div className="flex gap-1.5 mb-3 justify-end">
               {flight.baggage.checked.included && <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--accent-primary-dim)] text-[var(--text-muted)] font-medium">Bag</span>}
               {flight.refundable && <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--accent-primary-dim)] text-[var(--text-muted)] font-medium">Refundable</span>}
             </div>
             <button
               onClick={() => router.push(`/checkout?id=${flight.id}`)}
-              className="px-4 py-2 rounded-[var(--radius-md)] bg-[var(--accent-cta)] text-[var(--text-inverse)] text-xs font-semibold hover:opacity-90 transition-opacity flex items-center gap-1"
+              className="px-4 py-2 rounded-[var(--radius-md)] bg-[var(--accent-cta)] text-[var(--text-inverse)] text-xs font-semibold hover:opacity-90 transition-opacity flex items-center gap-1 w-full justify-center sm:w-auto"
             >
               Select <ExternalLink className="w-3 h-3 opacity-50" />
             </button>
@@ -269,23 +281,28 @@ function SearchContent() {
   useEffect(() => { if (from) setOrigin(from); if (to) setDestination(to); }, [from, to, setOrigin, setDestination]);
 
   useEffect(() => {
+    let isMounted = true;
     if (!from || !to || !date) return;
+    
     const fetchResults = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/search", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ origin: from, destination: to, departureDate: date, returnDate: returnDate || undefined, passengers: { adults, children, infants }, cabinClass: cabin }),
-        });
-        if (!res.ok) throw new Error(`Search failed: ${res.statusText}`);
-        const data = await res.json();
-        setAllFlights(data.flights || []);
-        setFilteredFlights(data.flights || []);
-      } catch (err) { setError(err instanceof Error ? err.message : "Something went wrong."); }
-      finally { setIsLoading(false); }
+        const results = await fetchLiveFlights(from, to, date);
+        if (isMounted) {
+          setAllFlights(results || []);
+          setFilteredFlights(results || []);
+        }
+      } catch (err) { 
+        if (isMounted) setError(err instanceof Error ? err.message : "Something went wrong."); 
+      }
+      finally { 
+        if (isMounted) setIsLoading(false); 
+      }
     };
+    
     fetchResults();
+    return () => { isMounted = false; };
   }, [from, to, date, returnDate, adults, children, infants, cabin]);
 
   const sortedFlights = useMemo(() => sortFlights(filteredFlights, sortBy), [filteredFlights, sortBy]);
