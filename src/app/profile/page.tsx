@@ -106,11 +106,11 @@ function ProfileContent() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[var(--bg-subtle)] pb-20 flex flex-col">
-      <header className="bg-[var(--bg-base)] border-b border-[var(--border-default)]">
+    <div className="min-h-[100dvh] bg-[var(--bg-base)] pb-20 flex flex-col">
+      <header className="bg-transparent border-b border-[var(--border-default)]">
         <div className="container-app py-8 lg:py-12">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-[var(--bg-base)] shadow-sm overflow-hidden bg-[var(--accent-primary-dim)] flex items-center justify-center">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-transparent shadow-sm overflow-hidden bg-[var(--accent-primary-dim)] flex items-center justify-center">
               {user?.image ? (
                 <img src={user.image} alt={user.name || "User"} className="w-full h-full object-cover" />
               ) : (
@@ -130,7 +130,7 @@ function ProfileContent() {
           
           {/* Sidebar */}
           <div className="w-full lg:w-64 shrink-0">
-            <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] p-2 shadow-sm flex flex-col gap-1">
+            <div className="sticky top-24 bg-transparent flex flex-col gap-1">
               <button
                 onClick={() => handleTabChange("account")}
                 className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] text-sm font-medium transition-colors text-left ${
@@ -156,7 +156,7 @@ function ProfileContent() {
                 <Bell className="w-4 h-4" /> Price Alerts
               </button>
               
-              <div className="h-px bg-[var(--border-default)] my-2" />
+              <div className="h-px bg-[var(--border-default)] my-2 w-full" />
               
               <button
                 onClick={() => signOut({ callbackUrl: '/' })}
@@ -171,7 +171,7 @@ function ProfileContent() {
           <div className="flex-1">
             
             {activeTab === "account" && (
-              <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] p-6 shadow-sm">
+              <div className="bg-transparent border border-[var(--border-default)] rounded-[var(--radius-xl)] p-6">
                 <h2 className="text-xl font-bold mb-6">Account Details</h2>
                 <div className="space-y-6 max-w-md">
                   <div>
@@ -192,7 +192,7 @@ function ProfileContent() {
             )}
 
             {activeTab === "wallet" && (
-              <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] shadow-sm overflow-hidden">
+              <div className="bg-transparent border border-[var(--border-default)] rounded-[var(--radius-xl)] overflow-hidden">
                 <div className="p-6 border-b border-[var(--border-default)]">
                   <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
                     <Wallet className="w-5 h-5 text-[var(--accent-cta)]" />
@@ -239,7 +239,7 @@ function ProfileContent() {
             )}
 
             {activeTab === "alerts" && (
-              <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] shadow-sm overflow-hidden">
+              <div className="bg-transparent border border-[var(--border-default)] rounded-[var(--radius-xl)] overflow-hidden">
                 <div className="p-6 border-b border-[var(--border-default)]">
                   <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
                     <Bell className="w-5 h-5 text-[var(--accent-cta)]" />

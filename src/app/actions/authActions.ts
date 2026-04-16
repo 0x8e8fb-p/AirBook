@@ -27,6 +27,8 @@ export async function registerUser(formData: FormData) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    console.log("[Auth] Attempting to create user in database:", email);
+
     await prisma.user.create({
       data: {
         name,
@@ -35,9 +37,10 @@ export async function registerUser(formData: FormData) {
       }
     });
 
+    console.log("[Auth] User created successfully");
     return { success: true };
-  } catch (error) {
-    console.error("Registration error:", error);
-    return { success: false, error: "Something went wrong" };
+  } catch (error: any) {
+    console.error("[Auth] Registration error details:", error);
+    return { success: false, error: error?.message || "Something went wrong in the database" };
   }
 }

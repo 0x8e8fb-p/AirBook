@@ -96,17 +96,13 @@ function FlightCardSkeleton() {
 /* ─── Flight Card ──────── */
 function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index: number; isCheapest: boolean }) {
   const router = useRouter();
-  const airlineInfo = AIRLINES[flight.airline];
-  const { setSelectedFlight } = useCheckoutStore();
-
-  const sourceMap: Record<string, string> = {
-    'google_flights': 'Google Flights',
-    'ixigo': 'Ixigo',
-    'makemytrip': 'MakeMyTrip',
-    'cleartrip': 'Cleartrip'
+  // Using Kiwi's airline logo CDN to fetch any missing airlines dynamically by their carrier code
+  const airlineInfo = AIRLINES[flight.airline] || {
+    name: flight.airline,
+    logo: `https://images.kiwi.com/airlines/128/${flight.airline}.png`,
+    color: '#888888'
   };
-
-  const sourceName = sourceMap[flight.source] || 'Master API';
+  const { setSelectedFlight } = useCheckoutStore();
 
   // Apply stagger to flight cards
   const baseDelay = 0.3; // Base delay for the list to appear
@@ -131,12 +127,21 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
         <div className="flex flex-col sm:flex-row sm:items-center gap-5">
           {/* Airline */}
           <div className="flex items-center gap-3 sm:w-40 shrink-0">
-            <div className="w-9 h-9 rounded-[var(--radius-sm)] flex items-center justify-center text-white font-bold text-xs shrink-0" style={{ backgroundColor: airlineInfo?.color || "#3F3F46" }}>
-              {flight.airline}
+            <div className="w-8 h-8 rounded bg-white flex items-center justify-center p-1 shrink-0 shadow-sm border border-[var(--border-default)]">
+              <img 
+                src={airlineInfo.logo} 
+                alt={airlineInfo.name}
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://images.kiwi.com/airlines/128/default.png';
+                }}
+              />
             </div>
             <div className="min-w-0">
-              <div className="text-sm font-medium truncate">{flight.airlineName}</div>
-              <div className="text-[11px] text-[var(--text-muted)] font-mono">{flight.flightNumber}</div>
+              <div className="text-sm font-medium truncate">{airlineInfo.name}</div>
+              <div className="text-[11px] text-[var(--text-muted)] font-mono flex items-center gap-1.5">
+                <span>{flight.flightNumber}</span>
+              </div>
             </div>
           </div>
 
@@ -182,17 +187,16 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
               <div className="text-2xl font-bold font-mono-price text-[var(--text-primary)]">
                 {formatPrice(flight.price)}
               </div>
-              <div className="text-[9px] text-[var(--text-muted)] mt-0.5 flex items-center gap-1">
-                Found via <span className="font-semibold text-[var(--text-secondary)]">{sourceName}</span>
-              </div>
             </div>
             
-            {flight.appliedOffer && (
+            {flight.appliedOffer ? (
               <div className="mb-3 w-full sm:w-auto bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/20 text-[var(--accent-green)] text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1.5">
                 <TicketPercent className="w-3 h-3" />
-                <span className="truncate max-w-[150px]">{flight.appliedOffer.name}</span>
+                <span className="truncate max-w-[150px]" title={flight.appliedOffer.name}>
+                  {flight.appliedOffer.name}
+                </span>
               </div>
-            )}
+            ) : null}
 
             <div className="flex gap-1.5 mb-3 justify-end w-full">
               {flight.baggage.checked.included && <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--bg-subtle)] border border-[var(--border-default)] text-[var(--text-muted)] font-medium">15kg Bag</span>}

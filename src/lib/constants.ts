@@ -4,23 +4,23 @@
 
 /** Indian airline data with logos */
 export const AIRLINES: Record<string, { name: string; logo: string; color: string }> = {
-  '6E': { name: 'IndiGo', logo: '/airlines/indigo.svg', color: '#0033A0' },
-  'AI': { name: 'Air India', logo: '/airlines/airindia.svg', color: '#E31837' },
-  'SG': { name: 'SpiceJet', logo: '/airlines/spicejet.svg', color: '#FF0000' },
-  'QP': { name: 'Akasa Air', logo: '/airlines/akasa.svg', color: '#FF6B00' },
-  'IX': { name: 'Air India Express', logo: '/airlines/aiexpress.svg', color: '#ED1C24' },
-  '9I': { name: 'Alliance Air', logo: '/airlines/alliance.svg', color: '#1B3A6B' },
-  'S5': { name: 'Star Air', logo: '/airlines/starair.svg', color: '#003DA5' },
-  'I7': { name: 'IndiGo (Interline)', logo: '/airlines/indigo.svg', color: '#0033A0' },
-  'UK': { name: 'Air India (Vistara)', logo: '/airlines/airindia.svg', color: '#4A2F83' },
+  '6E': { name: 'IndiGo', logo: 'https://images.kiwi.com/airlines/128/6E.png', color: '#0033A0' },
+  'AI': { name: 'Air India', logo: 'https://images.kiwi.com/airlines/128/AI.png', color: '#E31837' },
+  'SG': { name: 'SpiceJet', logo: 'https://images.kiwi.com/airlines/128/SG.png', color: '#FF0000' },
+  'QP': { name: 'Akasa Air', logo: 'https://images.kiwi.com/airlines/128/QP.png', color: '#FF6B00' },
+  'IX': { name: 'Air India Express', logo: 'https://images.kiwi.com/airlines/128/IX.png', color: '#ED1C24' },
+  '9I': { name: 'Alliance Air', logo: 'https://images.kiwi.com/airlines/128/9I.png', color: '#1B3A6B' },
+  'S5': { name: 'Star Air', logo: 'https://images.kiwi.com/airlines/128/S5.png', color: '#003DA5' },
+  'I7': { name: 'IndiGo (Interline)', logo: 'https://images.kiwi.com/airlines/128/6E.png', color: '#0033A0' },
+  'UK': { name: 'Vistara', logo: 'https://images.kiwi.com/airlines/128/UK.png', color: '#4A2F83' },
   // International popular
-  'EK': { name: 'Emirates', logo: '/airlines/emirates.svg', color: '#D71921' },
-  'EY': { name: 'Etihad Airways', logo: '/airlines/etihad.svg', color: '#BD8B13' },
-  'SQ': { name: 'Singapore Airlines', logo: '/airlines/singapore.svg', color: '#FDB813' },
-  'TG': { name: 'Thai Airways', logo: '/airlines/thai.svg', color: '#6F2DA8' },
-  'QR': { name: 'Qatar Airways', logo: '/airlines/qatar.svg', color: '#5C0D34' },
-  'LH': { name: 'Lufthansa', logo: '/airlines/lufthansa.svg', color: '#05164D' },
-  'BA': { name: 'British Airways', logo: '/airlines/ba.svg', color: '#075AAA' },
+  'EK': { name: 'Emirates', logo: 'https://images.kiwi.com/airlines/128/EK.png', color: '#D71921' },
+  'EY': { name: 'Etihad Airways', logo: 'https://images.kiwi.com/airlines/128/EY.png', color: '#BD8B13' },
+  'SQ': { name: 'Singapore Airlines', logo: 'https://images.kiwi.com/airlines/128/SQ.png', color: '#FDB813' },
+  'TG': { name: 'Thai Airways', logo: 'https://images.kiwi.com/airlines/128/TG.png', color: '#6F2DA8' },
+  'QR': { name: 'Qatar Airways', logo: 'https://images.kiwi.com/airlines/128/QR.png', color: '#5C0D34' },
+  'LH': { name: 'Lufthansa', logo: 'https://images.kiwi.com/airlines/128/LH.png', color: '#05164D' },
+  'BA': { name: 'British Airways', logo: 'https://images.kiwi.com/airlines/128/BA.png', color: '#075AAA' },
 };
 
 /** Default filter state */

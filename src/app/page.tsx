@@ -306,7 +306,7 @@ export default function HomePage() {
             Find the cheapest<br />flights, instantly.
           </h1>
           <p className="text-[var(--text-secondary)] text-base sm:text-lg max-w-md mx-auto leading-relaxed">
-            Compare fares across Google Flights, MakeMyTrip, Cleartrip & Ixigo. Apply all Indian credit card offers automatically.
+            Find the absolute lowest fares and apply all Indian credit card offers automatically to get your true effective price.
           </p>
         </motion.div>
 
