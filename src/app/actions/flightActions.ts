@@ -18,7 +18,7 @@ export interface EnrichedFlight {
   pricing: FlightPriceDetails;
 }
 
-export async function getAndTrackFlights(origin: string, destination: string, dateString: string): Promise<EnrichedFlight[]> {
+export async function getAndTrackFlights(origin: string, destination: string, dateString: string, userCards?: string[]): Promise<EnrichedFlight[]> {
   try {
     // 1. Fetch raw flights via Master API Scrapers concurrently
     const scrapers = [
@@ -71,7 +71,7 @@ export async function getAndTrackFlights(origin: string, destination: string, da
       flightNumber: flight.flightNumber,
       departureTime: flight.departureTime,
       arrivalTime: flight.arrivalTime,
-      pricing: calculateBestEffectivePrice(flight.basePriceINR)
+      pricing: calculateBestEffectivePrice(flight.basePriceINR, userCards)
     }));
 
     // 3. Find the lowest effective price from this batch
@@ -95,6 +95,7 @@ export async function getAndTrackFlights(origin: string, destination: string, da
           where: {
             routeId: route.id,
             departureDate,
+            basePrice: { gt: 0 },
             recordedAt: {
               gte: new Date(Date.now() - 60 * 60 * 1000) // 1 hour ago
             }

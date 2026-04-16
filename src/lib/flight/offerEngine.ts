@@ -88,7 +88,22 @@ export function calculateBestEffectivePrice(baseFare: number, userCards?: string
   let bestOffer: BankOffer | null = null;
   let maxDiscount = 0;
 
-  for (const offer of INDIAN_BANK_OFFERS) {
+  // Filter offers based on userCards if provided
+  let applicableOffers = INDIAN_BANK_OFFERS;
+  
+  if (userCards && userCards.length > 0) {
+    applicableOffers = INDIAN_BANK_OFFERS.filter(offer => {
+      const bankPrefix = offer.id.split('_')[0]; // e.g. HDFC_CC_15 -> HDFC
+      const isCardOwned = userCards.includes(bankPrefix) || userCards.includes(offer.id);
+      
+      // Generic Airline Offers are always applicable regardless of cards
+      const isGeneric = ['INDIGO', 'AKASA', 'AIRINDIA'].includes(bankPrefix);
+      
+      return isCardOwned || isGeneric;
+    });
+  }
+
+  for (const offer of applicableOffers) {
     if (totalFare >= offer.minBooking) {
       let discount = 0;
       if (offer.type === 'flat') {

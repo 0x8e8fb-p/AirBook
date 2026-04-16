@@ -8,10 +8,13 @@ import type { FlightResult, SortOption, CabinClass } from "@/lib/types";
 import { sortFlights } from "@/lib/api/search-orchestrator";
 import { getAirportDisplay } from "@/lib/airports";
 import { AIRLINES, SORT_OPTIONS, formatPrice, formatDuration, formatTime } from "@/lib/constants";
-import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent } from "lucide-react";
+import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent, Wallet } from "lucide-react";
 import { fetchLiveFlights } from "@/lib/api/live-flight-mapper";
+import { useUserStore } from "@/stores/user-store";
+import { useCheckoutStore } from "@/stores/checkout-store";
 
 import { Footer } from "@/components/layout/Footer";
+import { PriceTrendChart } from "@/components/dashboard/PriceTrendChart";
 
 /* ─── Loading ──── */
 function SearchingAnimation() {
@@ -45,6 +48,7 @@ function SkeletonCard() {
 function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index: number; isCheapest: boolean }) {
   const router = useRouter();
   const airlineInfo = AIRLINES[flight.airline];
+  const { setSelectedFlight } = useCheckoutStore();
 
   const sourceMap: Record<string, string> = {
     'google_flights': 'Google Flights',
@@ -142,7 +146,10 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
               {flight.refundable && <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--bg-subtle)] border border-[var(--border-default)] text-[var(--text-muted)] font-medium">Refundable</span>}
             </div>
             <button
-              onClick={() => router.push(`/checkout?id=${flight.id}`)}
+              onClick={() => {
+                setSelectedFlight(flight);
+                router.push(`/checkout`);
+              }}
               className="px-4 py-2.5 rounded-[var(--radius-md)] bg-[var(--accent-cta)] text-[var(--text-inverse)] text-xs font-semibold hover:opacity-90 transition-opacity flex items-center gap-1 w-full justify-center sm:w-auto"
             >
               Book Now <ArrowRight className="w-3.5 h-3.5" />
@@ -319,6 +326,89 @@ function FilterPanel({ flights, onFilter, show, onClose }: { flights: FlightResu
   );
 }
 
+/* ─── Wallet Modal ──── */
+function WalletModal({ show, onClose }: { show: boolean; onClose: () => void }) {
+  const { ownedCards, toggleCard } = useUserStore();
+
+  const banks = [
+    { id: 'HDFC', name: 'HDFC Bank' },
+    { id: 'SBI', name: 'SBI Card' },
+    { id: 'ICICI', name: 'ICICI Bank' },
+    { id: 'AXIS', name: 'Axis Bank' },
+    { id: 'KOTAK', name: 'Kotak Mahindra Bank' },
+    { id: 'YES', name: 'Yes Bank' },
+    { id: 'RBL', name: 'RBL Bank' },
+    { id: 'SC', name: 'Standard Chartered' },
+    { id: 'AMEX', name: 'American Express' },
+    { id: 'INDUS', name: 'IndusInd Bank' },
+    { id: 'IDFC', name: 'IDFC First Bank' },
+    { id: 'AU', name: 'AU Small Finance Bank' },
+    { id: 'HSBC', name: 'HSBC Bank' },
+    { id: 'BOB', name: 'Bank of Baroda' },
+    { id: 'FEDERAL', name: 'Federal Bank' },
+    { id: 'CRED', name: 'CRED Pay' },
+    { id: 'PAYTM', name: 'Paytm Wallet' },
+    { id: 'PHONEPE', name: 'PhonePe' },
+    { id: 'MOBIKWIK', name: 'MobiKwik' },
+  ];
+
+  return (
+    <AnimatePresence>
+      {show && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+            animate={{ opacity: 1, scale: 1, y: 0 }} 
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-md bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-[var(--radius-xl)] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+          >
+            <div className="flex items-center justify-between p-5 border-b border-[var(--border-muted)]">
+              <div>
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <Wallet className="w-5 h-5 text-[var(--accent-cta)]" />
+                  My Wallet
+                </h3>
+                <p className="text-xs text-[var(--text-muted)] mt-1">Select the cards you own to see personalized lowest prices.</p>
+              </div>
+              <button onClick={onClose} className="p-2 rounded-full hover:bg-[var(--accent-primary-dim)] transition-colors">
+                <X className="w-5 h-5 text-[var(--text-secondary)]" />
+              </button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {banks.map(bank => (
+                  <label key={bank.id} className={`flex items-center gap-3 p-3 rounded-[var(--radius-md)] border cursor-pointer transition-colors ${
+                    ownedCards.includes(bank.id) ? 'bg-[var(--accent-primary-dim)] border-[var(--accent-cta)]' : 'border-[var(--border-default)] hover:border-[var(--border-strong)]'
+                  }`}>
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 rounded-[var(--radius-sm)] border-[var(--border-strong)] text-[var(--accent-cta)] focus:ring-[var(--accent-cta)] focus:ring-offset-0 bg-[var(--bg-base)]"
+                      checked={ownedCards.includes(bank.id)}
+                      onChange={() => toggleCard(bank.id)}
+                    />
+                    <span className="text-sm font-medium select-none">{bank.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-5 border-t border-[var(--border-muted)] bg-[var(--bg-subtle)]">
+              <button 
+                onClick={onClose}
+                className="w-full py-3 bg-[var(--accent-cta)] text-[var(--text-inverse)] font-semibold rounded-[var(--radius-md)] hover:opacity-90 transition-opacity"
+              >
+                Save & Update Prices
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 /* ─── Main ──── */
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -340,6 +430,9 @@ function SearchContent() {
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("cheapest");
   const [showFilters, setShowFilters] = useState(false);
+  const [showWallet, setShowWallet] = useState(false);
+
+  const { ownedCards } = useUserStore();
 
   useEffect(() => { if (from) setOrigin(from); if (to) setDestination(to); }, [from, to, setOrigin, setDestination]);
 
@@ -351,7 +444,7 @@ function SearchContent() {
       setIsLoading(true);
       setError(null);
       try {
-        const results = await fetchLiveFlights(from, to, date);
+        const results = await fetchLiveFlights(from, to, date, ownedCards);
         if (isMounted) {
           setAllFlights(results || []);
           setFilteredFlights(results || []);
@@ -366,7 +459,7 @@ function SearchContent() {
     
     fetchResults();
     return () => { isMounted = false; };
-  }, [from, to, date, returnDate, adults, children, infants, cabin]);
+  }, [from, to, date, returnDate, adults, children, infants, cabin, ownedCards]);
 
   const sortedFlights = useMemo(() => sortFlights(filteredFlights, sortBy), [filteredFlights, sortBy]);
   const handleFilter = useCallback((f: FlightResult[]) => setFilteredFlights(f), []);
@@ -389,11 +482,24 @@ function SearchContent() {
               {date && new Date(date).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })} · {adults + children + infants} traveller{adults + children + infants > 1 ? "s" : ""}
             </div>
           </div>
-          <button onClick={() => setShowFilters(!showFilters)} className="lg:hidden p-2 rounded-[var(--radius-sm)] border border-[var(--border-default)] hover:bg-[var(--accent-primary-dim)]" aria-label="Filters">
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-          </button>
+          
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setShowWallet(true)} 
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border border-[var(--accent-cta)]/30 bg-[var(--accent-primary-dim)] text-[var(--accent-cta)] text-xs font-semibold hover:bg-[var(--accent-cta)] hover:text-[var(--text-inverse)] transition-colors"
+            >
+              <Wallet className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">My Wallet</span>
+              {ownedCards.length > 0 && <span className="bg-[var(--accent-cta)] text-[var(--text-inverse)] w-4 h-4 rounded-full flex items-center justify-center text-[9px] group-hover:bg-[var(--bg-base)] group-hover:text-[var(--accent-cta)]">{ownedCards.length}</span>}
+            </button>
+            <button onClick={() => setShowFilters(!showFilters)} className="lg:hidden p-2 rounded-[var(--radius-sm)] border border-[var(--border-default)] hover:bg-[var(--accent-primary-dim)]" aria-label="Filters">
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </header>
+
+      <WalletModal show={showWallet} onClose={() => setShowWallet(false)} />
 
       <div className="container-app py-6">
         <div className="flex gap-8">
@@ -421,6 +527,7 @@ function SearchContent() {
               </div>
             ) : (
               <div className="max-w-3xl mx-auto">
+                <PriceTrendChart origin={from} destination={to} date={date} />
                 <SortBar sortBy={sortBy} onSort={setSortBy} totalResults={sortedFlights.length} />
                 <div className="space-y-3">
                   {sortedFlights.map((flight, i) => (

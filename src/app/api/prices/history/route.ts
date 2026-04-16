@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    // We want all price history for this specific route and departure date, ordered by recorded time
+    // Exclude anomalous basePrice 0 logs
     const history = await prisma.priceHistory.findMany({
       where: {
         route: {
@@ -22,6 +22,9 @@ export async function GET(request: Request) {
         departureDate: {
           gte: new Date(new Date(dateStr).setHours(0, 0, 0, 0)),
           lt: new Date(new Date(dateStr).setHours(23, 59, 59, 999))
+        },
+        basePrice: {
+          gt: 0 // Ignore anomalous bugs from previous scraper versions
         }
       },
       orderBy: {

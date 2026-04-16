@@ -57,6 +57,9 @@ export async function scrapeGoogleFlights(origin: string, destination: string, d
         price = Math.round(price * 100);
       }
 
+      // Safeguard: Ensure price is not 0 or abnormally low
+      if (price <= 0) continue;
+
       standardizedFlights.push({
         id: `google-${Math.random().toString(36).substr(2, 9)}`,
         origin: origin,

@@ -2,9 +2,9 @@ import { getAndTrackFlights, EnrichedFlight } from '@/app/actions/flightActions'
 import { FlightResult, FlightSegment } from '@/lib/types';
 import { AIRLINES } from '@/lib/constants';
 
-export async function fetchLiveFlights(origin: string, destination: string, date: string): Promise<FlightResult[]> {
+export async function fetchLiveFlights(origin: string, destination: string, date: string, userCards?: string[]): Promise<FlightResult[]> {
   try {
-    const liveFlights = await getAndTrackFlights(origin, destination, date);
+    const liveFlights = await getAndTrackFlights(origin, destination, date, userCards);
     
     return liveFlights.map((flight: EnrichedFlight) => {
       // Map airline code to full name if available in our constants
