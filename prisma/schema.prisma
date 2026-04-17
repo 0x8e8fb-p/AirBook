@@ -138,3 +138,34 @@ model VerificationToken {
   @@unique([identifier, token])
   @@schema("public")
 }
+
+model FlightOffer {
+  id          String   @id @default(cuid())
+  source      String   // "hdfc_smartbuy", "grabon", "manual", etc.
+  category    String   // "bank_cc", "bank_dc", "bank_emi", "upi_wallet",
+                       // "airline_promo", "ota_coupon", "cashback_portal",
+                       // "international", "loyalty", "seasonal"
+  bankCode    String?  // "HDFC", "SBI", etc. (null for airline/OTA offers)
+  name        String   // Human-readable offer name
+  description String?  // Longer description with terms
+  type        String   // "percentage" or "flat"
+  value       Float    // 0.15 for 15%, or 1500 for flat ₹1500
+  maxCap      Float?   // Max discount cap for percentage offers
+  minBooking  Float    @default(0)
+  promoCode   String?  // "HDFCEMI", "6E400", etc.
+  platform    String?  // "makemytrip", "cleartrip", "ixigo", "airline_direct", "any"
+  airline     String?  // "6E", "AI", etc. (null = all airlines)
+  url         String?  // Link to official offer page
+  validFrom   DateTime @default(now())
+  validUntil  DateTime
+  active      Boolean  @default(true)
+  priority    Int      @default(0)
+  scrapedAt   DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active, validUntil])
+  @@index([category, bankCode])
+  @@index([platform])
+  @@schema("public")
+}

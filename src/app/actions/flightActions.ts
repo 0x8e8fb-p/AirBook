@@ -65,16 +65,16 @@ export async function getAndTrackFlights(origin: string, destination: string, da
     }
     const uniqueFlights = Array.from(flightMap.values());
 
-    // 2. Apply Smart-Pricing
-    const enrichedFlights = uniqueFlights.map(flight => ({
+    // 2. Apply Smart-Pricing (async — DB-backed offers)
+    const enrichedFlights = await Promise.all(uniqueFlights.map(async flight => ({
       id: flight.id,
       source: flight.source,
       airline: flight.airline,
       flightNumber: flight.flightNumber,
       departureTime: flight.departureTime,
       arrivalTime: flight.arrivalTime,
-      pricing: calculateBestEffectivePrice(flight.basePriceINR, userCards)
-    }));
+      pricing: await calculateBestEffectivePrice(flight.basePriceINR, userCards, flight.airline)
+    })));
 
     // Log the search action here since this is where flights are successfully fetched
     logSearchAction(origin, destination, dateString, enrichedFlights.length).catch(e => console.error("Error logging search from getAndTrackFlights:", e));

@@ -1,10 +1,19 @@
+import prisma from '@/lib/prisma';
+
 export interface BankOffer {
   id: string;
   name: string;
   type: 'percentage' | 'flat';
-  value: number; // percentage (0.15) or flat amount (1000)
-  maxCap?: number; // max discount amount for percentage
+  value: number;
+  maxCap?: number;
   minBooking: number;
+  promoCode?: string | null;
+  platform?: string | null;
+  airline?: string | null;
+  url?: string | null;
+  category: string;
+  bankCode?: string | null;
+  validUntil: Date;
 }
 
 export interface FlightPriceDetails {
@@ -14,111 +23,119 @@ export interface FlightPriceDetails {
   appliedOffer: BankOffer | null;
 }
 
-const CONVENIENCE_FEE = 350; // Standard domestic convenience fee
+const CONVENIENCE_FEE = 350;
 
-const INDIAN_BANK_OFFERS: BankOffer[] = [
-  // HDFC Bank
-  { id: 'HDFC_CC_15', name: '15% off up to ₹1500 on HDFC Credit Cards', type: 'percentage', value: 0.15, maxCap: 1500, minBooking: 5000 },
-  { id: 'HDFC_EMI_FLAT', name: 'Flat ₹2000 off on HDFC EMI', type: 'flat', value: 2000, minBooking: 10000 },
-  { id: 'HDFC_DC_10', name: '10% off up to ₹1000 on HDFC Debit Cards', type: 'percentage', value: 0.10, maxCap: 1000, minBooking: 4000 },
+// ── In-memory cache for DB offers (5 min TTL) ──
+let cachedOffers: BankOffer[] | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-  // SBI Card
-  { id: 'SBI_CC_10', name: '10% off up to ₹1200 on SBI Credit Cards', type: 'percentage', value: 0.10, maxCap: 1200, minBooking: 3000 },
-  { id: 'SBI_CC_12', name: '12% off up to ₹1500 on SBI Credit Cards (Wednesdays)', type: 'percentage', value: 0.12, maxCap: 1500, minBooking: 4000 },
-  
-  // ICICI Bank
-  { id: 'ICICI_CC_15', name: '15% off up to ₹1500 on ICICI Credit Cards', type: 'percentage', value: 0.15, maxCap: 1500, minBooking: 5000 },
-  { id: 'ICICI_NB_FLAT', name: 'Flat ₹500 off on ICICI Netbanking', type: 'flat', value: 500, minBooking: 3000 },
-  { id: 'ICICI_AMAZON_PAY', name: '5% unlimited cashback on Amazon Pay ICICI', type: 'percentage', value: 0.05, maxCap: 99999, minBooking: 0 },
+function mapDbOffer(row: any): BankOffer {
+  return {
+    id: row.id,
+    name: row.name,
+    type: row.type as 'percentage' | 'flat',
+    value: row.value,
+    maxCap: row.maxCap ?? undefined,
+    minBooking: row.minBooking,
+    promoCode: row.promoCode,
+    platform: row.platform,
+    airline: row.airline,
+    url: row.url,
+    category: row.category,
+    bankCode: row.bankCode,
+    validUntil: row.validUntil,
+  };
+}
 
-  // Axis Bank
-  { id: 'AXIS_CC_12', name: '12% off up to ₹1200 on Axis Credit Cards', type: 'percentage', value: 0.12, maxCap: 1200, minBooking: 4000 },
-  { id: 'AXIS_DC_FLAT', name: 'Flat ₹1000 off on Axis Debit Cards', type: 'flat', value: 1000, minBooking: 4000 },
-  { id: 'AXIS_FLIPKART', name: '4% unlimited cashback on Flipkart Axis Card', type: 'percentage', value: 0.04, maxCap: 99999, minBooking: 0 },
+export async function getActiveOffers(): Promise<BankOffer[]> {
+  const now = Date.now();
+  if (cachedOffers && (now - cacheTimestamp) < CACHE_TTL) {
+    return cachedOffers;
+  }
 
-  // Kotak Mahindra Bank
-  { id: 'KOTAK_CC_10', name: '10% off up to ₹1000 on Kotak Credit Cards', type: 'percentage', value: 0.10, maxCap: 1000, minBooking: 3500 },
-  { id: 'KOTAK_811_FLAT', name: 'Flat ₹811 off on Kotak 811', type: 'flat', value: 811, minBooking: 4000 },
+  try {
+    const rows = await prisma.flightOffer.findMany({
+      where: {
+        active: true,
+        validUntil: { gte: new Date() },
+        validFrom: { lte: new Date() },
+      },
+      orderBy: { priority: 'desc' },
+    });
 
-  // Yes Bank
-  { id: 'YES_CC_15', name: '15% off up to ₹1500 on Yes Bank Credit Cards', type: 'percentage', value: 0.15, maxCap: 1500, minBooking: 4500 },
+    cachedOffers = rows.map(mapDbOffer);
+    cacheTimestamp = now;
+    return cachedOffers;
+  } catch (error) {
+    console.error('Failed to fetch offers from DB, using empty list:', error);
+    return cachedOffers || [];
+  }
+}
 
-  // RBL Bank
-  { id: 'RBL_CC_FLAT', name: 'Flat ₹1200 off on RBL Credit Cards', type: 'flat', value: 1200, minBooking: 5000 },
+/** Invalidate the in-memory cache (called after sync) */
+export function invalidateOfferCache() {
+  cachedOffers = null;
+  cacheTimestamp = 0;
+}
 
-  // Standard Chartered
-  { id: 'SC_CC_20', name: '20% off up to ₹2000 on Standard Chartered Cards', type: 'percentage', value: 0.20, maxCap: 2000, minBooking: 6000 },
+/** Get offers filtered for a specific user's cards */
+export async function getOffersForUser(
+  userCards?: string[],
+  price?: number,
+  airlineCode?: string,
+): Promise<BankOffer[]> {
+  const allOffers = await getActiveOffers();
 
-  // American Express
-  { id: 'AMEX_CC_FLAT', name: 'Flat ₹1500 off on Amex Network Cards', type: 'flat', value: 1500, minBooking: 8000 },
-  { id: 'AMEX_PLAT_15', name: '15% off up to ₹2500 on Amex Platinum', type: 'percentage', value: 0.15, maxCap: 2500, minBooking: 10000 },
+  return allOffers.filter(offer => {
+    // Price filter
+    if (price !== undefined && price < offer.minBooking) return false;
 
-  // IndusInd Bank
-  { id: 'INDUS_CC_12', name: '12% off up to ₹1200 on IndusInd Cards', type: 'percentage', value: 0.12, maxCap: 1200, minBooking: 4000 },
+    // Airline filter — airline-specific offers only match their airline
+    if (offer.airline && airlineCode && offer.airline !== airlineCode) return false;
 
-  // IDFC First Bank
-  { id: 'IDFC_CC_10', name: '10% off up to ₹1000 on IDFC Credit Cards', type: 'percentage', value: 0.10, maxCap: 1000, minBooking: 3000 },
+    // Card filter — bank offers need matching user card
+    if (offer.bankCode && userCards && userCards.length > 0) {
+      return userCards.includes(offer.bankCode);
+    }
 
-  // AU Small Finance Bank
-  { id: 'AU_CC_15', name: '15% off up to ₹1500 on AU Bank Cards', type: 'percentage', value: 0.15, maxCap: 1500, minBooking: 5000 },
+    // Non-bank offers (airline promos, OTA coupons, cashback, seasonal) are always applicable
+    if (!offer.bankCode) return true;
 
-  // HSBC Bank
-  { id: 'HSBC_CC_FLAT', name: 'Flat ₹1000 off on HSBC Credit Cards', type: 'flat', value: 1000, minBooking: 5000 },
+    // If no cards specified, still show non-bank offers
+    if (!userCards || userCards.length === 0) {
+      return !offer.bankCode;
+    }
 
-  // Bank of Baroda
-  { id: 'BOB_CC_10', name: '10% off up to ₹1200 on BOB Credit Cards', type: 'percentage', value: 0.10, maxCap: 1200, minBooking: 4000 },
+    return true;
+  });
+}
 
-  // Federal Bank
-  { id: 'FEDERAL_CC_15', name: '15% off up to ₹1500 on Federal Bank Cards', type: 'percentage', value: 0.15, maxCap: 1500, minBooking: 5000 },
-
-  // UPI & Wallets (Paytm, PhonePe, CRED, MobiKwik, Cred Pay)
-  { id: 'CRED_PAY_FLAT', name: 'Flat ₹500 off via CRED Pay', type: 'flat', value: 500, minBooking: 2500 },
-  { id: 'PAYTM_WALLET_10', name: '10% cashback up to ₹500 on Paytm Wallet', type: 'percentage', value: 0.10, maxCap: 500, minBooking: 2000 },
-  { id: 'PHONEPE_UPI_FLAT', name: 'Flat ₹300 off on PhonePe UPI', type: 'flat', value: 300, minBooking: 2000 },
-  { id: 'MOBIKWIK_15', name: '15% SuperCash up to ₹1000 on MobiKwik', type: 'percentage', value: 0.15, maxCap: 1000, minBooking: 3000 },
-
-  // Generic Airline Offers
-  { id: 'INDIGO_6E_FLAT', name: 'Flat ₹400 off on IndiGo flights (Code: 6E400)', type: 'flat', value: 400, minBooking: 3500 },
-  { id: 'AKASA_QP_10', name: '10% off up to ₹800 on Akasa Air (Code: QP10)', type: 'percentage', value: 0.10, maxCap: 800, minBooking: 3000 },
-  { id: 'AIRINDIA_AI_500', name: 'Flat ₹500 off on Air India flights', type: 'flat', value: 500, minBooking: 4000 }
-];
-
-export function calculateBestEffectivePrice(baseFare: number, userCards?: string[]): FlightPriceDetails {
+export async function calculateBestEffectivePrice(
+  baseFare: number,
+  userCards?: string[],
+  airlineCode?: string,
+): Promise<FlightPriceDetails> {
   const totalFare = baseFare + CONVENIENCE_FEE;
+  const applicableOffers = await getOffersForUser(userCards, totalFare, airlineCode);
+
   let bestOffer: BankOffer | null = null;
   let maxDiscount = 0;
 
-  // Filter offers based on userCards if provided
-  let applicableOffers = INDIAN_BANK_OFFERS;
-  
-  if (userCards && userCards.length > 0) {
-    applicableOffers = INDIAN_BANK_OFFERS.filter(offer => {
-      const bankPrefix = offer.id.split('_')[0]; // e.g. HDFC_CC_15 -> HDFC
-      const isCardOwned = userCards.includes(bankPrefix) || userCards.includes(offer.id);
-      
-      // Generic Airline Offers are always applicable regardless of cards
-      const isGeneric = ['INDIGO', 'AKASA', 'AIRINDIA'].includes(bankPrefix);
-      
-      return isCardOwned || isGeneric;
-    });
-  }
-
   for (const offer of applicableOffers) {
-    if (totalFare >= offer.minBooking) {
-      let discount = 0;
-      if (offer.type === 'flat') {
-        discount = offer.value;
-      } else if (offer.type === 'percentage') {
-        discount = totalFare * offer.value;
-        if (offer.maxCap && discount > offer.maxCap) {
-          discount = offer.maxCap;
-        }
+    let discount = 0;
+    if (offer.type === 'flat') {
+      discount = offer.value;
+    } else if (offer.type === 'percentage') {
+      discount = totalFare * offer.value;
+      if (offer.maxCap && discount > offer.maxCap) {
+        discount = offer.maxCap;
       }
+    }
 
-      if (discount > maxDiscount) {
-        maxDiscount = discount;
-        bestOffer = offer;
-      }
+    if (discount > maxDiscount) {
+      maxDiscount = discount;
+      bestOffer = offer;
     }
   }
 
@@ -128,4 +145,34 @@ export function calculateBestEffectivePrice(baseFare: number, userCards?: string
     effectivePrice: totalFare - maxDiscount,
     appliedOffer: bestOffer,
   };
+}
+
+/** Get ALL applicable offers for checkout display (not just best) */
+export async function getAllApplicableOffers(
+  baseFare: number,
+  userCards?: string[],
+  airlineCode?: string,
+): Promise<{ offer: BankOffer; discount: number }[]> {
+  const totalFare = baseFare + CONVENIENCE_FEE;
+  const applicableOffers = await getOffersForUser(userCards, totalFare, airlineCode);
+
+  const results: { offer: BankOffer; discount: number }[] = [];
+
+  for (const offer of applicableOffers) {
+    let discount = 0;
+    if (offer.type === 'flat') {
+      discount = offer.value;
+    } else if (offer.type === 'percentage') {
+      discount = totalFare * offer.value;
+      if (offer.maxCap && discount > offer.maxCap) {
+        discount = offer.maxCap;
+      }
+    }
+    if (discount > 0) {
+      results.push({ offer, discount });
+    }
+  }
+
+  // Sort by discount descending
+  return results.sort((a, b) => b.discount - a.discount);
 }
