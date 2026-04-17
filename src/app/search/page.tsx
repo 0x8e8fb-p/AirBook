@@ -271,15 +271,17 @@ function FilterPanel({ flights, onFilter, show, onClose }: { flights: FlightResu
   }, [flights]);
 
   const banks = useMemo(() => {
-    const set = new Set<string>();
+    const map = new Map<string, string>();
     flights.forEach((f) => {
       if (f.appliedOffer) {
-        // Extract the bank name from the offer ID or Name (e.g., HDFC_CC_15 -> HDFC)
-        const bankCode = f.appliedOffer.id.split('_')[0];
-        set.add(bankCode);
+        const bankCode = f.appliedOffer.id.split('_')[0]; // fallback if bankCode missing
+        const displayName = f.appliedOffer.bankCode || bankCode;
+        map.set(f.appliedOffer.id, displayName);
       }
     });
-    return Array.from(set).sort();
+    // Deduplicate by display name
+    const uniqueBanks = Array.from(new Set(map.values())).sort();
+    return uniqueBanks;
   }, [flights]);
 
   useEffect(() => {
@@ -287,7 +289,12 @@ function FilterPanel({ flights, onFilter, show, onClose }: { flights: FlightResu
     if (maxStops !== null) filtered = filtered.filter((f) => f.stops <= maxStops);
     if (selectedAirlines.length > 0) filtered = filtered.filter((f) => selectedAirlines.includes(f.airline));
     if (selectedBank) {
-      filtered = filtered.filter(f => f.appliedOffer?.id.startsWith(selectedBank));
+      filtered = filtered.filter(f => {
+        if (!f.appliedOffer) return false;
+        const bankCode = f.appliedOffer.id.split('_')[0];
+        const displayName = f.appliedOffer.bankCode || bankCode;
+        return displayName === selectedBank;
+      });
     }
     onFilter(filtered);
   }, [maxStops, selectedAirlines, selectedBank, flights, onFilter]);

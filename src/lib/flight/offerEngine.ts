@@ -3,9 +3,10 @@ import { prisma } from '@/lib/prisma';
 export interface BankOffer {
   id: string;
   name: string;
-  type: 'percentage' | 'flat';
+  description?: string | null;
+  type: string;
   value: number;
-  maxCap?: number;
+  maxCap?: number | null;
   minBooking: number;
   promoCode?: string | null;
   platform?: string | null;
