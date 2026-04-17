@@ -42,7 +42,7 @@ function CheckoutContent() {
       try {
         const baseFare = selectedFlight.basePrice || selectedFlight.price;
         const code = getAirlineCodeFromFlight(selectedFlight);
-        const offers = await fetchCheckoutOffers(baseFare, code);
+        const offers = await fetchCheckoutOffers(baseFare, code || undefined);
         setApplicableOffers(offers);
       } catch (err) {
         console.error("Failed to load offers:", err);

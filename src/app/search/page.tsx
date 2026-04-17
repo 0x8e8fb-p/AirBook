@@ -8,8 +8,8 @@ import type { FlightResult, SortOption, CabinClass } from "@/lib/types";
 import { sortFlights } from "@/lib/utils";
 import { getAirportDisplay } from "@/lib/airports";
 import { AIRLINES, SORT_OPTIONS, formatPrice, formatDuration, formatTime, getAirlineCodeFromFlight, getAirlineLogoForFlight } from "@/lib/constants";
-import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent, Wallet, Frown } from "lucide-react";
-import { fetchLiveFlights } from "@/lib/api/live-flight-mapper";
+import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent, Wallet, Frown, RefreshCw } from "lucide-react";
+import { fetchLiveFlights, fetchGoogleFlights, fetchOTAFlights } from "@/lib/api/live-flight-mapper";
 import { useUserStore } from "@/stores/user-store";
 import { useCheckoutStore } from "@/stores/checkout-store";
 import { syncWallet, getUserWallet } from "@/app/actions/userActions";
@@ -504,6 +504,7 @@ function SearchContent() {
   const [allFlights, setAllFlights] = useState<FlightResult[]>([]);
   const [filteredFlights, setFilteredFlights] = useState<FlightResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetchingOTAs, setIsFetchingOTAs] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("cheapest");
   const [showFilters, setShowFilters] = useState(false);
@@ -532,24 +533,48 @@ function SearchContent() {
     const fetchResults = async () => {
       setIsLoading(true);
       setError(null);
+      
       try {
-        const results = await fetchLiveFlights(from, to, date, ownedCards);
+        // Phase 1: Fetch fast Google Flights
+        const googleResults = await fetchGoogleFlights(from, to, date, ownedCards);
+        
         if (isMounted) {
-          setAllFlights(results || []);
-          setFilteredFlights(results || []);
+          setAllFlights(googleResults || []);
+          setFilteredFlights(googleResults || []);
+          setIsLoading(false);
+          setIsFetchingOTAs(true);
           
-          // Await the server action so it doesn't get cancelled by the browser
           try {
-            await logSearchAction(from, to, date, results?.length || 1);
+            await logSearchAction(from, to, date, googleResults?.length || 1);
           } catch (e) {
             console.error("Failed to log search:", e);
           }
         }
+        
+        // Phase 2: Fetch OTA flights in the background
+        const otaResults = await fetchOTAFlights(from, to, date, ownedCards);
+        
+        if (isMounted && otaResults && otaResults.length > 0) {
+          setAllFlights(prev => {
+            const combined = [...prev, ...otaResults];
+            // Deduplicate by flight number and departure time just in case
+            const unique = Array.from(new Map(combined.map(item => [item.flightNumber + item.departureTime, item])).values());
+            return unique;
+          });
+          
+          setFilteredFlights(prev => {
+            const combined = [...prev, ...otaResults];
+            const unique = Array.from(new Map(combined.map(item => [item.flightNumber + item.departureTime, item])).values());
+            return unique;
+          });
+        }
       } catch (err) { 
         if (isMounted) setError(err instanceof Error ? err.message : "Something went wrong."); 
-      }
-      finally { 
-        if (isMounted) setIsLoading(false); 
+      } finally { 
+        if (isMounted) {
+          setIsLoading(false); 
+          setIsFetchingOTAs(false);
+        }
       }
     };
     
@@ -662,6 +687,12 @@ function SearchContent() {
               >
                 <PriceTrendChart origin={from} destination={to} date={date} />
                 <CostCuttingTips origin={from} destination={to} avgPrice={avgPrice} offerCount={offerCount} maxSaving={maxSaving} />
+                {isFetchingOTAs && (
+                  <div className="mb-4 p-3 bg-[var(--accent-primary-dim)] border border-[var(--accent-cta)]/20 rounded-[var(--radius-md)] flex items-center justify-center gap-2 text-sm text-[var(--accent-cta)]">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span className="font-medium">Searching Makemytrip, Cleartrip & Ixigo for better offers...</span>
+                  </div>
+                )}
                 <SortBar sortBy={sortBy} onSort={setSortBy} totalResults={sortedFlights.length} />
                 <div className="space-y-3">
                   {sortedFlights.map((flight, i) => (

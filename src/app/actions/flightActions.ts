@@ -21,6 +21,152 @@ export interface EnrichedFlight {
   pricing: FlightPriceDetails;
 }
 
+export async function getGoogleFlightsAction(origin: string, destination: string, dateString: string, userCards?: string[]): Promise<EnrichedFlight[]> {
+  try {
+    const cacheKey = `${origin}-${destination}-${dateString}-${userCards?.join(',') || ''}-google`;
+    const cachedFlights = flightCache.get(cacheKey);
+    
+    if (cachedFlights) {
+      console.log(`[Cache Hit] Returning Google flights for ${origin}-${destination}`);
+      return cachedFlights;
+    }
+
+    const rawFlights = await scrapeGoogleFlights(origin, destination, dateString);
+    if (!rawFlights || rawFlights.length === 0) return [];
+
+    const flightMap = new Map<string, StandardizedFlight & { source?: string }>();
+    for (const f of rawFlights) {
+      if (f.basePriceINR <= 0) continue;
+      const hour = f.departureTime.substring(0, 13);
+      const key = `${f.flightNumber}-${hour}`;
+      if (!flightMap.has(key) || f.basePriceINR < flightMap.get(key)!.basePriceINR) {
+        flightMap.set(key, { ...f, source: 'google_flights' });
+      }
+    }
+    const uniqueFlights = Array.from(flightMap.values());
+
+    const enrichedFlights = await Promise.all(uniqueFlights.map(async flight => ({
+      id: flight.id,
+      source: flight.source,
+      airline: flight.airline,
+      flightNumber: flight.flightNumber,
+      departureTime: flight.departureTime,
+      arrivalTime: flight.arrivalTime,
+      pricing: await calculateBestEffectivePrice(flight.basePriceINR, userCards, flight.airline)
+    })));
+
+    logSearchAction(origin, destination, dateString, enrichedFlights.length).catch(e => console.error("Error logging search from getGoogleFlightsAction:", e));
+
+    if (enrichedFlights.length > 0) {
+      const lowestFlight = enrichedFlights.reduce((prev, current) => 
+        (prev.pricing.effectivePrice < current.pricing.effectivePrice) ? prev : current
+      );
+
+      const departureDate = new Date(dateString);
+      Promise.resolve().then(async () => {
+        try {
+          const route = await prisma.flightRoute.upsert({
+            where: { origin_destination: { origin, destination } },
+            update: {},
+            create: { origin, destination }
+          });
+
+          const recentLog = await prisma.priceHistory.findFirst({
+            where: {
+              routeId: route.id,
+              departureDate,
+              basePrice: { gt: 0 },
+              recordedAt: { gte: new Date(Date.now() - 60 * 60 * 1000) }
+            }
+          });
+
+          if (!recentLog) {
+            await prisma.priceHistory.create({
+              data: {
+                routeId: route.id,
+                departureDate,
+                effectivePrice: lowestFlight.pricing.effectivePrice,
+                basePrice: lowestFlight.pricing.baseFare,
+                airline: lowestFlight.airline
+              }
+            });
+          }
+        } catch (dbError) {
+          console.error("Failed to log price history:", dbError);
+        }
+      });
+    }
+
+    flightCache.set(cacheKey, enrichedFlights);
+    return enrichedFlights;
+  } catch (error) {
+    console.error("Google Flight search failed:", error);
+    return [];
+  }
+}
+
+export async function getOTAFlightsAction(origin: string, destination: string, dateString: string, userCards?: string[]): Promise<EnrichedFlight[]> {
+  try {
+    const cacheKey = `${origin}-${destination}-${dateString}-${userCards?.join(',') || ''}-ota`;
+    const cachedFlights = flightCache.get(cacheKey);
+    
+    if (cachedFlights) {
+      console.log(`[Cache Hit] Returning OTA flights for ${origin}-${destination}`);
+      return cachedFlights;
+    }
+
+    const scrapers = [
+      scrapeIxigoFlights(origin, destination, dateString),
+      scrapeMMTFlights(origin, destination, dateString),
+      scrapeCleartripFlights(origin, destination, dateString)
+    ];
+
+    const results = await Promise.allSettled(scrapers);
+    let rawFlights: StandardizedFlight[] = [];
+
+    for (const result of results) {
+      if (result.status === 'fulfilled' && result.value) {
+        rawFlights.push(...result.value);
+      }
+    }
+    
+    if (rawFlights.length === 0) return [];
+
+    const flightMap = new Map<string, StandardizedFlight & { source?: string }>();
+    for (const f of rawFlights) {
+      if (f.basePriceINR <= 0) continue;
+      const hour = f.departureTime.substring(0, 13);
+      const key = `${f.flightNumber}-${hour}`;
+      
+      if (!flightMap.has(key) || f.basePriceINR < flightMap.get(key)!.basePriceINR) {
+        let source = 'master_api';
+        if (f.id.startsWith('ixigo')) source = 'ixigo';
+        else if (f.id.startsWith('mmt')) source = 'makemytrip';
+        else if (f.id.startsWith('ct')) source = 'cleartrip';
+
+        flightMap.set(key, { ...f, source });
+      }
+    }
+    const uniqueFlights = Array.from(flightMap.values());
+
+    const enrichedFlights = await Promise.all(uniqueFlights.map(async flight => ({
+      id: flight.id,
+      source: flight.source,
+      airline: flight.airline,
+      flightNumber: flight.flightNumber,
+      departureTime: flight.departureTime,
+      arrivalTime: flight.arrivalTime,
+      pricing: await calculateBestEffectivePrice(flight.basePriceINR, userCards, flight.airline)
+    })));
+
+    flightCache.set(cacheKey, enrichedFlights);
+    return enrichedFlights;
+  } catch (error) {
+    console.error("OTA Flight search failed:", error);
+    return [];
+  }
+}
+
 export async function getAndTrackFlights(origin: string, destination: string, dateString: string, userCards?: string[]): Promise<EnrichedFlight[]> {
   try {
     const cacheKey = `${origin}-${destination}-${dateString}-${userCards?.join(',') || ''}`;
