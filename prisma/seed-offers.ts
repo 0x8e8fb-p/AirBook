@@ -16,7 +16,7 @@ const offers = [
   { source:'manual', category:'bank_cc', bankCode:'ICICI', name:'Flat ₹500 off on ICICI Netbanking', type:'flat', value:500, minBooking:3000, validUntil:endOfQ2 },
   { source:'manual', category:'bank_cc', bankCode:'ICICI', name:'5% unlimited cashback on Amazon Pay ICICI', type:'percentage', value:0.05, maxCap:99999, minBooking:0, validUntil:endOfYear },
   { source:'manual', category:'bank_cc', bankCode:'AXIS', name:'12% off up to ₹1200 on Axis Credit Cards', type:'percentage', value:0.12, maxCap:1200, minBooking:4000, validUntil:endOfMonth },
-  { source:'manual', category:'bank_cc', bankCode:'AXIS', name:'Flat ₹1000 off on Axis Debit Cards', type:'flat', value:1000, minBooking:4000, category:'bank_dc', validUntil:endOfMonth },
+  { source:'manual', category:'bank_dc', bankCode:'AXIS', name:'Flat ₹1000 off on Axis Debit Cards', type:'flat', value:1000, minBooking:4000, validUntil:endOfMonth },
   { source:'manual', category:'bank_cc', bankCode:'AXIS', name:'4% cashback on Flipkart Axis Card', type:'percentage', value:0.04, maxCap:99999, minBooking:0, validUntil:endOfYear },
   { source:'manual', category:'bank_cc', bankCode:'KOTAK', name:'10% off up to ₹1000 on Kotak Credit Cards', type:'percentage', value:0.10, maxCap:1000, minBooking:3500, validUntil:endOfMonth },
   { source:'manual', category:'bank_cc', bankCode:'KOTAK', name:'Flat ₹811 off on Kotak 811', type:'flat', value:811, minBooking:4000, validUntil:endOfQ2 },
