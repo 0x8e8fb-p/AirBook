@@ -150,15 +150,6 @@ export const INDIAN_HOLIDAYS_2026 = [
   { date: '2026-12-25', name: 'Christmas', nameHi: 'क्रिसमस', type: 'national' },
 ] as const;
 
-/** API configuration */
-export const API_CONFIG = {
-  SEARCH_TIMEOUT_MS: 15000,        // 15 seconds max search time
-  CACHE_TTL_MS: 15 * 60 * 1000,    // 15 minutes cache
-  MAX_RESULTS_PER_SOURCE: 50,
-  DUFFEL_RATE_LIMIT: 100,          // requests per minute
-  KIWI_RATE_LIMIT: 30,
-  SERPAPI_RATE_LIMIT: 5,
-} as const;
 
 /** Price formatting */
 export const formatPrice = (price: number): string => {

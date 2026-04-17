@@ -102,7 +102,7 @@ git commit -m "refactor: remove unused types and schemas"
 
 ### Task 5: Verify Build and Tests
 
-- [ ] **Step 1: Run type checking and tests**
+- [x] **Step 1: Run type checking and tests**
 Ensure that the codebase still compiles and all tests pass after the cleanup.
 
 ```bash
@@ -111,5 +111,5 @@ npm run build
 npm test --silent
 ```
 
-- [ ] **Step 2: Final verification commit**
+- [x] **Step 2: Final verification commit**
 If any additional fixes were needed during the build verification, commit them here.

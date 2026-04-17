@@ -125,23 +125,6 @@ export interface FlightResult {
   searchHash: string;
 }
 
-/** Search results from the orchestrator */
-export interface SearchResults {
-  flights: FlightResult[];
-  searchParams: SearchParams;
-  sources: {
-    source: FlightSource;
-    status: 'success' | 'error' | 'timeout';
-    resultCount: number;
-    responseTimeMs: number;
-    error?: string;
-  }[];
-  totalResults: number;
-  cheapest: number;        // Cheapest price found
-  fastest: number;         // Fastest duration in minutes
-  searchId: string;
-  cachedAt?: string;
-}
 
 /** Sort options for results */
 export type SortOption =

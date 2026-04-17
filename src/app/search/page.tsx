@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchStore } from "@/stores/search-store";
 import type { FlightResult, SortOption, CabinClass } from "@/lib/types";
-import { sortFlights } from "@/lib/api/search-orchestrator";
+import { sortFlights } from "@/lib/utils";
 import { getAirportDisplay } from "@/lib/airports";
 import { AIRLINES, SORT_OPTIONS, formatPrice, formatDuration, formatTime, getAirlineCodeFromFlight, getAirlineLogoForFlight } from "@/lib/constants";
 import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent, Wallet, Frown } from "lucide-react";
