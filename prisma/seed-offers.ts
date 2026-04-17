@@ -9,7 +9,7 @@ const offers = [
   // ── BANK CREDIT CARDS ──
   { source:'manual', category:'bank_cc', bankCode:'HDFC', name:'15% off up to ₹1500 on HDFC Credit Cards', type:'percentage', value:0.15, maxCap:1500, minBooking:5000, validUntil:endOfMonth, priority:10 },
   { source:'manual', category:'bank_cc', bankCode:'HDFC', name:'Flat ₹2000 off on HDFC EMI', type:'flat', value:2000, minBooking:10000, promoCode:'HDFCEMI', validUntil:endOfMonth, priority:8 },
-  { source:'manual', category:'bank_cc', bankCode:'HDFC', name:'10% off up to ₹1000 on HDFC Debit Cards', type:'percentage', value:0.10, maxCap:1000, minBooking:4000, category:'bank_dc', validUntil:endOfMonth },
+  { source:'manual', category:'bank_dc', bankCode:'HDFC', name:'10% off up to ₹1000 on HDFC Debit Cards', type:'percentage', value:0.10, maxCap:1000, minBooking:4000, validUntil:endOfMonth },
   { source:'manual', category:'bank_cc', bankCode:'SBI', name:'10% off up to ₹1200 on SBI Credit Cards', type:'percentage', value:0.10, maxCap:1200, minBooking:3000, validUntil:endOfMonth, priority:9 },
   { source:'manual', category:'bank_cc', bankCode:'SBI', name:'12% off up to ₹1500 on SBI Cards (Wednesdays)', type:'percentage', value:0.12, maxCap:1500, minBooking:4000, validUntil:endOfQ2 },
   { source:'manual', category:'bank_cc', bankCode:'ICICI', name:'15% off up to ₹1500 on ICICI Credit Cards', type:'percentage', value:0.15, maxCap:1500, minBooking:5000, validUntil:endOfMonth, priority:10 },
