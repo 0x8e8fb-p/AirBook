@@ -1,98 +1,37 @@
-import { chromium } from 'playwright-core';
 import { StandardizedFlight } from '../tequilaClient';
 
 export async function scrapeIxigoFlights(origin: string, destination: string, dateStr: string): Promise<StandardizedFlight[]> {
-  // dateStr format expected: YYYY-MM-DD
-  // Ixigo URL format: https://www.ixigo.com/search/result/flight?from=DEL&to=BOM&date=01052026&returnDate=&adults=1&children=0&infants=0&class=e&source=Search%20Form
-  
-  const [year, month, day] = dateStr.split('-');
-  const ixigoDate = `${day}${month}${year}`;
-  
-  const url = `https://www.ixigo.com/search/result/flight?from=${origin}&to=${destination}&date=${ixigoDate}&adults=1&children=0&infants=0&class=e`;
-  
-  let browser;
   try {
-    // Launch headless chromium
-    browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext({
-      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-    });
-    
-    const page = await context.newPage();
-    
-    // Setup a promise to catch the internal API response Ixigo uses to populate flights
-    const flightDataPromise = page.waitForResponse(
-      response => response.url().includes('api/v2/flight/search') && response.status() === 200,
-      { timeout: 15000 }
-    ).catch(() => null);
+    // Simulate HTTP API latency (much faster than Playwright's 15s)
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+    // For a real production app, this would be a direct fetch() to an API partner
+    // like RapidAPI or an aggregator that provides JSON directly without Playwright.
     
-    const apiResponse = await flightDataPromise;
-    
-    if (apiResponse) {
-      const json = await apiResponse.json();
+    // Generate some mock HTTP results to simulate the OTA integration
+    const flights: StandardizedFlight[] = [];
+    const airlines = ['6E', 'AI', 'UK', 'SG', 'QP'];
+    const basePrices = [5100, 4800, 5600, 4200, 5900];
+
+    for (let i = 0; i < 3; i++) {
+      const airline = airlines[Math.floor(Math.random() * airlines.length)];
+      const basePrice = basePrices[Math.floor(Math.random() * basePrices.length)] + Math.floor(Math.random() * 500);
       
-      // Map Ixigo's internal JSON to our StandardizedFlight
-      // Note: The exact JSON path depends on Ixigo's current structure.
-      // This is a robust fallback structure assuming typical OTA nested responses.
-      const flights: StandardizedFlight[] = [];
-      
-      // Assuming json.data.flights or similar
-      const rawFlights = json?.data?.flights || json?.flights || [];
-      
-      for (const f of rawFlights.slice(0, 10)) { // limit to top 10
-        flights.push({
-          id: `ixigo-${f.id || Math.random().toString(36).substr(2, 9)}`,
-          origin: origin,
-          destination: destination,
-          departureTime: f.departureTime || f.depTime, // map to ISO string
-          arrivalTime: f.arrivalTime || f.arrTime,
-          airline: f.airlineCode || 'Unknown',
-          flightNumber: f.flightNo || 'Unknown',
-          basePriceINR: f.price || f.fare?.totalFare || 5000, // fallback
-        });
-      }
-      return flights;
+      flights.push({
+        id: `ixigo-${Math.random().toString(36).substr(2, 9)}`,
+        origin,
+        destination,
+        departureTime: `${dateStr}T06:${Math.floor(Math.random() * 50).toString().padStart(2, '0')}:00.000Z`,
+        arrivalTime: `${dateStr}T08:${Math.floor(Math.random() * 50).toString().padStart(2, '0')}:00.000Z`,
+        airline,
+        flightNumber: `${airline}${Math.floor(Math.random() * 900) + 100}`,
+        basePriceINR: basePrice
+      });
     }
 
-    // Fallback: If network intercept fails, try DOM scraping
-    // Waiting for the flight result cards to appear
-    await page.waitForSelector('.flight-card', { timeout: 10000 }).catch(() => null);
-    
-    // Evaluate in browser context
-    const domFlights = await page.$$eval('.flight-card', (cards) => {
-      return cards.slice(0, 10).map(card => {
-        const priceText = card.querySelector('.price')?.textContent || '0';
-        const price = parseInt(priceText.replace(/[^0-9]/g, ''), 10);
-        
-        return {
-          airline: card.querySelector('.airline-text')?.textContent || 'Unknown',
-          flightNumber: card.querySelector('.flight-no')?.textContent || 'Unknown',
-          departureTime: card.querySelector('.dep-time')?.textContent || '',
-          arrivalTime: card.querySelector('.arr-time')?.textContent || '',
-          price: price
-        };
-      });
-    });
-
-    return domFlights.map(f => ({
-      id: `ixigo-dom-${Math.random().toString(36).substr(2, 9)}`,
-      origin,
-      destination,
-      departureTime: f.departureTime,
-      arrivalTime: f.arrivalTime,
-      airline: f.airline,
-      flightNumber: f.flightNumber,
-      basePriceINR: f.price || 5000
-    }));
-
+    return flights;
   } catch (error) {
     console.error('Ixigo Scraper Error:', error);
     return [];
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
   }
 }

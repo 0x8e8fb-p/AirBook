@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { StandardizedFlight } from '@/lib/flight/tequilaClient';
+import { flightCache } from '@/lib/flight/flightCache';
 
 export interface EnrichedFlight {
   id: string;
@@ -22,6 +23,14 @@ export interface EnrichedFlight {
 
 export async function getAndTrackFlights(origin: string, destination: string, dateString: string, userCards?: string[]): Promise<EnrichedFlight[]> {
   try {
+    const cacheKey = `${origin}-${destination}-${dateString}-${userCards?.join(',') || ''}`;
+    const cachedFlights = flightCache.get(cacheKey);
+    
+    if (cachedFlights) {
+      console.log(`[Cache Hit] Returning flights for ${origin}-${destination}`);
+      return cachedFlights;
+    }
+
     // 1. Fetch raw flights via Master API Scrapers concurrently
     const scrapers = [
       scrapeGoogleFlights(origin, destination, dateString),
@@ -126,6 +135,7 @@ export async function getAndTrackFlights(origin: string, destination: string, da
       }
     });
 
+    flightCache.set(cacheKey, enrichedFlights);
     return enrichedFlights;
   } catch (error) {
     console.error("Flight search failed:", error);
