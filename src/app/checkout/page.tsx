@@ -9,6 +9,10 @@ import { logBookingClick, fetchCheckoutOffers } from "@/app/actions/flightAction
 import { getAirportDisplay } from "@/lib/airports";
 import { Footer } from "@/components/layout/Footer";
 import { OfferClaimGuide } from "@/components/ui/OfferClaimGuide";
+import { formatPlatformName } from "@/lib/utils";
+import { useUserStore } from "@/stores/user-store";
+import { getUserWallet } from "@/app/actions/userActions";
+import { useSession } from "next-auth/react";
 import type { BankOffer } from "@/lib/flight/offerEngine";
 
 function CheckoutContent() {
@@ -19,6 +23,8 @@ function CheckoutContent() {
   const [applicableOffers, setApplicableOffers] = useState<{ offer: BankOffer; discount: number }[]>([]);
   const [isLoadingOffers, setIsLoadingOffers] = useState(true);
   const [showAllOffers, setShowAllOffers] = useState(false);
+  const { ownedCards, setCards } = useUserStore();
+  const { data: session } = useSession();
 
   useEffect(() => {
     setIsMounted(true);
@@ -36,13 +42,24 @@ function CheckoutContent() {
     }
   }, [selectedFlight, router, isMounted]);
 
+  // Load user wallet from DB if logged in
+  useEffect(() => {
+    if (session?.user) {
+      getUserWallet().then(res => {
+        if (res.success && res.cards) {
+          setCards(res.cards);
+        }
+      });
+    }
+  }, [session, setCards]);
+
   useEffect(() => {
     async function loadOffers() {
       if (!selectedFlight) return;
       try {
         const baseFare = selectedFlight.basePrice || selectedFlight.price;
         const code = getAirlineCodeFromFlight(selectedFlight);
-        const offers = await fetchCheckoutOffers(baseFare, code || undefined);
+        const offers = await fetchCheckoutOffers(baseFare, code || undefined, ownedCards);
         setApplicableOffers(offers);
       } catch (err) {
         console.error("Failed to load offers:", err);
@@ -53,7 +70,7 @@ function CheckoutContent() {
     if (isMounted && selectedFlight) {
       loadOffers();
     }
-  }, [isMounted, selectedFlight]);
+  }, [isMounted, selectedFlight, ownedCards]);
 
   // Don't render until mounted AND we have a flight (prevents hydration mismatch)
   if (!isMounted || !selectedFlight) return null;
@@ -254,6 +271,9 @@ function CheckoutContent() {
                       </span>
                       <div className="text-[10px] text-[var(--text-muted)] mt-0.5 leading-tight">
                         {selectedFlight.appliedOffer.name}
+                        <span className="text-[var(--accent-cta)] ml-1">
+                          · {formatPlatformName(selectedFlight.appliedOffer.platform, selectedFlight.appliedOffer.bankCode, selectedFlight.appliedOffer.category)}
+                        </span>
                       </div>
                     </div>
                     <span className="font-mono-price font-bold text-[var(--accent-green)]">

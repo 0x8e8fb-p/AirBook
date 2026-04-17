@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchStore } from "@/stores/search-store";
 import type { FlightResult, SortOption, CabinClass } from "@/lib/types";
-import { sortFlights, formatPlatformName } from "@/lib/utils";
+import { sortFlights, formatPlatformName, formatBankName } from "@/lib/utils";
 import { getAirportDisplay } from "@/lib/airports";
 import { AIRLINES, SORT_OPTIONS, formatPrice, formatDuration, formatTime, getAirlineCodeFromFlight, getAirlineLogoForFlight } from "@/lib/constants";
 import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent, Wallet, Frown, RefreshCw } from "lucide-react";
@@ -200,7 +200,7 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
               <div className="mb-3 w-full sm:w-auto bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/20 text-[var(--accent-green)] text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1.5">
                 <TicketPercent className="w-3 h-3" />
                 <span title={flight.appliedOffer.name}>
-                  Save {formatPrice(maxDiscount)} on {formatPlatformName(flight.appliedOffer.platform)}
+                  Save {formatPrice(maxDiscount)} on {formatPlatformName(flight.appliedOffer.platform, flight.appliedOffer.bankCode, flight.appliedOffer.category)}
                 </span>
               </div>
             ) : flight.appliedOffer ? (
@@ -280,17 +280,16 @@ function FilterPanel({ flights, onFilter, show, onClose }: { flights: FlightResu
   }, [flights]);
 
   const banks = useMemo(() => {
-    const map = new Map<string, string>();
+    const seen = new Map<string, string>();
     flights.forEach((f) => {
-      if (f.appliedOffer) {
-        const bankCode = f.appliedOffer.id.split('_')[0]; // fallback if bankCode missing
-        const displayName = f.appliedOffer.bankCode || bankCode;
-        map.set(f.appliedOffer.id, displayName);
+      if (f.appliedOffer?.bankCode) {
+        const code = f.appliedOffer.bankCode;
+        if (!seen.has(code)) {
+          seen.set(code, formatBankName(code));
+        }
       }
     });
-    // Deduplicate by display name
-    const uniqueBanks = Array.from(new Set(map.values())).sort();
-    return uniqueBanks;
+    return Array.from(seen.entries()).sort((a, b) => a[1].localeCompare(b[1]));
   }, [flights]);
 
   useEffect(() => {
@@ -298,12 +297,7 @@ function FilterPanel({ flights, onFilter, show, onClose }: { flights: FlightResu
     if (maxStops !== null) filtered = filtered.filter((f) => f.stops <= maxStops);
     if (selectedAirlines.length > 0) filtered = filtered.filter((f) => selectedAirlines.includes(f.airline));
     if (selectedBank) {
-      filtered = filtered.filter(f => {
-        if (!f.appliedOffer) return false;
-        const bankCode = f.appliedOffer.id.split('_')[0];
-        const displayName = f.appliedOffer.bankCode || bankCode;
-        return displayName === selectedBank;
-      });
+      filtered = filtered.filter(f => f.appliedOffer?.bankCode === selectedBank);
     }
     onFilter(filtered);
   }, [maxStops, selectedAirlines, selectedBank, flights, onFilter]);
@@ -342,15 +336,15 @@ function FilterPanel({ flights, onFilter, show, onClose }: { flights: FlightResu
             >
               All Available Offers
             </button>
-            {banks.map(bank => (
+            {banks.map(([code, displayName]) => (
               <button 
-                key={bank} 
-                onClick={() => setSelectedBank(bank)}
+                key={code} 
+                onClick={() => setSelectedBank(code)}
                 className={`text-left text-[13px] px-2.5 py-1.5 rounded-[var(--radius-sm)] transition-colors ${
-                  selectedBank === bank ? 'bg-[var(--accent-primary-dim)] text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-base)]'
+                  selectedBank === code ? 'bg-[var(--accent-primary-dim)] text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-base)]'
                 }`}
               >
-                {bank} Cards
+                {displayName}
               </button>
             ))}
           </div>
@@ -571,14 +565,10 @@ function SearchContent() {
         const otaResults = await fetchOTAFlights(from, to, date, ownedCards);
         
         if (isMounted && otaResults && otaResults.length > 0) {
+          // Only update allFlights — FilterPanel's useEffect will re-apply
+          // active filters and call onFilter → setFilteredFlights automatically.
+          // This prevents the stops/airline filter from being bypassed.
           setAllFlights(prev => {
-            const combined = [...prev, ...otaResults];
-            // Deduplicate by flight number and departure time just in case
-            const unique = Array.from(new Map(combined.map(item => [item.flightNumber + item.departureTime, item])).values());
-            return unique;
-          });
-          
-          setFilteredFlights(prev => {
             const combined = [...prev, ...otaResults];
             const unique = Array.from(new Map(combined.map(item => [item.flightNumber + item.departureTime, item])).values());
             return unique;

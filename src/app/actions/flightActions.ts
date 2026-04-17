@@ -406,8 +406,8 @@ export async function getPlatformStats() {
   }
 }
 
-export async function fetchCheckoutOffers(baseFare: number, airlineCode?: string) {
+export async function fetchCheckoutOffers(baseFare: number, airlineCode?: string, userCards?: string[]) {
   const { getAllApplicableOffers } = await import('@/lib/flight/offerEngine');
-  return await getAllApplicableOffers(baseFare, [], airlineCode);
+  return await getAllApplicableOffers(baseFare, userCards, airlineCode);
 }
 
