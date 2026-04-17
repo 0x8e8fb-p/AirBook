@@ -245,3 +245,9 @@ export async function getPlatformStats() {
     return { searchesToday: 0, moneySavedMonth: 0 };
   }
 }
+
+export async function fetchCheckoutOffers(baseFare: number, airlineCode?: string) {
+  const { getAllApplicableOffers } = await import('@/lib/flight/offerEngine');
+  return await getAllApplicableOffers(baseFare, [], airlineCode);
+}
+

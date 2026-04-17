@@ -3,17 +3,22 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCheckoutStore } from "@/stores/checkout-store";
-import { ArrowLeft, Plane, ShieldCheck, Briefcase, ExternalLink, TicketPercent, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Plane, ShieldCheck, Briefcase, ExternalLink, TicketPercent, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import { formatPrice, formatDuration, formatTime, getAirlineLogoForFlight, getAirlineCodeFromFlight } from "@/lib/constants";
-import { logBookingClick } from "@/app/actions/flightActions";
+import { logBookingClick, fetchCheckoutOffers } from "@/app/actions/flightActions";
 import { getAirportDisplay } from "@/lib/airports";
 import { Footer } from "@/components/layout/Footer";
+import { OfferClaimGuide } from "@/components/ui/OfferClaimGuide";
+import type { BankOffer } from "@/lib/flight/offerEngine";
 
 function CheckoutContent() {
   const router = useRouter();
   const { selectedFlight } = useCheckoutStore();
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [applicableOffers, setApplicableOffers] = useState<{ offer: BankOffer; discount: number }[]>([]);
+  const [isLoadingOffers, setIsLoadingOffers] = useState(true);
+  const [showAllOffers, setShowAllOffers] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -30,6 +35,25 @@ function CheckoutContent() {
       return () => clearTimeout(timer);
     }
   }, [selectedFlight, router, isMounted]);
+
+  useEffect(() => {
+    async function loadOffers() {
+      if (!selectedFlight) return;
+      try {
+        const baseFare = selectedFlight.basePrice || selectedFlight.price;
+        const code = getAirlineCodeFromFlight(selectedFlight);
+        const offers = await fetchCheckoutOffers(baseFare, code);
+        setApplicableOffers(offers);
+      } catch (err) {
+        console.error("Failed to load offers:", err);
+      } finally {
+        setIsLoadingOffers(false);
+      }
+    }
+    if (isMounted && selectedFlight) {
+      loadOffers();
+    }
+  }, [isMounted, selectedFlight]);
 
   // Don't render until mounted AND we have a flight (prevents hydration mismatch)
   if (!isMounted || !selectedFlight) return null;
@@ -65,6 +89,8 @@ function CheckoutContent() {
       setIsRedirecting(false);
     }, 1500);
   };
+
+  const displayedOffers = showAllOffers ? applicableOffers : applicableOffers.slice(0, 2);
 
   return (
     <div className="min-h-[100dvh] bg-[var(--bg-subtle)] pb-20">
@@ -146,8 +172,35 @@ function CheckoutContent() {
               </div>
             </div>
 
+            {/* Applicable Offers Guide */}
+            {!isLoadingOffers && applicableOffers.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <TicketPercent className="w-5 h-5 text-[var(--accent-green)]" />
+                  How to save more on this booking
+                </h3>
+                <div className="space-y-3">
+                  {displayedOffers.map((item, idx) => (
+                    <OfferClaimGuide key={item.offer.id || idx} offer={item.offer} />
+                  ))}
+                </div>
+                {applicableOffers.length > 2 && (
+                  <button 
+                    onClick={() => setShowAllOffers(!showAllOffers)}
+                    className="flex items-center gap-1 text-[13px] font-medium text-[var(--accent-cta)] hover:underline mx-auto mt-2"
+                  >
+                    {showAllOffers ? (
+                      <>Show Less <ChevronUp className="w-3.5 h-3.5" /></>
+                    ) : (
+                      <>Show {applicableOffers.length - 2} More Offers <ChevronDown className="w-3.5 h-3.5" /></>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Policies */}
-            <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] p-6 shadow-sm">
+            <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] p-6 shadow-sm mt-4">
               <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider text-[var(--text-muted)]">Important Information</h3>
               
               <div className="grid sm:grid-cols-2 gap-6">

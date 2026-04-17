@@ -18,6 +18,7 @@ import { useSession } from "next-auth/react";
 
 import { Footer } from "@/components/layout/Footer";
 import { PriceTrendChart } from "@/components/dashboard/PriceTrendChart";
+import { CostCuttingTips } from "@/components/ui/CostCuttingTips";
 
 /* ─── Loading ──── */
 function SearchingAnimation() {
@@ -556,6 +557,27 @@ function SearchContent() {
     return () => { isMounted = false; };
   }, [from, to, date, returnDate, adults, children, infants, cabin, ownedCards]);
 
+  const avgPrice = useMemo(() => {
+    if (allFlights.length === 0) return 0;
+    const sum = allFlights.reduce((acc, f) => acc + f.price, 0);
+    return Math.round(sum / allFlights.length);
+  }, [allFlights]);
+
+  const { offerCount, maxSaving } = useMemo(() => {
+    let max = 0;
+    const uniqueOffers = new Set<string>();
+    
+    allFlights.forEach(f => {
+      if (f.appliedOffer) {
+        uniqueOffers.add(f.appliedOffer.id);
+        const discount = (f.basePrice && f.price) ? (f.basePrice + 350) - f.price : 0;
+        if (discount > max) max = discount;
+      }
+    });
+    
+    return { offerCount: uniqueOffers.size, maxSaving: max };
+  }, [allFlights]);
+
   const sortedFlights = useMemo(() => sortFlights(filteredFlights, sortBy), [filteredFlights, sortBy]);
   const handleFilter = useCallback((f: FlightResult[]) => setFilteredFlights(f), []);
 
@@ -639,6 +661,7 @@ function SearchContent() {
                 className="max-w-3xl mx-auto"
               >
                 <PriceTrendChart origin={from} destination={to} date={date} />
+                <CostCuttingTips origin={from} destination={to} avgPrice={avgPrice} offerCount={offerCount} maxSaving={maxSaving} />
                 <SortBar sortBy={sortBy} onSort={setSortBy} totalResults={sortedFlights.length} />
                 <div className="space-y-3">
                   {sortedFlights.map((flight, i) => (
