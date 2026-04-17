@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchStore } from "@/stores/search-store";
 import type { FlightResult, SortOption, CabinClass } from "@/lib/types";
-import { sortFlights } from "@/lib/utils";
+import { sortFlights, formatPlatformName } from "@/lib/utils";
 import { getAirportDisplay } from "@/lib/airports";
 import { AIRLINES, SORT_OPTIONS, formatPrice, formatDuration, formatTime, getAirlineCodeFromFlight, getAirlineLogoForFlight } from "@/lib/constants";
 import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent, Wallet, Frown, RefreshCw } from "lucide-react";
@@ -107,6 +107,8 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
   const airlineLogo = getAirlineLogoForFlight(flight);
   const { setSelectedFlight } = useCheckoutStore();
 
+  const maxDiscount = flight.basePrice && flight.price ? Math.max(0, (flight.basePrice + 350) - flight.price) : 0;
+
   // Apply stagger to flight cards
   const baseDelay = 0.3; // Base delay for the list to appear
   const staggerDelay = Math.min(index * 0.08, 0.6); // Stagger them in quickly
@@ -194,7 +196,14 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
               </div>
             </div>
             
-            {flight.appliedOffer ? (
+            {flight.appliedOffer && maxDiscount > 0 ? (
+              <div className="mb-3 w-full sm:w-auto bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/20 text-[var(--accent-green)] text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1.5">
+                <TicketPercent className="w-3 h-3" />
+                <span title={flight.appliedOffer.name}>
+                  Save {formatPrice(maxDiscount)} on {formatPlatformName(flight.appliedOffer.platform)}
+                </span>
+              </div>
+            ) : flight.appliedOffer ? (
               <div className="mb-3 w-full sm:w-auto bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/20 text-[var(--accent-green)] text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1.5">
                 <TicketPercent className="w-3 h-3" />
                 <span title={flight.appliedOffer.name}>

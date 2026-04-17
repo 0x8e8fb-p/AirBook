@@ -123,3 +123,19 @@ export function fuzzyMatch(query: string, target: string): number {
   return (score / Math.max(q.length, t.length)) * 0.6;
 }
 
+export function formatPlatformName(platform?: string | null): string {
+  if (!platform) return "Any Platform";
+  const map: Record<string, string> = {
+    'makemytrip': 'MakeMyTrip',
+    'cleartrip': 'Cleartrip',
+    'ixigo': 'Ixigo',
+    'yatra': 'Yatra',
+    'goibibo': 'Goibibo',
+    'easemytrip': 'EaseMyTrip',
+    'airline_direct': 'Airline Direct',
+    'grabon': 'GrabOn',
+    'any': 'Any Platform'
+  };
+  return map[platform.toLowerCase()] || platform.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+

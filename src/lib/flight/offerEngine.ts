@@ -35,6 +35,7 @@ function mapDbOffer(row: any): BankOffer {
   return {
     id: row.id,
     name: row.name,
+    description: row.description,
     type: row.type as 'percentage' | 'flat',
     value: row.value,
     maxCap: row.maxCap ?? undefined,

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, CreditCard, Smartphone, Tag, Globe, Gift, Percent, ExternalLink, Copy, Check } from "lucide-react";
 import type { BankOffer } from "@/lib/flight/offerEngine";
+import { formatPrice } from "@/lib/constants";
+import { formatPlatformName } from "@/lib/utils";
 
 function getOfferSteps(offer: BankOffer): { icon: typeof CreditCard; steps: string[] } {
   const cat = offer.category;
@@ -116,10 +118,13 @@ const PRO_TIPS = [
   "Compare airline direct website vs OTA — sometimes ₹200-500 difference",
 ];
 
-export function OfferClaimGuide({ offer }: { offer: BankOffer }) {
-  const [isOpen, setIsOpen] = useState(false);
+export function OfferClaimGuide({ offer, discount, isBestOffer = false, isOpenByDefault = false }: { offer: BankOffer, discount?: number, isBestOffer?: boolean, isOpenByDefault?: boolean }) {
+  const [isOpen, setIsOpen] = useState(isOpenByDefault || isBestOffer);
   const [copied, setCopied] = useState(false);
   const { icon: Icon, steps } = getOfferSteps(offer);
+  
+  // Format platform name (e.g. 'makemytrip' -> 'MakeMyTrip')
+  const formattedPlatform = formatPlatformName(offer.platform);
 
   const handleCopyCode = () => {
     if (offer.promoCode) {
@@ -141,9 +146,22 @@ export function OfferClaimGuide({ offer }: { offer: BankOffer }) {
           <div className="w-8 h-8 rounded-full bg-[var(--accent-green)]/10 flex items-center justify-center">
             <Icon className="w-4 h-4 text-[var(--accent-green)]" />
           </div>
-          <div className="text-left">
-            <div className="text-sm font-semibold">How to Claim This Discount</div>
-            <div className="text-[11px] text-[var(--text-muted)]">{offer.name}</div>
+          <div className="text-left flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="text-sm font-bold text-[var(--text-primary)]">
+                {discount ? `Save ${formatPrice(discount)}` : 'How to Claim This Discount'}
+              </div>
+              {isBestOffer && (
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-[var(--accent-cta)] text-[var(--text-inverse)]">
+                  Best Offer
+                </span>
+              )}
+            </div>
+            <div className="text-[11px] text-[var(--text-muted)] mt-0.5">{offer.name}</div>
+            <div className="text-[11px] font-medium text-[var(--accent-cta)] mt-1 flex items-center gap-1">
+              <Globe className="w-3 h-3" />
+              Apply on: {formattedPlatform}
+            </div>
           </div>
         </div>
         <ChevronDown className={`w-4 h-4 text-[var(--text-muted)] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />

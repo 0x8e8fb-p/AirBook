@@ -181,7 +181,7 @@ function CheckoutContent() {
                 </h3>
                 <div className="space-y-3">
                   {displayedOffers.map((item, idx) => (
-                    <OfferClaimGuide key={item.offer.id || idx} offer={item.offer} />
+                    <OfferClaimGuide key={item.offer.id || idx} offer={item.offer} discount={item.discount} isBestOffer={idx === 0} />
                   ))}
                 </div>
                 {applicableOffers.length > 2 && (
