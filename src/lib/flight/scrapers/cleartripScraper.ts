@@ -22,7 +22,8 @@ export async function scrapeCleartripFlights(origin: string, destination: string
         arrivalTime: `${dateStr}T12:${Math.floor(Math.random() * 50).toString().padStart(2, '0')}:00.000Z`,
         airline,
         flightNumber: `${airline}${Math.floor(Math.random() * 900) + 100}`,
-        basePriceINR: basePrice
+        basePriceINR: basePrice,
+        stops: Math.random() > 0.7 ? 1 : 0
       });
     }
 

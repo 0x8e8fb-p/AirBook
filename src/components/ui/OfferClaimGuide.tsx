@@ -7,13 +7,13 @@ import type { BankOffer } from "@/lib/flight/offerEngine";
 import { formatPrice } from "@/lib/constants";
 import { formatPlatformName } from "@/lib/utils";
 
-function getOfferSteps(offer: BankOffer): { icon: typeof CreditCard; steps: string[] } {
+function getOfferSteps(offer: BankOffer, formattedPlatform: string): { icon: typeof CreditCard; steps: string[] } {
   const cat = offer.category;
   if (cat === 'bank_cc') {
     return {
       icon: CreditCard,
       steps: [
-        "Select 'Credit Card' as payment method on the booking platform",
+        `Proceed to ${formattedPlatform} and select 'Credit Card' as payment method`,
         `Choose your ${offer.bankCode || ''} credit card`,
         offer.promoCode ? `Enter promo code: ${offer.promoCode}` : "Discount will be auto-applied at checkout",
         "Complete the payment — discount reflects in final amount",
@@ -25,10 +25,11 @@ function getOfferSteps(offer: BankOffer): { icon: typeof CreditCard; steps: stri
     return {
       icon: CreditCard,
       steps: [
-        "Select 'Debit Card' as payment method",
+        `Select '${formattedPlatform}' as your booking platform`,
+        "Proceed to the checkout page and select 'Debit Card' as payment method",
         `Enter your ${offer.bankCode || ''} debit card details`,
-        "Complete OTP verification on your registered mobile",
-        "Discount amount will be reflected in the final charge",
+        offer.promoCode ? `Apply promo code: ${offer.promoCode} before making payment` : "Discount amount will be auto-applied on the payment page",
+        "Complete OTP verification on your registered mobile to finalize the booking",
       ],
     };
   }
@@ -121,10 +122,8 @@ const PRO_TIPS = [
 export function OfferClaimGuide({ offer, discount, isBestOffer = false, isOpenByDefault = false }: { offer: BankOffer, discount?: number, isBestOffer?: boolean, isOpenByDefault?: boolean }) {
   const [isOpen, setIsOpen] = useState(isOpenByDefault || isBestOffer);
   const [copied, setCopied] = useState(false);
-  const { icon: Icon, steps } = getOfferSteps(offer);
-  
-  // Format platform name (e.g. 'makemytrip' -> 'MakeMyTrip')
   const formattedPlatform = formatPlatformName(offer.platform);
+  const { icon: Icon, steps } = getOfferSteps(offer, formattedPlatform);
 
   const handleCopyCode = () => {
     if (offer.promoCode) {

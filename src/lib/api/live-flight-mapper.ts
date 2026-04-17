@@ -66,7 +66,7 @@ function mapEnrichedFlightToResult(flight: EnrichedFlight, origin: string, desti
     departureTime: flight.departureTime,
     arrivalTime: flight.arrivalTime,
     durationMinutes: finalDuration,
-    stops: 0,
+    stops: flight.stops || 0,
     stopCities: [],
     
     // Additional info

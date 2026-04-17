@@ -22,10 +22,11 @@ export async function scrapeIxigoFlights(origin: string, destination: string, da
         origin,
         destination,
         departureTime: `${dateStr}T06:${Math.floor(Math.random() * 50).toString().padStart(2, '0')}:00.000Z`,
-        arrivalTime: `${dateStr}T08:${Math.floor(Math.random() * 50).toString().padStart(2, '0')}:00.000Z`,
+        arrivalTime: `${dateStr}T11:${Math.floor(Math.random() * 50).toString().padStart(2, '0')}:00.000Z`,
         airline,
         flightNumber: `${airline}${Math.floor(Math.random() * 900) + 100}`,
-        basePriceINR: basePrice
+        basePriceINR: basePrice,
+        stops: Math.random() > 0.8 ? 1 : 0
       });
     }
 

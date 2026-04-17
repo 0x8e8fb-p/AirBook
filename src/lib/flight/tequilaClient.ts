@@ -7,5 +7,6 @@ export interface StandardizedFlight {
   airline: string;
   flightNumber: string;
   basePriceINR: number;
+  stops: number;
 }
 

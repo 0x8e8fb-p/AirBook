@@ -19,6 +19,7 @@ export interface EnrichedFlight {
   departureTime: string;
   arrivalTime: string;
   pricing: FlightPriceDetails;
+  stops: number;
 }
 
 export async function getGoogleFlightsAction(origin: string, destination: string, dateString: string, userCards?: string[]): Promise<EnrichedFlight[]> {
@@ -52,6 +53,7 @@ export async function getGoogleFlightsAction(origin: string, destination: string
       flightNumber: flight.flightNumber,
       departureTime: flight.departureTime,
       arrivalTime: flight.arrivalTime,
+      stops: flight.stops || 0,
       pricing: await calculateBestEffectivePrice(flight.basePriceINR, userCards, flight.airline)
     })));
 
@@ -156,6 +158,7 @@ export async function getOTAFlightsAction(origin: string, destination: string, d
       flightNumber: flight.flightNumber,
       departureTime: flight.departureTime,
       arrivalTime: flight.arrivalTime,
+      stops: flight.stops || 0,
       pricing: await calculateBestEffectivePrice(flight.basePriceINR, userCards, flight.airline)
     })));
 
@@ -228,6 +231,7 @@ export async function getAndTrackFlights(origin: string, destination: string, da
       flightNumber: flight.flightNumber,
       departureTime: flight.departureTime,
       arrivalTime: flight.arrivalTime,
+      stops: flight.stops || 0,
       pricing: await calculateBestEffectivePrice(flight.basePriceINR, userCards, flight.airline)
     })));
 

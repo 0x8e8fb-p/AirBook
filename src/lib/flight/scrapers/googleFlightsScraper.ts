@@ -68,7 +68,8 @@ export async function scrapeGoogleFlights(origin: string, destination: string, d
         arrivalTime,
         airline: itinerary.airline_names?.[0] || firstFlight.airline_name || 'Unknown',
         flightNumber: `${firstFlight.airline}${firstFlight.flight_number}`,
-        basePriceINR: price
+        basePriceINR: price,
+        stops: itinerary.flights.length - 1
       });
     }
 
