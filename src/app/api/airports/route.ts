@@ -1,27 +1,34 @@
-// ============================================
-// AirBook — Airport Autocomplete API Route
-// ============================================
+import { NextResponse } from "next/server";
+import { airApi, AirApiConfigError, AirApiError } from "@/lib/api/airApiClient";
+import { searchAirports as searchLocalAirports } from "@/lib/airports";
 
-import { NextResponse } from 'next/server';
-import { searchAirports } from '@/lib/airports';
-
-export const runtime = 'edge';
+export const runtime = "edge";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const query = searchParams.get('q');
-  const limitStr = searchParams.get('limit');
-  const limit = limitStr ? Math.min(parseInt(limitStr, 10), 15) : 8;
+  const query = (searchParams.get("q") ?? "").trim();
+  const limitParam = searchParams.get("limit");
+  const limit = limitParam ? Math.min(parseInt(limitParam, 10) || 8, 15) : 8;
 
-  if (!query || query.length < 1) {
-    return NextResponse.json([]);
+  if (query.length < 1) {
+    return NextResponse.json([], { headers: { "Cache-Control": "public, max-age=86400" } });
   }
 
-  const results = searchAirports(query, limit);
+  try {
+    const { airports } = await airApi.searchAirports({ q: query, limit });
+    if (airports.length > 0) {
+      return NextResponse.json(airports, {
+        headers: { "Cache-Control": "public, max-age=86400" },
+      });
+    }
+  } catch (err) {
+    if (!(err instanceof AirApiConfigError) && !(err instanceof AirApiError)) {
+      console.error("AirAPI airport search error:", err);
+    }
+  }
 
-  return NextResponse.json(results, {
-    headers: {
-      'Cache-Control': 'public, max-age=86400', // 24h cache for airport data
-    },
+  const local = searchLocalAirports(query, limit);
+  return NextResponse.json(local, {
+    headers: { "Cache-Control": "public, max-age=86400" },
   });
 }

@@ -1,12 +1,23 @@
 import type { NextConfig } from "next";
 
+function airApiOriginsForCsp(): string {
+  const raw = process.env.AIRAPI_URL;
+  if (!raw) return "";
+  try {
+    const origin = new URL(raw).origin;
+    return ` ${origin}`;
+  } catch {
+    return "";
+  }
+}
+
 const ContentSecurityPolicy = `
   default-src 'self';
   script-src 'self' 'unsafe-eval' 'unsafe-inline';
   style-src 'self' 'unsafe-inline';
   img-src 'self' data: blob: https:;
   font-src 'self' https://fonts.gstatic.com;
-  connect-src 'self' https://*.supabase.co wss://*.supabase.co;
+  connect-src 'self' https://*.supabase.co wss://*.supabase.co${airApiOriginsForCsp()};
   frame-ancestors 'none';
 `.replace(/\n/g, "");
 

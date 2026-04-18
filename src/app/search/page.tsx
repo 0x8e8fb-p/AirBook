@@ -9,7 +9,7 @@ import { sortFlights, formatPlatformName, formatBankName } from "@/lib/utils";
 import { getAirportDisplay } from "@/lib/airports";
 import { AIRLINES, SORT_OPTIONS, formatPrice, formatDuration, formatTime, getAirlineCodeFromFlight, getAirlineLogoForFlight } from "@/lib/constants";
 import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent, Wallet, Frown, RefreshCw } from "lucide-react";
-import { fetchLiveFlights, fetchGoogleFlights, fetchOTAFlights } from "@/lib/api/live-flight-mapper";
+import { fetchFlights } from "@/lib/api/live-flight-mapper";
 import { useUserStore } from "@/stores/user-store";
 import { useCheckoutStore } from "@/stores/checkout-store";
 import { syncWallet, getUserWallet } from "@/app/actions/userActions";
@@ -545,40 +545,20 @@ function SearchContent() {
       setError(null);
       
       try {
-        // Phase 1: Fetch fast Google Flights
-        const googleResults = await fetchGoogleFlights(from, to, date, ownedCards);
-        
+        const results = await fetchFlights(from, to, date, ownedCards);
+
+        if (!isMounted) return;
+        setAllFlights(results);
+        setFilteredFlights(results);
+
+        logSearchAction(from, to, date).catch((e) =>
+          console.error("Failed to log search:", e),
+        );
+      } catch (err) {
+        if (isMounted) setError(err instanceof Error ? err.message : "Something went wrong.");
+      } finally {
         if (isMounted) {
-          setAllFlights(googleResults || []);
-          setFilteredFlights(googleResults || []);
           setIsLoading(false);
-          setIsFetchingOTAs(true);
-          
-          try {
-            await logSearchAction(from, to, date, googleResults?.length || 1);
-          } catch (e) {
-            console.error("Failed to log search:", e);
-          }
-        }
-        
-        // Phase 2: Fetch OTA flights in the background
-        const otaResults = await fetchOTAFlights(from, to, date, ownedCards);
-        
-        if (isMounted && otaResults && otaResults.length > 0) {
-          // Only update allFlights — FilterPanel's useEffect will re-apply
-          // active filters and call onFilter → setFilteredFlights automatically.
-          // This prevents the stops/airline filter from being bypassed.
-          setAllFlights(prev => {
-            const combined = [...prev, ...otaResults];
-            const unique = Array.from(new Map(combined.map(item => [item.flightNumber + item.departureTime, item])).values());
-            return unique;
-          });
-        }
-      } catch (err) { 
-        if (isMounted) setError(err instanceof Error ? err.message : "Something went wrong."); 
-      } finally { 
-        if (isMounted) {
-          setIsLoading(false); 
           setIsFetchingOTAs(false);
         }
       }

@@ -1,196 +1,129 @@
-import { getAndTrackFlights, getGoogleFlightsAction, getOTAFlightsAction, EnrichedFlight } from '@/app/actions/flightActions';
-import { FlightResult, FlightSegment } from '@/lib/types';
-import { AIRLINES } from '@/lib/constants';
+import {
+  searchFlightsAction,
+  getAndTrackFlights,
+  getGoogleFlightsAction,
+  getOTAFlightsAction,
+  type EnrichedFlight,
+} from "@/app/actions/flightActions";
+import type { FlightResult, FlightSegment, FlightSource } from "@/lib/types";
+import { AIRLINES } from "@/lib/constants";
 
-function mapEnrichedFlightToResult(flight: EnrichedFlight, origin: string, destination: string, date: string): FlightResult {
-  // Map airline code to full name if available in our constants
-  let airlineName = flight.airline;
+function resolveAirlineName(code: string): string {
+  return AIRLINES[code]?.name ?? code;
+}
+
+function computeDuration(flight: EnrichedFlight): number | null {
+  if (flight.durationMinutes && flight.durationMinutes > 0) return flight.durationMinutes;
+  const dep = new Date(flight.departureTime).getTime();
+  const arr = new Date(flight.arrivalTime).getTime();
+  if (Number.isNaN(dep) || Number.isNaN(arr)) return null;
+  let diff = Math.round((arr - dep) / 60_000);
+  if (diff < 0) diff += 24 * 60;
+  return diff > 0 ? diff : null;
+}
+
+function resolveSource(raw: string | undefined): FlightSource {
+  const known: FlightSource[] = [
+    "google_flights",
+    "ixigo",
+    "makemytrip",
+    "cleartrip",
+    "master_api",
+  ];
+  return (known as string[]).includes(raw ?? "") ? (raw as FlightSource) : "master_api";
+}
+
+function mapEnrichedFlightToResult(
+  flight: EnrichedFlight,
+  origin: string,
+  destination: string,
+  date: string,
+): FlightResult {
+  const airlineName = resolveAirlineName(flight.airline);
   const airlineInfo = AIRLINES[flight.airline];
-  if (airlineInfo) {
-    airlineName = airlineInfo.name;
-  } else if (flight.airline === '6E') { airlineName = 'IndiGo'; }
-  else if (flight.airline === 'AI') { airlineName = 'Air India'; }
-  else if (flight.airline === 'UK') { airlineName = 'Vistara'; }
-  else if (flight.airline === 'SG') { airlineName = 'SpiceJet'; }
-  else if (flight.airline === 'QP') { airlineName = 'Akasa Air'; }
-  else if (flight.airline === 'I5') { airlineName = 'AirAsia India'; }
-
-  // Calculate duration in minutes (approximation based on departure/arrival strings)
-  const dep = new Date(flight.departureTime);
-  const arr = new Date(flight.arrivalTime);
-  let durationMinutes = Math.round((arr.getTime() - dep.getTime()) / 60000);
-  
-  // Handle overnight flights where arrival might be next day but date string is messed up
-  if (durationMinutes < 0) {
-    durationMinutes += 24 * 60;
-  }
-  
-  const finalDuration = durationMinutes > 0 ? durationMinutes : 120; // fallback to 2h if parsing fails
-
-  let source = flight.source || 'master_api' as any;
+  const durationMinutes = computeDuration(flight);
 
   const segment: FlightSegment = {
     airline: flight.airline,
-    airlineName: airlineName,
+    airlineName,
     airlineLogo: airlineInfo?.logo,
     flightNumber: flight.flightNumber,
-    origin: origin,
-    originCity: origin, // Simplified, ideally mapped
-    destination: destination,
-    destinationCity: destination, // Simplified
+    origin,
+    originCity: origin,
+    destination,
+    destinationCity: destination,
     departureTime: flight.departureTime,
     arrivalTime: flight.arrivalTime,
-    durationMinutes: finalDuration,
+    durationMinutes: durationMinutes ?? 0,
   };
 
   return {
     id: flight.id,
-    source: source,
+    source: resolveSource(flight.source),
     segments: [segment],
-    
-    // Price
+
     price: flight.pricing.effectivePrice,
-    currency: 'INR',
+    currency: "INR",
     pricePerAdult: flight.pricing.effectivePrice,
     basePrice: flight.pricing.baseFare,
     appliedOffer: flight.pricing.appliedOffer,
-    carbonEmissions: 100,
-    
-    // Summary fields
+
     airline: flight.airline,
-    airlineName: airlineName,
+    airlineName,
     airlineLogo: airlineInfo?.logo,
     flightNumber: flight.flightNumber,
-    origin: origin,
-    destination: destination,
+    origin,
+    destination,
     departureTime: flight.departureTime,
     arrivalTime: flight.arrivalTime,
-    durationMinutes: finalDuration,
-    stops: flight.stops || 0,
+    durationMinutes: durationMinutes ?? 0,
+    stops: flight.stops ?? 0,
     stopCities: [],
-    
-    // Additional info
+
     baggage: {
       cabin: { included: true, weight: 7 },
-      checked: { included: true, weight: 15 }
+      checked: { included: true, weight: 15 },
     },
     refundable: false,
-    cabinClass: 'economy',
-    seatsRemaining: Math.floor(Math.random() * 10) + 1,
-    
-    // Metadata
+    cabinClass: "economy",
+
     fetchedAt: new Date().toISOString(),
     searchHash: `${origin}-${destination}-${date}`,
   };
 }
 
-export async function fetchGoogleFlights(origin: string, destination: string, date: string, userCards?: string[]): Promise<FlightResult[]> {
+export async function fetchFlights(
+  origin: string,
+  destination: string,
+  date: string,
+  userCards?: string[],
+): Promise<FlightResult[]> {
   try {
-    const liveFlights = await getGoogleFlightsAction(origin, destination, date, userCards);
-    return liveFlights.map(flight => mapEnrichedFlightToResult(flight, origin, destination, date));
-  } catch (error) {
-    console.error("Error mapping Google flights:", error);
+    const enriched = await searchFlightsAction(origin, destination, date, userCards);
+    return enriched.map((flight) => mapEnrichedFlightToResult(flight, origin, destination, date));
+  } catch (err) {
+    console.error("Error mapping flights:", err);
     return [];
   }
 }
 
-export async function fetchOTAFlights(origin: string, destination: string, date: string, userCards?: string[]): Promise<FlightResult[]> {
-  try {
-    const liveFlights = await getOTAFlightsAction(origin, destination, date, userCards);
-    return liveFlights.map(flight => mapEnrichedFlightToResult(flight, origin, destination, date));
-  } catch (error) {
-    console.error("Error mapping OTA flights:", error);
-    return [];
-  }
+// Legacy aliases kept for now so existing UI / cron call-sites don't break.
+// Every alias delegates to fetchFlights — the two-phase split is gone.
+export const fetchLiveFlights = fetchFlights;
+export const fetchGoogleFlights = fetchFlights;
+export async function fetchOTAFlights(
+  _origin: string,
+  _destination: string,
+  _date: string,
+  _userCards?: string[],
+): Promise<FlightResult[]> {
+  return [];
 }
 
-export async function fetchLiveFlights(origin: string, destination: string, date: string, userCards?: string[]): Promise<FlightResult[]> {
-  try {
-    const liveFlights = await getAndTrackFlights(origin, destination, date, userCards);
-    
-    return liveFlights.map((flight: EnrichedFlight) => {
-      // Map airline code to full name if available in our constants
-      let airlineName = flight.airline;
-      const airlineInfo = AIRLINES[flight.airline];
-      if (airlineInfo) {
-        airlineName = airlineInfo.name;
-      } else if (flight.airline === '6E') { airlineName = 'IndiGo'; }
-      else if (flight.airline === 'AI') { airlineName = 'Air India'; }
-      else if (flight.airline === 'UK') { airlineName = 'Vistara'; }
-      else if (flight.airline === 'SG') { airlineName = 'SpiceJet'; }
-      else if (flight.airline === 'QP') { airlineName = 'Akasa Air'; }
-      else if (flight.airline === 'I5') { airlineName = 'AirAsia India'; }
-
-      // Calculate duration in minutes (approximation based on departure/arrival strings)
-      const dep = new Date(flight.departureTime);
-      const arr = new Date(flight.arrivalTime);
-      let durationMinutes = Math.round((arr.getTime() - dep.getTime()) / 60000);
-      
-      // Handle overnight flights where arrival might be next day but date string is messed up
-      if (durationMinutes < 0) {
-        durationMinutes += 24 * 60;
-      }
-      
-      const finalDuration = durationMinutes > 0 ? durationMinutes : 120; // fallback to 2h if parsing fails
-
-      let source = flight.source || 'master_api' as any;
-
-      const segment: FlightSegment = {
-        airline: flight.airline,
-        airlineName: airlineName,
-        airlineLogo: airlineInfo?.logo,
-        flightNumber: flight.flightNumber,
-        origin: origin,
-        originCity: origin, // Simplified, ideally mapped
-        destination: destination,
-        destinationCity: destination, // Simplified
-        departureTime: flight.departureTime,
-        arrivalTime: flight.arrivalTime,
-        durationMinutes: finalDuration,
-      };
-
-      return {
-        id: flight.id,
-        source: source,
-        segments: [segment],
-        
-        // Price
-        price: flight.pricing.effectivePrice,
-        currency: 'INR',
-        pricePerAdult: flight.pricing.effectivePrice,
-        basePrice: flight.pricing.baseFare,
-        appliedOffer: flight.pricing.appliedOffer,
-        carbonEmissions: 100,
-        
-        // Summary fields
-        airline: flight.airline,
-        airlineName: airlineName,
-        airlineLogo: airlineInfo?.logo,
-        flightNumber: flight.flightNumber,
-        origin: origin,
-        destination: destination,
-        departureTime: flight.departureTime,
-        arrivalTime: flight.arrivalTime,
-        durationMinutes: finalDuration,
-        stops: 0,
-        stopCities: [],
-        
-        // Additional info
-        baggage: {
-          cabin: { included: true, weight: 7 },
-          checked: { included: true, weight: 15 }
-        },
-        refundable: false,
-        cabinClass: 'economy',
-        seatsRemaining: Math.floor(Math.random() * 10) + 1,
-        
-        // Metadata
-        fetchedAt: new Date().toISOString(),
-        searchHash: `${origin}-${destination}-${date}`,
-      };
-    });
-  } catch (error) {
-    console.error("Error mapping live flights:", error);
-    return [];
-  }
-}
+export {
+  searchFlightsAction,
+  getAndTrackFlights,
+  getGoogleFlightsAction,
+  getOTAFlightsAction,
+};
+export type { EnrichedFlight };

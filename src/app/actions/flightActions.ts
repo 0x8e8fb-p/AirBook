@@ -1,413 +1,245 @@
-'use server';
+"use server";
 
-import { scrapeIxigoFlights } from '@/lib/flight/scrapers/ixigoScraper';
-import { scrapeGoogleFlights } from '@/lib/flight/scrapers/googleFlightsScraper';
-import { scrapeMMTFlights } from '@/lib/flight/scrapers/mmtScraper';
-import { scrapeCleartripFlights } from '@/lib/flight/scrapers/cleartripScraper';
-import { calculateBestEffectivePrice, FlightPriceDetails } from '@/lib/flight/offerEngine';
-import { prisma } from '@/lib/prisma';
 import { getServerSession } from "next-auth/next";
+import { airApi, AirApiConfigError, AirApiError } from "@/lib/api/airApiClient";
+import type { Fare } from "@/lib/api/airApiTypes";
+import { calculateBestEffectivePrice, type FlightPriceDetails } from "@/lib/flight/offerEngine";
+import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
-import { StandardizedFlight } from '@/lib/flight/tequilaClient';
-import { flightCache } from '@/lib/flight/flightCache';
 
 export interface EnrichedFlight {
   id: string;
-  source?: string;
+  source: string;
   airline: string;
   flightNumber: string;
   departureTime: string;
   arrivalTime: string;
+  durationMinutes: number | null;
   pricing: FlightPriceDetails;
   stops: number;
 }
 
-export async function getGoogleFlightsAction(origin: string, destination: string, dateString: string, userCards?: string[]): Promise<EnrichedFlight[]> {
+async function getSessionUserId(): Promise<string | null> {
   try {
-    const cacheKey = `${origin}-${destination}-${dateString}-${userCards?.join(',') || ''}-google`;
-    const cachedFlights = flightCache.get(cacheKey);
-    
-    if (cachedFlights) {
-      console.log(`[Cache Hit] Returning Google flights for ${origin}-${destination}`);
-      return cachedFlights;
-    }
+    const session = await getServerSession(authOptions);
+    const user = session?.user as { id?: string } | undefined;
+    return user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
-    const rawFlights = await scrapeGoogleFlights(origin, destination, dateString);
-    if (!rawFlights || rawFlights.length === 0) return [];
+function buildFlightId(fare: Fare, index: number): string {
+  const core = [fare.sourceApi, fare.airline, fare.flightNumber ?? "NN", fare.departureDate, fare.departureTime ?? index].join("-");
+  return core.replace(/\s+/g, "");
+}
 
-    const flightMap = new Map<string, StandardizedFlight & { source?: string }>();
-    for (const f of rawFlights) {
-      if (f.basePriceINR <= 0) continue;
-      const hour = f.departureTime.substring(0, 13);
-      const key = `${f.flightNumber}-${hour}`;
-      if (!flightMap.has(key) || f.basePriceINR < flightMap.get(key)!.basePriceINR) {
-        flightMap.set(key, { ...f, source: 'google_flights' });
-      }
-    }
-    const uniqueFlights = Array.from(flightMap.values());
+function dedupeFares(fares: Fare[]): Fare[] {
+  const map = new Map<string, Fare>();
+  for (const f of fares) {
+    if (!(f.price > 0)) continue;
+    const hourBucket = (f.departureTime ?? "").slice(0, 13);
+    const key = `${f.flightNumber ?? "NN"}-${hourBucket}`;
+    const current = map.get(key);
+    if (!current || f.price < current.price) map.set(key, f);
+  }
+  return Array.from(map.values());
+}
 
-    const enrichedFlights = await Promise.all(uniqueFlights.map(async flight => ({
-      id: flight.id,
-      source: flight.source,
-      airline: flight.airline,
-      flightNumber: flight.flightNumber,
-      departureTime: flight.departureTime,
-      arrivalTime: flight.arrivalTime,
-      stops: flight.stops || 0,
-      pricing: await calculateBestEffectivePrice(flight.basePriceINR, userCards, flight.airline)
-    })));
+async function enrichFares(fares: Fare[], userCards?: string[]): Promise<EnrichedFlight[]> {
+  return Promise.all(
+    fares.map(async (fare, i): Promise<EnrichedFlight> => {
+      const pricing = await calculateBestEffectivePrice(fare.price, userCards, fare.airline);
+      return {
+        id: buildFlightId(fare, i),
+        source: fare.sourceApi,
+        airline: fare.airline,
+        flightNumber: fare.flightNumber ?? "",
+        departureTime: fare.departureTime ?? fare.departureDate,
+        arrivalTime: fare.arrivalTime ?? fare.departureDate,
+        durationMinutes: fare.durationMinutes ?? null,
+        stops: fare.stops ?? 0,
+        pricing,
+      };
+    }),
+  );
+}
 
-    logSearchAction(origin, destination, dateString, enrichedFlights.length).catch(e => console.error("Error logging search from getGoogleFlightsAction:", e));
+async function trackLowestPrice(
+  origin: string,
+  destination: string,
+  dateString: string,
+  enriched: EnrichedFlight[],
+) {
+  if (enriched.length === 0) return;
+  const lowest = enriched.reduce(
+    (prev, current) => (prev.pricing.effectivePrice < current.pricing.effectivePrice ? prev : current),
+    enriched[0],
+  );
 
-    if (enrichedFlights.length > 0) {
-      const lowestFlight = enrichedFlights.reduce((prev, current) => 
-        (prev.pricing.effectivePrice < current.pricing.effectivePrice) ? prev : current
-      );
+  const departureDate = new Date(dateString);
+  if (Number.isNaN(departureDate.getTime())) return;
 
-      const departureDate = new Date(dateString);
-      Promise.resolve().then(async () => {
-        try {
-          const route = await prisma.flightRoute.upsert({
-            where: { origin_destination: { origin, destination } },
-            update: {},
-            create: { origin, destination }
-          });
+  try {
+    const route = await prisma.flightRoute.upsert({
+      where: { origin_destination: { origin, destination } },
+      update: {},
+      create: { origin, destination },
+    });
 
-          const recentLog = await prisma.priceHistory.findFirst({
-            where: {
-              routeId: route.id,
-              departureDate,
-              basePrice: { gt: 0 },
-              recordedAt: { gte: new Date(Date.now() - 60 * 60 * 1000) }
-            }
-          });
+    const recent = await prisma.priceHistory.findFirst({
+      where: {
+        routeId: route.id,
+        departureDate,
+        basePrice: { gt: 0 },
+        recordedAt: { gte: new Date(Date.now() - 60 * 60 * 1000) },
+      },
+    });
 
-          if (!recentLog) {
-            await prisma.priceHistory.create({
-              data: {
-                routeId: route.id,
-                departureDate,
-                effectivePrice: lowestFlight.pricing.effectivePrice,
-                basePrice: lowestFlight.pricing.baseFare,
-                airline: lowestFlight.airline
-              }
-            });
-          }
-        } catch (dbError) {
-          console.error("Failed to log price history:", dbError);
-        }
+    if (!recent) {
+      await prisma.priceHistory.create({
+        data: {
+          routeId: route.id,
+          departureDate,
+          effectivePrice: lowest.pricing.effectivePrice,
+          basePrice: lowest.pricing.baseFare,
+          airline: lowest.airline,
+        },
       });
     }
-
-    flightCache.set(cacheKey, enrichedFlights);
-    return enrichedFlights;
-  } catch (error) {
-    console.error("Google Flight search failed:", error);
-    return [];
+  } catch (err) {
+    console.error("Failed to log price history:", err);
   }
 }
 
-export async function getOTAFlightsAction(origin: string, destination: string, dateString: string, userCards?: string[]): Promise<EnrichedFlight[]> {
+export async function searchFlightsAction(
+  origin: string,
+  destination: string,
+  dateString: string,
+  userCards?: string[],
+  opts: { pax?: number; cabin?: "economy" | "premium_economy" | "business" | "first"; fresh?: boolean } = {},
+): Promise<EnrichedFlight[]> {
   try {
-    const cacheKey = `${origin}-${destination}-${dateString}-${userCards?.join(',') || ''}-ota`;
-    const cachedFlights = flightCache.get(cacheKey);
-    
-    if (cachedFlights) {
-      console.log(`[Cache Hit] Returning OTA flights for ${origin}-${destination}`);
-      return cachedFlights;
-    }
+    const { fares } = await airApi.searchFares({
+      from: origin,
+      to: destination,
+      date: dateString,
+      pax: opts.pax ?? 1,
+      cabin: opts.cabin ?? "economy",
+      fresh: opts.fresh,
+    });
 
-    const scrapers = [
-      scrapeIxigoFlights(origin, destination, dateString),
-      scrapeMMTFlights(origin, destination, dateString),
-      scrapeCleartripFlights(origin, destination, dateString)
-    ];
+    const deduped = dedupeFares(fares);
+    const enriched = await enrichFares(deduped, userCards);
 
-    const results = await Promise.allSettled(scrapers);
-    let rawFlights: StandardizedFlight[] = [];
-
-    for (const result of results) {
-      if (result.status === 'fulfilled' && result.value) {
-        rawFlights.push(...result.value);
-      }
-    }
-    
-    if (rawFlights.length === 0) return [];
-
-    const flightMap = new Map<string, StandardizedFlight & { source?: string }>();
-    for (const f of rawFlights) {
-      if (f.basePriceINR <= 0) continue;
-      const hour = f.departureTime.substring(0, 13);
-      const key = `${f.flightNumber}-${hour}`;
-      
-      if (!flightMap.has(key) || f.basePriceINR < flightMap.get(key)!.basePriceINR) {
-        let source = 'master_api';
-        if (f.id.startsWith('ixigo')) source = 'ixigo';
-        else if (f.id.startsWith('mmt')) source = 'makemytrip';
-        else if (f.id.startsWith('ct')) source = 'cleartrip';
-
-        flightMap.set(key, { ...f, source });
-      }
-    }
-    const uniqueFlights = Array.from(flightMap.values());
-
-    const enrichedFlights = await Promise.all(uniqueFlights.map(async flight => ({
-      id: flight.id,
-      source: flight.source,
-      airline: flight.airline,
-      flightNumber: flight.flightNumber,
-      departureTime: flight.departureTime,
-      arrivalTime: flight.arrivalTime,
-      stops: flight.stops || 0,
-      pricing: await calculateBestEffectivePrice(flight.basePriceINR, userCards, flight.airline)
-    })));
-
-    flightCache.set(cacheKey, enrichedFlights);
-    return enrichedFlights;
-  } catch (error) {
-    console.error("OTA Flight search failed:", error);
-    return [];
-  }
-}
-
-export async function getAndTrackFlights(origin: string, destination: string, dateString: string, userCards?: string[]): Promise<EnrichedFlight[]> {
-  try {
-    const cacheKey = `${origin}-${destination}-${dateString}-${userCards?.join(',') || ''}`;
-    const cachedFlights = flightCache.get(cacheKey);
-    
-    if (cachedFlights) {
-      console.log(`[Cache Hit] Returning flights for ${origin}-${destination}`);
-      return cachedFlights;
-    }
-
-    // 1. Fetch raw flights via Master API Scrapers concurrently
-    const scrapers = [
-      scrapeGoogleFlights(origin, destination, dateString),
-      scrapeIxigoFlights(origin, destination, dateString),
-      scrapeMMTFlights(origin, destination, dateString),
-      scrapeCleartripFlights(origin, destination, dateString)
-    ];
-
-    const results = await Promise.allSettled(scrapers);
-
-    let rawFlights: StandardizedFlight[] = [];
-
-    for (const result of results) {
-      if (result.status === 'fulfilled' && result.value) {
-        rawFlights.push(...result.value);
-      }
-    }
-    
-    if (rawFlights.length === 0) return [];
-
-    // Deduplicate flights by flightNumber and departureTime, keeping the cheapest base price
-    // ALSO ensure we don't accidentally keep a flight with base price 0 if it's an error.
-    const flightMap = new Map<string, StandardizedFlight & { source?: string }>();
-    for (const f of rawFlights) {
-      if (f.basePriceINR <= 0) continue; // Ignore zero or negative prices
-      
-      // Create a composite key (flight number + hour of departure to handle minor timezone string differences)
-      const hour = f.departureTime.substring(0, 13); // e.g. 2026-05-15T05
-      const key = `${f.flightNumber}-${hour}`;
-      
-      if (!flightMap.has(key) || f.basePriceINR < flightMap.get(key)!.basePriceINR) {
-        // Tag the source based on the ID
-        let source = 'master_api';
-        if (f.id.startsWith('google')) source = 'google_flights';
-        else if (f.id.startsWith('ixigo')) source = 'ixigo';
-        else if (f.id.startsWith('mmt')) source = 'makemytrip';
-        else if (f.id.startsWith('ct')) source = 'cleartrip';
-
-        flightMap.set(key, { ...f, source });
-      }
-    }
-    const uniqueFlights = Array.from(flightMap.values());
-
-    // 2. Apply Smart-Pricing (async — DB-backed offers)
-    const enrichedFlights = await Promise.all(uniqueFlights.map(async flight => ({
-      id: flight.id,
-      source: flight.source,
-      airline: flight.airline,
-      flightNumber: flight.flightNumber,
-      departureTime: flight.departureTime,
-      arrivalTime: flight.arrivalTime,
-      stops: flight.stops || 0,
-      pricing: await calculateBestEffectivePrice(flight.basePriceINR, userCards, flight.airline)
-    })));
-
-    // Log the search action here since this is where flights are successfully fetched
-    logSearchAction(origin, destination, dateString, enrichedFlights.length).catch(e => console.error("Error logging search from getAndTrackFlights:", e));
-
-    // 3. Find the lowest effective price from this batch
-    const lowestFlight = enrichedFlights.reduce((prev, current) => 
-      (prev.pricing.effectivePrice < current.pricing.effectivePrice) ? prev : current
+    logSearchAction(origin, destination, dateString).catch((e) =>
+      console.error("logSearchAction failed:", e),
     );
 
-    // 4. Log to database asynchronously
-    const departureDate = new Date(dateString);
-    
-    Promise.resolve().then(async () => {
-      try {
-        const route = await prisma.flightRoute.upsert({
-          where: { origin_destination: { origin, destination } },
-          update: {},
-          create: { origin, destination }
-        });
+    void trackLowestPrice(origin, destination, dateString, enriched);
 
-        // Check if we already logged a price for this route/date recently (e.g. within last hour) to avoid spam
-        const recentLog = await prisma.priceHistory.findFirst({
-          where: {
-            routeId: route.id,
-            departureDate,
-            basePrice: { gt: 0 },
-            recordedAt: {
-              gte: new Date(Date.now() - 60 * 60 * 1000) // 1 hour ago
-            }
-          }
-        });
-
-        if (!recentLog) {
-          await prisma.priceHistory.create({
-            data: {
-              routeId: route.id,
-              departureDate,
-              effectivePrice: lowestFlight.pricing.effectivePrice,
-              basePrice: lowestFlight.pricing.baseFare,
-              airline: lowestFlight.airline
-            }
-          });
-          console.log(`Logged price history for ${origin}-${destination} on ${dateString}: ${lowestFlight.pricing.effectivePrice}`);
-        } else {
-          console.log(`Skipped price history log for ${origin}-${destination} (already logged recently)`);
-        }
-      } catch (dbError) {
-        console.error("Failed to log price history:", dbError);
-      }
-    });
-
-    flightCache.set(cacheKey, enrichedFlights);
-    return enrichedFlights;
-  } catch (error) {
-    console.error("Flight search failed:", error);
-    throw new Error("Failed to retrieve flights via Master API");
+    return enriched;
+  } catch (err) {
+    if (err instanceof AirApiConfigError) {
+      console.error("AirAPI not configured:", err.message);
+      return [];
+    }
+    if (err instanceof AirApiError) {
+      console.error(`AirAPI ${err.status} on searchFares:`, err.message);
+      return [];
+    }
+    console.error("Flight search failed:", err);
+    return [];
   }
 }
 
-export async function logSearchAction(origin: string, destination: string, dateString: string, count: number) {
+export async function getAndTrackFlights(
+  origin: string,
+  destination: string,
+  dateString: string,
+  userCards?: string[],
+): Promise<EnrichedFlight[]> {
+  return searchFlightsAction(origin, destination, dateString, userCards);
+}
+
+export async function getGoogleFlightsAction(
+  origin: string,
+  destination: string,
+  dateString: string,
+  userCards?: string[],
+): Promise<EnrichedFlight[]> {
+  return searchFlightsAction(origin, destination, dateString, userCards);
+}
+
+export async function getOTAFlightsAction(
+  _origin: string,
+  _destination: string,
+  _dateString: string,
+  _userCards?: string[],
+): Promise<EnrichedFlight[]> {
+  return [];
+}
+
+export async function logSearchAction(
+  origin: string,
+  destination: string,
+  dateString: string,
+) {
   try {
-    let userId = null;
-    try {
-      const session = await getServerSession(authOptions);
-      if (session?.user && (session.user as any).id) {
-        userId = (session.user as any).id;
-      }
-    } catch (e) {
-      console.log("Could not get session in logSearchAction, proceeding anonymously");
-    }
-    
+    const userId = await getSessionUserId();
     let parsedDate = new Date(dateString);
-    if (isNaN(parsedDate.getTime())) {
-      parsedDate = new Date(); // fallback to today if invalid
-    }
-    
-    // Create one record in SearchHistory to represent the user's search
+    if (Number.isNaN(parsedDate.getTime())) parsedDate = new Date();
+
     await prisma.searchHistory.create({
-      data: {
-        userId,
-        origin,
-        destination,
-        departureDate: parsedDate
-      }
+      data: { userId, origin, destination, departureDate: parsedDate },
     });
-
-    // Create fake booking clicks with 0 price/discount to inflate the search count
-    // This is a hack to reuse the same counting logic without breaking the schema
-    const records = Array.from({ length: Math.max(0, count - 1) }).map(() => ({
-      userId,
-      route: `${origin}-${destination}`,
-      airline: "SEARCH_COUNT",
-      price: 0,
-      discountSaved: 0
-    }));
-
-    if (records.length > 0) {
-      await prisma.bookingClick.createMany({
-        data: records
-      });
-    }
-
     return { success: true };
-  } catch (error) {
-    console.error("Failed to log search history action:", error);
+  } catch (err) {
+    console.error("Failed to log search history action:", err);
     return { success: false };
   }
 }
 
 export async function logBookingClick(route: string, airline: string, price: number, discountSaved: number) {
   try {
-    let userId = null;
-    try {
-      const session = await getServerSession(authOptions);
-      if (session?.user && (session.user as any).id) {
-        userId = (session.user as any).id;
-      }
-    } catch (e) {
-      console.log("Could not get session in logBookingClick, proceeding anonymously");
-    }
-
+    const userId = await getSessionUserId();
     await prisma.bookingClick.create({
-      data: {
-        userId,
-        route,
-        airline,
-        price,
-        discountSaved
-      }
+      data: { userId, route, airline, price, discountSaved },
     });
     return { success: true };
-  } catch (error) {
-    console.error("Failed to log booking click:", error);
+  } catch (err) {
+    console.error("Failed to log booking click:", err);
     return { success: false };
   }
 }
 
 export async function getPlatformStats() {
   try {
-    // Total distinct searches
-    const actualSearches = await prisma.searchHistory.count();
-    
-    // Additional inflated searches (where airline = "SEARCH_COUNT")
-    const inflatedSearches = await prisma.bookingClick.count({
-      where: {
-        airline: "SEARCH_COUNT"
-      }
-    });
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
 
-    const totalSearches = actualSearches + inflatedSearches;
-
-    const savingsAgg = await prisma.bookingClick.aggregate({
-      where: {
-        airline: {
-          not: "SEARCH_COUNT" // Only count actual bookings for money saved
-        }
-      },
-      _sum: {
-        discountSaved: true
-      }
-    });
+    const [searchesToday, savingsAgg] = await Promise.all([
+      prisma.searchHistory.count({ where: { createdAt: { gte: startOfDay } } }),
+      prisma.bookingClick.aggregate({
+        where: { createdAt: { gte: startOfMonth } },
+        _sum: { discountSaved: true },
+      }),
+    ]);
 
     return {
-      searchesToday: totalSearches || 0,
-      moneySavedMonth: savingsAgg._sum.discountSaved || 0
+      searchesToday,
+      moneySavedMonth: savingsAgg._sum.discountSaved ?? 0,
     };
-  } catch (error) {
-    console.error("Failed to get platform stats:", error);
+  } catch (err) {
+    console.error("Failed to get platform stats:", err);
     return { searchesToday: 0, moneySavedMonth: 0 };
   }
 }
 
 export async function fetchCheckoutOffers(baseFare: number, airlineCode?: string, userCards?: string[]) {
-  const { getAllApplicableOffers } = await import('@/lib/flight/offerEngine');
-  return await getAllApplicableOffers(baseFare, userCards, airlineCode);
+  const { getAllApplicableOffers } = await import("@/lib/flight/offerEngine");
+  return getAllApplicableOffers(baseFare, userCards, airlineCode);
 }
-
