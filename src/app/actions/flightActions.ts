@@ -162,24 +162,6 @@ export async function getAndTrackFlights(
   return searchFlightsAction(origin, destination, dateString, userCards);
 }
 
-export async function getGoogleFlightsAction(
-  origin: string,
-  destination: string,
-  dateString: string,
-  userCards?: string[],
-): Promise<EnrichedFlight[]> {
-  return searchFlightsAction(origin, destination, dateString, userCards);
-}
-
-export async function getOTAFlightsAction(
-  _origin: string,
-  _destination: string,
-  _dateString: string,
-  _userCards?: string[],
-): Promise<EnrichedFlight[]> {
-  return [];
-}
-
 export async function logSearchAction(
   origin: string,
   destination: string,

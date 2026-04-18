@@ -9,7 +9,7 @@ import { sortFlights, formatPlatformName, formatBankName } from "@/lib/utils";
 import { getAirportDisplay } from "@/lib/airports";
 import { AIRLINES, SORT_OPTIONS, formatPrice, formatDuration, formatTime, getAirlineCodeFromFlight, getAirlineLogoForFlight } from "@/lib/constants";
 import { AVAILABLE_BANK_CARDS } from "@/lib/banks";
-import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent, Wallet, Frown, RefreshCw } from "lucide-react";
+import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent, Wallet, Frown } from "lucide-react";
 import { fetchFlights } from "@/lib/api/live-flight-mapper";
 import { useUserStore } from "@/stores/user-store";
 import { useCheckoutStore } from "@/stores/checkout-store";
@@ -495,7 +495,6 @@ function SearchContent() {
   const [allFlights, setAllFlights] = useState<FlightResult[]>([]);
   const [filteredFlights, setFilteredFlights] = useState<FlightResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isFetchingOTAs, setIsFetchingOTAs] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("cheapest");
   const [showFilters, setShowFilters] = useState(false);
@@ -540,7 +539,6 @@ function SearchContent() {
       } finally {
         if (isMounted) {
           setIsLoading(false);
-          setIsFetchingOTAs(false);
         }
       }
     };
@@ -654,12 +652,6 @@ function SearchContent() {
               >
                 <PriceTrendChart origin={from} destination={to} date={date} />
                 <CostCuttingTips origin={from} destination={to} avgPrice={avgPrice} offerCount={offerCount} maxSaving={maxSaving} />
-                {isFetchingOTAs && (
-                  <div className="mb-4 p-3 bg-[var(--accent-primary-dim)] border border-[var(--accent-cta)]/20 rounded-[var(--radius-md)] flex items-center justify-center gap-2 text-sm text-[var(--accent-cta)]">
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span className="font-medium">Searching Makemytrip, Cleartrip & Ixigo for better offers...</span>
-                  </div>
-                )}
                 <SortBar sortBy={sortBy} onSort={setSortBy} totalResults={sortedFlights.length} />
                 <div className="space-y-3">
                   {sortedFlights.map((flight, i) => (

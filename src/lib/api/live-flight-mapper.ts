@@ -1,8 +1,5 @@
 import {
   searchFlightsAction,
-  getAndTrackFlights,
-  getGoogleFlightsAction,
-  getOTAFlightsAction,
   type EnrichedFlight,
 } from "@/app/actions/flightActions";
 import type { FlightResult, FlightSegment, FlightSource } from "@/lib/types";
@@ -107,23 +104,4 @@ export async function fetchFlights(
   }
 }
 
-// Legacy aliases kept for now so existing UI / cron call-sites don't break.
-// Every alias delegates to fetchFlights — the two-phase split is gone.
-export const fetchLiveFlights = fetchFlights;
-export const fetchGoogleFlights = fetchFlights;
-export async function fetchOTAFlights(
-  _origin: string,
-  _destination: string,
-  _date: string,
-  _userCards?: string[],
-): Promise<FlightResult[]> {
-  return [];
-}
-
-export {
-  searchFlightsAction,
-  getAndTrackFlights,
-  getGoogleFlightsAction,
-  getOTAFlightsAction,
-};
 export type { EnrichedFlight };

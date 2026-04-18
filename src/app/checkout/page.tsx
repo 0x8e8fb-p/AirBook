@@ -14,6 +14,25 @@ import { useUserStore } from "@/stores/user-store";
 import { getUserWallet } from "@/app/actions/userActions";
 import { useSession } from "next-auth/react";
 import type { BankOffer } from "@/lib/flight/offerEngine";
+import type { FlightResult } from "@/lib/types";
+
+const PLATFORM_URLS: Record<string, string> = {
+  ixigo: "https://www.ixigo.com/flights",
+  makemytrip: "https://www.makemytrip.com/flights",
+  cleartrip: "https://www.cleartrip.com/flights",
+  goibibo: "https://www.goibibo.com/flights",
+  easemytrip: "https://www.easemytrip.com/flights",
+  yatra: "https://flights.yatra.com",
+  google_flights: "https://www.google.com/travel/flights",
+};
+
+function resolveBookingUrl(flight: FlightResult): string {
+  const platform = flight.appliedOffer?.platform?.toLowerCase();
+  if (platform && PLATFORM_URLS[platform]) return PLATFORM_URLS[platform];
+  const src = flight.source?.toLowerCase();
+  if (src && PLATFORM_URLS[src]) return PLATFORM_URLS[src];
+  return PLATFORM_URLS.google_flights;
+}
 
 function CheckoutContent() {
   const router = useRouter();
@@ -87,17 +106,11 @@ function CheckoutContent() {
       discountAmount > 0 ? discountAmount : 0
     );
 
-    // In a real app, this would be a deep link to the OTA or airline
-    // For now, we simulate a redirect delay and open a generic booking page
     setTimeout(() => {
-      let otaUrl = "https://www.google.com/travel/flights";
-      if (selectedFlight.source === 'ixigo') otaUrl = "https://www.ixigo.com/flights";
-      if (selectedFlight.source === 'makemytrip') otaUrl = "https://www.makemytrip.com/flights";
-      if (selectedFlight.source === 'cleartrip') otaUrl = "https://www.cleartrip.com/flights";
-      
-      window.open(otaUrl, '_blank');
+      const otaUrl = resolveBookingUrl(selectedFlight);
+      window.open(otaUrl, "_blank", "noopener,noreferrer");
       setIsRedirecting(false);
-    }, 1500);
+    }, 800);
   };
 
   const displayedOffers = showAllOffers ? applicableOffers : applicableOffers.slice(0, 2);
