@@ -23,6 +23,7 @@ import { CostCuttingTips } from "@/components/ui/CostCuttingTips";
 import { DateHinter } from "@/components/ui/DateHinter";
 import { FareDipAlert } from "@/components/ui/FareDipAlert";
 import { AlternativeItineraries } from "@/components/ui/AlternativeItineraries";
+import { GroupBookCTA } from "@/components/ui/GroupBookCTA";
 
 /* ─── Loading ──── */
 function SearchingAnimation() {
@@ -663,6 +664,7 @@ function SearchContent() {
                 animate={{ opacity: 1 }}
                 className="max-w-3xl mx-auto"
               >
+                <GroupBookCTA pax={adults + children + infants} origin={from} destination={to} date={date} />
                 <FareDipAlert origin={from} destination={to} date={date} />
                 <AlternativeItineraries origin={from} destination={to} date={date} />
                 <DateHinter

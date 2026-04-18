@@ -9,6 +9,7 @@ import { logBookingClick, fetchCheckoutOffers } from "@/app/actions/flightAction
 import { getAirportDisplay } from "@/lib/airports";
 import { Footer } from "@/components/layout/Footer";
 import { OfferClaimGuide } from "@/components/ui/OfferClaimGuide";
+import { PriceFreezeButton } from "@/components/ui/PriceFreezeButton";
 import { formatPlatformName } from "@/lib/utils";
 import { useUserStore } from "@/stores/user-store";
 import { getUserWallet } from "@/app/actions/userActions";
@@ -308,7 +309,7 @@ function CheckoutContent() {
                 </p>
               </div>
 
-              <button 
+              <button
                 onClick={handleProceed}
                 disabled={isRedirecting}
                 className="w-full py-4 bg-[var(--accent-cta)] text-[var(--text-inverse)] font-bold rounded-[var(--radius-lg)] hover:opacity-90 disabled:opacity-70 transition-opacity flex items-center justify-center gap-2 text-[15px]"
@@ -319,6 +320,18 @@ function CheckoutContent() {
                   <>Proceed to Booking <ExternalLink className="w-4 h-4 ml-1" /></>
                 )}
               </button>
+
+              <div className="mt-3">
+                <PriceFreezeButton
+                  origin={selectedFlight.origin}
+                  destination={selectedFlight.destination}
+                  departureDate={selectedFlight.departureTime}
+                  airline={selectedFlight.airline}
+                  flightNumber={selectedFlight.flightNumber}
+                  lockedPrice={selectedFlight.price}
+                  basePrice={baseFare}
+                />
+              </div>
             </div>
           </div>
 

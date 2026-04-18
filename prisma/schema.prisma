@@ -130,6 +130,24 @@ model BookingClick {
   @@schema("public")
 }
 
+model PriceFreeze {
+  id             String   @id @default(cuid())
+  userId         String
+  origin         String
+  destination    String
+  departureDate  DateTime
+  airline        String
+  flightNumber   String?
+  lockedPrice    Float
+  basePrice      Float
+  expiresAt      DateTime
+  redeemed       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([userId, expiresAt])
+  @@schema("public")
+}
+
 model VerificationToken {
   identifier String
   token      String
