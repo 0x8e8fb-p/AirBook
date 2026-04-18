@@ -10,8 +10,26 @@ export function cn(...inputs: ClassValue[]): string {
   return clsx(inputs);
 }
 
+/** Does the applied offer use a card the user owns? */
+export function isWalletMatch(flight: FlightResult, ownedCards?: string[]): boolean {
+  if (!ownedCards || ownedCards.length === 0) return false;
+  const code = flight.appliedOffer?.bankCode;
+  if (!code) return false;
+  const normalized = code.toUpperCase();
+  return ownedCards.some((c) => c.toUpperCase() === normalized);
+}
+
+function discountAmount(flight: FlightResult): number {
+  if (!flight.appliedOffer || !flight.basePrice) return 0;
+  return Math.max(0, flight.basePrice + 350 - flight.price);
+}
+
 /** Sort flights based on selected option */
-export function sortFlights(flights: FlightResult[], sortBy: SortOption): FlightResult[] {
+export function sortFlights(
+  flights: FlightResult[],
+  sortBy: SortOption,
+  ownedCards?: string[],
+): FlightResult[] {
   const sorted = [...flights];
 
   switch (sortBy) {
@@ -27,14 +45,24 @@ export function sortFlights(flights: FlightResult[], sortBy: SortOption): Flight
       return sorted.sort((a, b) =>
         new Date(b.departureTime).getTime() - new Date(a.departureTime).getTime()
       );
-    case 'best_value':
-      // Score: normalize price and duration, weight them
+    case 'best_value': {
+      const maxPrice = Math.max(...sorted.map((f) => f.price));
+      const maxDur = Math.max(...sorted.map((f) => f.durationMinutes));
       return sorted.sort((a, b) => {
-        const maxPrice = Math.max(...sorted.map((f) => f.price));
-        const maxDur = Math.max(...sorted.map((f) => f.durationMinutes));
         const scoreA = (a.price / maxPrice) * 0.6 + (a.durationMinutes / maxDur) * 0.3 + (a.stops * 0.1);
         const scoreB = (b.price / maxPrice) * 0.6 + (b.durationMinutes / maxDur) * 0.3 + (b.stops * 0.1);
         return scoreA - scoreB;
+      });
+    }
+    case 'wallet_match':
+      return sorted.sort((a, b) => {
+        const matchA = isWalletMatch(a, ownedCards) ? 1 : 0;
+        const matchB = isWalletMatch(b, ownedCards) ? 1 : 0;
+        if (matchA !== matchB) return matchB - matchA;
+        const discA = discountAmount(a);
+        const discB = discountAmount(b);
+        if (discA !== discB) return discB - discA;
+        return a.price - b.price;
       });
     default:
       return sorted;

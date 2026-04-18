@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchStore } from "@/stores/search-store";
 import type { FlightResult, SortOption, CabinClass } from "@/lib/types";
-import { sortFlights, formatPlatformName, formatBankName } from "@/lib/utils";
+import { sortFlights, formatPlatformName, formatBankName, isWalletMatch } from "@/lib/utils";
 import { getAirportDisplay } from "@/lib/airports";
 import { AIRLINES, SORT_OPTIONS, formatPrice, formatDuration, formatTime, getAirlineCodeFromFlight, getAirlineLogoForFlight } from "@/lib/constants";
 import { AVAILABLE_BANK_CARDS } from "@/lib/banks";
@@ -97,9 +97,9 @@ function FlightCardSkeleton() {
 }
 
 /* ─── Flight Card ──────── */
-function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index: number; isCheapest: boolean }) {
+function FlightCard({ flight, index, isCheapest, ownedCards }: { flight: FlightResult; index: number; isCheapest: boolean; ownedCards: string[] }) {
   const router = useRouter();
-  
+
   const airlineCode = getAirlineCodeFromFlight(flight);
   const airlineName =
     flight.airlineName ||
@@ -109,6 +109,7 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
   const { setSelectedFlight } = useCheckoutStore();
 
   const maxDiscount = flight.basePrice && flight.price ? Math.max(0, (flight.basePrice + 350) - flight.price) : 0;
+  const walletMatch = isWalletMatch(flight, ownedCards);
 
   // Apply stagger to flight cards
   const baseDelay = 0.3; // Base delay for the list to appear
@@ -127,6 +128,12 @@ function FlightCard({ flight, index, isCheapest }: { flight: FlightResult; index
           <div className="absolute -top-2.5 left-4 flex items-center gap-1.5 bg-[var(--bg-base)] border border-[var(--accent-cta)] px-2.5 py-0.5 rounded-full">
             <Sparkles className="w-3 h-3 text-[var(--accent-cta)]" />
             <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--accent-cta)]">Lowest Price</span>
+          </div>
+        )}
+        {walletMatch && (
+          <div className={`absolute -top-2.5 ${isCheapest ? "left-36" : "left-4"} flex items-center gap-1.5 bg-[var(--bg-base)] border border-[var(--accent-green)] px-2.5 py-0.5 rounded-full`}>
+            <Wallet className="w-3 h-3 text-[var(--accent-green)]" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--accent-green)]">In Your Wallet</span>
           </div>
         )}
 
@@ -568,7 +575,10 @@ function SearchContent() {
     return { offerCount: uniqueOffers.size, maxSaving: max };
   }, [allFlights]);
 
-  const sortedFlights = useMemo(() => sortFlights(filteredFlights, sortBy), [filteredFlights, sortBy]);
+  const sortedFlights = useMemo(
+    () => sortFlights(filteredFlights, sortBy, ownedCards),
+    [filteredFlights, sortBy, ownedCards],
+  );
   const handleFilter = useCallback((f: FlightResult[]) => setFilteredFlights(f), []);
 
   return (
@@ -655,7 +665,7 @@ function SearchContent() {
                 <SortBar sortBy={sortBy} onSort={setSortBy} totalResults={sortedFlights.length} />
                 <div className="space-y-3">
                   {sortedFlights.map((flight, i) => (
-                    <FlightCard key={flight.id} flight={flight} index={i} isCheapest={i === 0 && sortBy === "cheapest"} />
+                    <FlightCard key={flight.id} flight={flight} index={i} isCheapest={i === 0 && sortBy === "cheapest"} ownedCards={ownedCards} />
                   ))}
                 </div>
               </motion.div>

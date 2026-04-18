@@ -131,6 +131,7 @@ export type SortOption =
   | 'cheapest'
   | 'fastest'
   | 'best_value'
+  | 'wallet_match'
   | 'earliest_departure'
   | 'latest_departure';
 

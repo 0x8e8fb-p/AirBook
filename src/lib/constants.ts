@@ -123,6 +123,7 @@ export const SORT_OPTIONS = [
   { value: 'cheapest', label: 'Cheapest', labelHi: 'सबसे सस्ता' },
   { value: 'fastest', label: 'Fastest', labelHi: 'सबसे तेज़' },
   { value: 'best_value', label: 'Best Value', labelHi: 'सबसे बेहतर' },
+  { value: 'wallet_match', label: 'Best for my cards', labelHi: 'मेरे कार्ड के लिए' },
   { value: 'earliest_departure', label: 'Earliest', labelHi: 'सबसे पहले' },
   { value: 'latest_departure', label: 'Latest', labelHi: 'सबसे बाद' },
 ] as const;
