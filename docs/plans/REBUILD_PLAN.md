@@ -36,7 +36,7 @@ Owner: Prabha
 │   • /api/coupons       → airApiClient.listCoupons()      │
 │   • /api/airports      → airApiClient.searchAirports()   │
 │   • /api/prices/history→ own PriceHistory (Supabase)     │
-│   • /api/cron/*        → Vercel cron (x-vercel-cron auth)│
+│   • /api/cron/*        → Vercel cron (Bearer $CRON_SEC) │
 │   • /api/auth/[...]    → NextAuth v4 (→ migrate v5)      │
 └──────────────────────────────────────────────────────────┘
             │
@@ -144,7 +144,7 @@ Add: 3-retry exponential backoff on 5xx, AbortSignal.timeout(8000), Upstash KV l
 8. Update CSP in `next.config.ts` → add AirAPI origin to `connect-src`.
 
 ### Phase 2 — Bug fixes + UX hardening (1 day)
-1. **Fix cron auth** — `/api/cron/track/route.ts` + any remaining: switch to `request.headers.get('x-vercel-cron')` check (Vercel-signed). Delete `CRON_SECRET`, delete `/api/cron/track-test`.
+1. **Fix cron auth** — `/api/cron/track/route.ts` checks `Authorization: Bearer ${process.env.CRON_SECRET}` (Vercel auto-injects when `CRON_SECRET` env is set). Delete `/api/cron/track-test`.
 2. **Persist checkout store** — add `persist` middleware in `src/stores/checkout-store.ts`; drop 100ms wait hack in `checkout/page.tsx:36`.
 3. **Add `middleware.ts`** at `src/` root — protect `/profile`, `/search` (optional), return 401 on `/api/**` without session where needed.
 4. **Fix `reduce` crash** `flightActions.ts:242` — pass initial value.
@@ -240,6 +240,26 @@ Supabase migrations: consolidate into **one** file `supabase/migrations/001_init
    - `/checkout` keeps selection on reload
    - `/api/cron/track` returns 401 on unsigned req, 200 from Vercel cron
 7. Monitor Vercel logs for 24h. Watch Upstash cache hit ratio > 70%.
+
+### Required env vars at deploy (full list)
+- `DATABASE_URL`, `DIRECT_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+- `AIRAPI_URL`, `AIRAPI_CLIENT_ID`, `AIRAPI_KEY`
+- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+- `CRON_SECRET` (required by Vercel cron — `Authorization: Bearer $CRON_SECRET` auto-injected)
+- `RESEND_API_KEY`
+- `NEXT_PUBLIC_SITE_URL`
+
+### Pre-deploy checklist
+- `npm run build` clean
+- `npm test` all green (16+ tests)
+- `npx prisma migrate deploy` against prod DB
+- `curl -H "Authorization: Bearer $CRON_SECRET" https://<domain>/api/cron/track` returns 200
+- Without header: returns 401
+- Open `/search?from=DEL&to=BOM&date=<future>` — fares stream in
+- DevTools → Network: no call to `*.airbook` API uses browser-visible key
+- Rate-limit smoke: hit `/api/airports?q=del` 150× in 60s → last calls return 429 with `Retry-After`
 
 ---
 
