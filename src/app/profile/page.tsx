@@ -501,9 +501,9 @@ function ProfileContent() {
                       </button>
                     </div>
                     {resetError && <p className="text-xs text-[var(--accent-red)] mt-2">{resetError}</p>}
-                    {resetSent && !process.env.NEXT_PUBLIC_RESEND_API_KEY && (
+                    {resetSent && process.env.NODE_ENV === "development" && (
                       <p className="text-xs text-[var(--accent-cta)] mt-2 p-2 bg-[var(--accent-cta)]/10 rounded">
-                        <strong>Developer Note:</strong> Check your terminal logs for the password reset link since no Resend API key is configured.
+                        <strong>Developer Note:</strong> If no Resend API key is set on the server, the reset link is logged to the server terminal.
                       </p>
                     )}
                   </div>

@@ -83,9 +83,9 @@ export default function RegisterPage() {
             <div className="mb-6 p-4 rounded-[var(--radius-md)] bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/20 text-[var(--accent-green)] text-sm">
               {successMsg}
             </div>
-            {!process.env.NEXT_PUBLIC_RESEND_API_KEY && (
+            {process.env.NODE_ENV === "development" && (
               <p className="text-xs text-[var(--accent-cta)] mt-2 p-2 bg-[var(--accent-cta)]/10 rounded">
-                <strong>Developer Note:</strong> Check your terminal logs for the verification link since no Resend API key is configured.
+                <strong>Developer Note:</strong> If no Resend API key is set on the server, the verification link is logged to the server terminal.
               </p>
             )}
             <Link href="/login" className="inline-block mt-4 py-2 px-4 bg-[var(--text-primary)] text-[var(--bg-base)] font-semibold rounded-[var(--radius-md)] hover:opacity-90 transition-opacity">
