@@ -292,3 +292,13 @@ export async function getCheapestNearbyDays(
     return { selectedPrice: null, cheapest: [] };
   }
 }
+
+export async function fetchSplitTicketSuggestions(origin: string, destination: string, date: string) {
+  const { findSplitTickets } = await import("@/lib/flight/splitTicket");
+  return findSplitTickets(origin, destination, date);
+}
+
+export async function fetchHiddenCityOpportunities(origin: string, destination: string, date: string) {
+  const { findHiddenCityOpportunities } = await import("@/lib/flight/splitTicket");
+  return findHiddenCityOpportunities(origin, destination, date);
+}
