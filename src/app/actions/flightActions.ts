@@ -226,6 +226,11 @@ export async function fetchCheckoutOffers(baseFare: number, airlineCode?: string
   return getAllApplicableOffers(baseFare, userCards, airlineCode);
 }
 
+export async function fetchPriceTrend(origin: string, destination: string, date: string) {
+  const { analyzePriceTrend } = await import("@/lib/flight/priceTrend");
+  return analyzePriceTrend(origin, destination, date);
+}
+
 export interface NearbyDay {
   date: string;
   price: number;

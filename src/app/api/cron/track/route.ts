@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAndTrackFlights } from '@/app/actions/flightActions';
+import { analyzePriceTrend } from '@/lib/flight/priceTrend';
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_mock');
@@ -39,7 +40,7 @@ export async function GET(request: Request) {
           const lowestPrice = flights.length > 0 ? Math.min(...flights.map(f => f.pricing.effectivePrice)) : null;
 
           if (lowestPrice) {
-            // Check for any active alerts for this route that match the lowest price
+            const trend = await analyzePriceTrend(route.origin, route.destination, dateStr).catch(() => null);
             const activeAlerts = await prisma.priceAlert.findMany({
               where: {
                 origin: route.origin,
@@ -59,11 +60,14 @@ export async function GET(request: Request) {
                 console.log(`[Cron] Sending price drop alert to ${alert.user.email} for ${route.origin}-${route.destination}`);
                 try {
                   if (process.env.RESEND_API_KEY) {
+                    const trendLine = trend && trend.verdict !== "INSUFFICIENT_DATA"
+                      ? `<p><strong>${trend.verdict === "RISING" ? "⏰ Book now" : trend.verdict === "DROP_LIKELY" ? "📉 May drop further" : "📊 Stable"}:</strong> ${trend.message}.</p>`
+                      : "";
                     await resend.emails.send({
                       from: 'AirBook Alerts <alerts@updates.airbook.com>',
                       to: alert.user.email,
                       subject: `🚨 Price Drop: ${route.origin} to ${route.destination} is now ₹${lowestPrice}`,
-                      html: `<p>Good news! The flight from ${route.origin} to ${route.destination} has dropped to ₹${lowestPrice}, which is below your target of ₹${alert.targetPrice}.</p><p>Book now on AirBook!</p>`
+                      html: `<p>Good news! The flight from ${route.origin} to ${route.destination} has dropped to ₹${lowestPrice}, which is below your target of ₹${alert.targetPrice}.</p>${trendLine}<p>Book now on AirBook!</p>`
                     });
                   }
                   

@@ -21,6 +21,7 @@ import { Footer } from "@/components/layout/Footer";
 import { PriceTrendChart } from "@/components/dashboard/PriceTrendChart";
 import { CostCuttingTips } from "@/components/ui/CostCuttingTips";
 import { DateHinter } from "@/components/ui/DateHinter";
+import { FareDipAlert } from "@/components/ui/FareDipAlert";
 
 /* ─── Loading ──── */
 function SearchingAnimation() {
@@ -661,6 +662,7 @@ function SearchContent() {
                 animate={{ opacity: 1 }}
                 className="max-w-3xl mx-auto"
               >
+                <FareDipAlert origin={from} destination={to} date={date} />
                 <DateHinter
                   origin={from}
                   destination={to}
