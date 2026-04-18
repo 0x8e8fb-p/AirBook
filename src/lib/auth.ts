@@ -11,7 +11,6 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-      allowDangerousEmailAccountLinking: true,
       profile(profile) {
         return {
           id: profile.sub,
@@ -25,7 +24,7 @@ export const authOptions: NextAuthOptions = {
       name: "Credentials",
       credentials: {
         email: { label: "Email or Mobile", type: "text", placeholder: "Email or Mobile Number" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -36,76 +35,64 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.user.findFirst({
           where: {
-            OR: [
-              { email: identifier },
-              { mobile: identifier },
-            ]
-          }
+            OR: [{ email: identifier }, { mobile: identifier }],
+          },
         });
 
-        console.log("[Auth] User found:", user?.email || user?.mobile);
-
         if (!user || !user.password) {
-          console.error("[Auth] No user found or no password hash");
           throw new Error("Invalid credentials");
         }
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
-
-        console.log("[Auth] Password is valid:", isValid);
-
         if (!isValid) {
           throw new Error("Invalid credentials");
         }
 
-        // If they registered with a mobile number and no email, emailVerified will be null.
-        // We only want to block login if they actually HAVE an email but haven't verified it yet.
         if (user.email && !user.emailVerified) {
           throw new Error("Please verify your email address before logging in");
         }
 
         return user;
-      }
-    })
+      },
+    }),
   ],
   session: {
     strategy: "jwt",
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
-      console.log("[Auth] signIn callback:", { userEmail: user?.email, accountProvider: account?.provider });
-      return true;
+    async jwt({ token, user, trigger }) {
+      if (user?.id) {
+        token.sub = user.id;
+      }
+      if (token.sub && (user || trigger === "update" || !token.username)) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.sub },
+            select: { username: true, mobile: true, dob: true },
+          });
+          if (dbUser) {
+            token.username = dbUser.username;
+            token.mobile = dbUser.mobile;
+            token.dob = dbUser.dob?.toISOString() ?? null;
+          }
+        } catch {
+          // ignore — token keeps prior values
+        }
+      }
+      return token;
     },
     async session({ session, token }) {
       if (session.user && token.sub) {
         (session.user as any).id = token.sub;
-        
-        // Fetch fresh user data so session always has latest username/mobile/dob
-        try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: token.sub },
-            select: { username: true, mobile: true, dob: true }
-          });
-          if (dbUser) {
-            (session.user as any).username = dbUser.username;
-            (session.user as any).mobile = dbUser.mobile;
-            (session.user as any).dob = dbUser.dob;
-          }
-        } catch (e) {
-          console.error("Error fetching session user details:", e);
-        }
+        (session.user as any).username = token.username ?? null;
+        (session.user as any).mobile = token.mobile ?? null;
+        (session.user as any).dob = token.dob ?? null;
       }
       return session;
     },
-    async jwt({ token, user }) {
-      if (user) {
-        token.sub = user.id;
-      }
-      return token;
-    }
   },
   pages: {
-    signIn: '/login',
-    error: '/api/auth/error',
-  }
+    signIn: "/login",
+    error: "/api/auth/error",
+  },
 };

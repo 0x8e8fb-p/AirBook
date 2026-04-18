@@ -10,28 +10,7 @@ import { syncWallet } from "@/app/actions/userActions";
 import { getAlerts, deleteAlert, createAlert } from "@/app/actions/alertActions";
 import { formatPrice } from "@/lib/constants";
 import { sendPasswordResetEmail, deleteAccount, updateProfileImage, updateProfile } from "@/app/actions/authActions";
-
-const BANKS = [
-  { id: 'HDFC', name: 'HDFC Bank' },
-  { id: 'SBI', name: 'SBI Card' },
-  { id: 'ICICI', name: 'ICICI Bank' },
-  { id: 'AXIS', name: 'Axis Bank' },
-  { id: 'KOTAK', name: 'Kotak Mahindra Bank' },
-  { id: 'YES', name: 'Yes Bank' },
-  { id: 'RBL', name: 'RBL Bank' },
-  { id: 'SC', name: 'Standard Chartered' },
-  { id: 'AMEX', name: 'American Express' },
-  { id: 'INDUS', name: 'IndusInd Bank' },
-  { id: 'IDFC', name: 'IDFC First Bank' },
-  { id: 'AU', name: 'AU Small Finance Bank' },
-  { id: 'HSBC', name: 'HSBC Bank' },
-  { id: 'BOB', name: 'Bank of Baroda' },
-  { id: 'FEDERAL', name: 'Federal Bank' },
-  { id: 'CRED', name: 'CRED Pay' },
-  { id: 'PAYTM', name: 'Paytm Wallet' },
-  { id: 'PHONEPE', name: 'PhonePe' },
-  { id: 'MOBIKWIK', name: 'MobiKwik' },
-];
+import { AVAILABLE_BANK_CARDS as BANKS } from "@/lib/banks";
 
 function ProfileContent() {
   const { data: session, status } = useSession();

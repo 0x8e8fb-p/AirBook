@@ -19,7 +19,7 @@ function CheckoutContent() {
   const router = useRouter();
   const { selectedFlight } = useCheckoutStore();
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(useCheckoutStore.persist.hasHydrated());
   const [applicableOffers, setApplicableOffers] = useState<{ offer: BankOffer; discount: number }[]>([]);
   const [isLoadingOffers, setIsLoadingOffers] = useState(true);
   const [showAllOffers, setShowAllOffers] = useState(false);
@@ -27,20 +27,14 @@ function CheckoutContent() {
   const { data: session } = useSession();
 
   useEffect(() => {
-    setIsMounted(true);
+    const unsub = useCheckoutStore.persist.onFinishHydration(() => setIsHydrated(true));
+    if (useCheckoutStore.persist.hasHydrated()) setIsHydrated(true);
+    return unsub;
   }, []);
 
-  // Delay the redirect check slightly to allow Zustand to hydrate from localStorage
   useEffect(() => {
-    if (isMounted) {
-      const timer = setTimeout(() => {
-        if (!selectedFlight) {
-          router.replace("/");
-        }
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [selectedFlight, router, isMounted]);
+    if (isHydrated && !selectedFlight) router.replace("/");
+  }, [selectedFlight, router, isHydrated]);
 
   // Load user wallet from DB if logged in
   useEffect(() => {
@@ -67,13 +61,12 @@ function CheckoutContent() {
         setIsLoadingOffers(false);
       }
     }
-    if (isMounted && selectedFlight) {
+    if (isHydrated && selectedFlight) {
       loadOffers();
     }
-  }, [isMounted, selectedFlight, ownedCards]);
+  }, [isHydrated, selectedFlight, ownedCards]);
 
-  // Don't render until mounted AND we have a flight (prevents hydration mismatch)
-  if (!isMounted || !selectedFlight) return null;
+  if (!isHydrated || !selectedFlight) return null;
 
   const logoUrl = getAirlineLogoForFlight(selectedFlight);
   const code = getAirlineCodeFromFlight(selectedFlight);

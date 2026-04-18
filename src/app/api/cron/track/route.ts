@@ -13,12 +13,10 @@ const POPULAR_ROUTES = [
 ];
 
 export async function GET(request: Request) {
-  // Simple auth to prevent abuse
-  const { searchParams } = new URL(request.url);
-  const key = searchParams.get('key');
-  
-  if (key !== process.env.CRON_SECRET && process.env.NODE_ENV !== 'development') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const authHeader = request.headers.get("authorization");
+  const expected = process.env.CRON_SECRET;
+  if (!expected || authHeader !== `Bearer ${expected}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const results = [];

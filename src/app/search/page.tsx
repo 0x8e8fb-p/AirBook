@@ -8,6 +8,7 @@ import type { FlightResult, SortOption, CabinClass } from "@/lib/types";
 import { sortFlights, formatPlatformName, formatBankName } from "@/lib/utils";
 import { getAirportDisplay } from "@/lib/airports";
 import { AIRLINES, SORT_OPTIONS, formatPrice, formatDuration, formatTime, getAirlineCodeFromFlight, getAirlineLogoForFlight } from "@/lib/constants";
+import { AVAILABLE_BANK_CARDS } from "@/lib/banks";
 import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent, Wallet, Frown, RefreshCw } from "lucide-react";
 import { fetchFlights } from "@/lib/api/live-flight-mapper";
 import { useUserStore } from "@/stores/user-store";
@@ -413,27 +414,7 @@ function WalletModal({ show, onClose }: { show: boolean; onClose: () => void }) 
     onClose();
   };
 
-  const banks = [
-    { id: 'HDFC', name: 'HDFC Bank' },
-    { id: 'SBI', name: 'SBI Card' },
-    { id: 'ICICI', name: 'ICICI Bank' },
-    { id: 'AXIS', name: 'Axis Bank' },
-    { id: 'KOTAK', name: 'Kotak Mahindra Bank' },
-    { id: 'YES', name: 'Yes Bank' },
-    { id: 'RBL', name: 'RBL Bank' },
-    { id: 'SC', name: 'Standard Chartered' },
-    { id: 'AMEX', name: 'American Express' },
-    { id: 'INDUS', name: 'IndusInd Bank' },
-    { id: 'IDFC', name: 'IDFC First Bank' },
-    { id: 'AU', name: 'AU Small Finance Bank' },
-    { id: 'HSBC', name: 'HSBC Bank' },
-    { id: 'BOB', name: 'Bank of Baroda' },
-    { id: 'FEDERAL', name: 'Federal Bank' },
-    { id: 'CRED', name: 'CRED Pay' },
-    { id: 'PAYTM', name: 'Paytm Wallet' },
-    { id: 'PHONEPE', name: 'PhonePe' },
-    { id: 'MOBIKWIK', name: 'MobiKwik' },
-  ];
+  const banks = AVAILABLE_BANK_CARDS;
 
   return (
     <AnimatePresence>
