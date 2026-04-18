@@ -27,6 +27,17 @@ export interface FlightPriceDetails {
 
 export const CONVENIENCE_FEE = 350;
 
+/** UPI wallets / pay apps — treated as universally available (no card ownership check) */
+export const UNIVERSAL_UPI_CODES: Set<string> = new Set([
+  "PAYTM",
+  "PHONEPE",
+  "CRED",
+  "MOBIKWIK",
+  "GPAY",
+  "FREECHARGE",
+  "AMAZONPAY",
+]);
+
 const BANK_NAME_TO_CODE: Record<string, string> = {
   HDFC: "HDFC",
   ICICI: "ICICI",
@@ -53,6 +64,17 @@ const BANK_NAME_TO_CODE: Record<string, string> = {
   CANARA: "CANARA",
   PNB: "PNB",
   ONECARD: "ONECARD",
+  PAYTM: "PAYTM",
+  PAYTMWALLET: "PAYTM",
+  PHONEPE: "PHONEPE",
+  CRED: "CRED",
+  CREDPAY: "CRED",
+  MOBIKWIK: "MOBIKWIK",
+  GPAY: "GPAY",
+  GOOGLEPAY: "GPAY",
+  FREECHARGE: "FREECHARGE",
+  AMAZONPAY: "AMAZONPAY",
+  AMAZON: "AMAZONPAY",
 };
 
 export function resolveBankCode(bankName: string | null | undefined): string | null {
@@ -136,6 +158,7 @@ export async function getOffersForUser(
     if (offer.airline && airlineCode && offer.airline !== airlineCode) return false;
 
     if (offer.bankCode) {
+      if (UNIVERSAL_UPI_CODES.has(offer.bankCode)) return true;
       if (!userCards || userCards.length === 0) return false;
       return userCards.includes(offer.bankCode);
     }

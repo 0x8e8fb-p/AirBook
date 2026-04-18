@@ -20,6 +20,7 @@ import { useSession } from "next-auth/react";
 import { Footer } from "@/components/layout/Footer";
 import { PriceTrendChart } from "@/components/dashboard/PriceTrendChart";
 import { CostCuttingTips } from "@/components/ui/CostCuttingTips";
+import { DateHinter } from "@/components/ui/DateHinter";
 
 /* ─── Loading ──── */
 function SearchingAnimation() {
@@ -660,6 +661,12 @@ function SearchContent() {
                 animate={{ opacity: 1 }}
                 className="max-w-3xl mx-auto"
               >
+                <DateHinter
+                  origin={from}
+                  destination={to}
+                  selectedDate={date}
+                  onPickDate={(d) => router.push(`/search?from=${from}&to=${to}&date=${d}`)}
+                />
                 <PriceTrendChart origin={from} destination={to} date={date} />
                 <CostCuttingTips origin={from} destination={to} avgPrice={avgPrice} offerCount={offerCount} maxSaving={maxSaving} />
                 <SortBar sortBy={sortBy} onSort={setSortBy} totalResults={sortedFlights.length} />

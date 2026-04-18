@@ -225,3 +225,65 @@ export async function fetchCheckoutOffers(baseFare: number, airlineCode?: string
   const { getAllApplicableOffers } = await import("@/lib/flight/offerEngine");
   return getAllApplicableOffers(baseFare, userCards, airlineCode);
 }
+
+export interface NearbyDay {
+  date: string;
+  price: number;
+  deltaFromSelected: number;
+}
+
+export async function getCheapestNearbyDays(
+  origin: string,
+  destination: string,
+  selectedDate: string,
+  windowDays = 3,
+): Promise<{ selectedPrice: number | null; cheapest: NearbyDay[] }> {
+  try {
+    const sel = new Date(selectedDate);
+    if (Number.isNaN(sel.getTime())) return { selectedPrice: null, cheapest: [] };
+
+    const months = new Set<string>();
+    for (let d = -windowDays; d <= windowDays; d++) {
+      const cursor = new Date(sel);
+      cursor.setDate(sel.getDate() + d);
+      months.add(`${cursor.getUTCFullYear()}-${String(cursor.getUTCMonth() + 1).padStart(2, "0")}`);
+    }
+
+    const byDate = new Map<string, number>();
+    await Promise.all(
+      Array.from(months).map(async (month) => {
+        try {
+          const { days } = await airApi.faresCalendar({ from: origin, to: destination, month });
+          for (const d of days) if (d.cheapest !== null && d.cheapest > 0) byDate.set(d.date, d.cheapest);
+        } catch {
+          // tolerate per-month failure
+        }
+      }),
+    );
+
+    const selectedPrice = byDate.get(selectedDate) ?? null;
+    const results: NearbyDay[] = [];
+    for (let d = -windowDays; d <= windowDays; d++) {
+      if (d === 0) continue;
+      const cursor = new Date(sel);
+      cursor.setDate(sel.getDate() + d);
+      const key = cursor.toISOString().slice(0, 10);
+      const price = byDate.get(key);
+      if (typeof price !== "number") continue;
+      results.push({
+        date: key,
+        price,
+        deltaFromSelected: selectedPrice !== null ? price - selectedPrice : 0,
+      });
+    }
+
+    results.sort((a, b) => a.price - b.price);
+    return { selectedPrice, cheapest: results.slice(0, 3) };
+  } catch (err) {
+    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+      return { selectedPrice: null, cheapest: [] };
+    }
+    console.error("getCheapestNearbyDays failed:", err);
+    return { selectedPrice: null, cheapest: [] };
+  }
+}
