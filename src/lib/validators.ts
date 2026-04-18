@@ -16,6 +16,6 @@ export const calendarRequestSchema = z.object({
   origin: iataCodeSchema,
   destination: iataCodeSchema,
   month: z.number().int().min(1).max(12),
-  year: z.number().int().min(2024).max(2027),
+  year: z.number().int().min(2024).max(2035),
   cabinClass: cabinClassSchema.optional().default('economy'),
 });
