@@ -6,11 +6,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSearchStore } from "@/stores/search-store";
 import { searchAirports } from "@/lib/airports";
 import { getPlatformStats } from "@/app/actions/flightActions";
+import { getTrendingRoutes } from "@/app/actions/intelligenceActions";
 import type { Airport } from "@/lib/types";
 import {
   ArrowRightLeft, ChevronDown, X,
   Search, TrendingDown, Shield, Zap, Plane,
+  Brain, Radar, Layers, ArrowRight, TicketPercent,
 } from "lucide-react";
+import Link from "next/link";
 
 import { Footer } from "@/components/layout/Footer";
 
@@ -321,6 +324,7 @@ function SearchPanel() {
 export default function HomePage() {
   const [stats, setStats] = useState({ searchesToday: 0, moneySavedMonth: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
+  const [trending, setTrending] = useState<{ biggest_drops?: { route: string; drop_pct: number; week_avg: number; current_price: number }[] } | null>(null);
 
   useEffect(() => {
     getPlatformStats().then(data => {
@@ -330,6 +334,9 @@ export default function HomePage() {
       });
       setStatsLoading(false);
     });
+    getTrendingRoutes().then(data => {
+      setTrending(data ?? null);
+    }).catch(() => setTrending(null));
   }, []);
 
   const formatLakhs = (val: number) => {
@@ -427,6 +434,56 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* FEATURE DISCOVERY */}
+      <section className="container-app py-16 border-t border-[var(--border-muted)] relative z-10">
+        <h2 className="text-lg font-semibold tracking-tight mb-8">Powered by AirAPI</h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { icon: Brain, href: "/intelligence", title: "Intelligence", desc: "ML price prediction + booking advice" },
+            { icon: Layers, href: "/compare", title: "Compare", desc: "OTA comparison + bank combos" },
+            { icon: Radar, href: "/status", title: "Tracker", desc: "Real-time flight positions via ADS-B" },
+            { icon: TicketPercent, href: "/deals", title: "Deals", desc: "Trending routes + bank offers" },
+          ].map((feat) => (
+            <Link
+              key={feat.title}
+              href={feat.href}
+              className="group p-4 rounded-[var(--radius-lg)] bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] border border-transparent hover:border-[var(--border-strong)] transition-all"
+            >
+              <feat.icon className="w-4 h-4 text-[var(--accent-cta)] mb-2.5 transition-transform group-hover:scale-110" />
+              <h3 className="text-sm font-semibold mb-1 flex items-center gap-1">
+                {feat.title}
+                <ArrowRight className="w-3 h-3 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+              </h3>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{feat.desc}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* TRENDING ROUTES */}
+      {trending && trending.biggest_drops && trending.biggest_drops.length > 0 && (
+        <section className="container-app py-16 border-t border-[var(--border-muted)] relative z-10">
+          <h2 className="text-lg font-semibold tracking-tight mb-8">Trending Price Drops</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {trending.biggest_drops.slice(0, 6).map((drop: any, i: number) => (
+              <Link
+                key={i}
+                href={`/search?from=${drop.route.split("-")[0]}&to=${drop.route.split("-")[1]}&date=${new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0]}&adults=1`}
+                className="p-4 rounded-[var(--radius-lg)] bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] border border-transparent hover:border-[var(--border-strong)] transition-all"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">{drop.route.split("-")[0]} → {drop.route.split("-")[1]}</span>
+                  <span className="text-[11px] font-bold text-[var(--accent-green)]">{drop.drop_pct}% down</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+                  <span>₹{Math.round(drop.week_avg).toLocaleString()} → ₹{Math.round(drop.current_price).toLocaleString()}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <Footer />
     </div>

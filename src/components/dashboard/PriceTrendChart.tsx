@@ -71,7 +71,7 @@ export function PriceTrendChart({ origin, destination, date }: { origin: string,
     const targetPrice = Math.floor(lastPrice * 0.95);
     const res = await createAlert(origin, destination, targetPrice);
     setCreatingAlert(false);
-    if (res.success) {
+    if (res) {
       setAlertSuccess(true);
       setTimeout(() => setAlertSuccess(false), 3000);
     } else {

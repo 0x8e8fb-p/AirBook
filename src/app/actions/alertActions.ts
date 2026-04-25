@@ -1,71 +1,58 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import {
+  airApi,
+  AirApiConfigError,
+  AirApiError,
+} from "@/lib/api/airApiClient";
 
-export async function createAlert(origin: string, destination: string, targetPrice: number) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user || !(session.user as any).id) {
-    return { success: false, error: "Not authenticated" };
-  }
-
+export async function subscribePriceAlert(
+  source: string,
+  destination: string,
+  targetPrice: number,
+  expiryDays = 30,
+) {
   try {
-    await prisma.priceAlert.create({
-      data: {
-        userId: (session.user as any).id,
-        origin,
-        destination,
-        targetPrice,
-      }
+    return await airApi.subscribeAlert({
+      source,
+      destination,
+      target_price: targetPrice,
+      expiry_days: expiryDays,
     });
-
-    return { success: true };
-  } catch (error) {
-    console.error("Failed to create alert:", error);
-    return { success: false, error: "Failed to update database" };
+  } catch (err) {
+    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+      console.error("Subscribe alert error:", err.message);
+      return null;
+    }
+    throw err;
   }
 }
 
-export async function getAlerts() {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user || !(session.user as any).id) {
-    return { success: false, error: "Not authenticated" };
-  }
-
+export async function getPriceAlerts(activeOnly = true) {
   try {
-    const alerts = await prisma.priceAlert.findMany({
-      where: { userId: (session.user as any).id },
-      orderBy: { createdAt: 'desc' }
-    });
-    
-    return { success: true, alerts };
-  } catch (error) {
-    console.error("Failed to get alerts:", error);
-    return { success: false, error: "Failed to fetch from database" };
+    return await airApi.getAlerts(activeOnly);
+  } catch (err) {
+    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+      console.error("List alerts error:", err.message);
+      return [];
+    }
+    throw err;
   }
 }
 
-export async function deleteAlert(id: string) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user || !(session.user as any).id) {
-    return { success: false, error: "Not authenticated" };
-  }
-
+export async function removePriceAlert(id: string) {
   try {
-    await prisma.priceAlert.delete({
-      where: { 
-        id,
-        userId: (session.user as any).id // Security: ensure they own it
-      }
-    });
-    
-    return { success: true };
-  } catch (error) {
-    console.error("Failed to delete alert:", error);
-    return { success: false, error: "Failed to delete from database" };
+    return await airApi.deleteAlert(id);
+  } catch (err) {
+    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+      console.error("Delete alert error:", err.message);
+      return null;
+    }
+    throw err;
   }
 }
+
+// Backward-compatible aliases for existing components
+export const createAlert = subscribePriceAlert;
+export const getAlerts = getPriceAlerts;
+export const deleteAlert = removePriceAlert;

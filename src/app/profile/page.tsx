@@ -113,7 +113,7 @@ function ProfileContent() {
     if (status === "authenticated" && activeTab === "alerts") {
       setLoadingAlerts(true);
       getAlerts().then(res => {
-        if (res.success) setAlerts(res.alerts || []);
+        setAlerts(Array.isArray(res) ? res : []);
         setLoadingAlerts(false);
       });
     }
@@ -131,14 +131,14 @@ function ProfileContent() {
     setIsCreatingAlert(true);
     const res = await createAlert(newAlertOrigin.toUpperCase(), newAlertDest.toUpperCase(), parseInt(newAlertPrice));
     
-    if (res.success) {
+    if (res) {
       setNewAlertOrigin("");
       setNewAlertDest("");
       setNewAlertPrice("");
       const alertsRes = await getAlerts();
-      if (alertsRes.success) setAlerts(alertsRes.alerts || []);
+      setAlerts(Array.isArray(alertsRes) ? alertsRes : []);
     } else {
-      alert(res.error || "Failed to create alert");
+      alert("Failed to create alert");
     }
     setIsCreatingAlert(false);
   };

@@ -24,6 +24,9 @@ import { DateHinter } from "@/components/ui/DateHinter";
 import { FareDipAlert } from "@/components/ui/FareDipAlert";
 import { AlternativeItineraries } from "@/components/ui/AlternativeItineraries";
 import { GroupBookCTA } from "@/components/ui/GroupBookCTA";
+import { getIntelligenceCombined } from "@/app/actions/intelligenceActions";
+import { subscribePriceAlert } from "@/app/actions/alertActions";
+import { Bell } from "lucide-react";
 
 /* ─── Loading ──── */
 function SearchingAnimation() {
@@ -510,6 +513,10 @@ function SearchContent() {
   const [sortBy, setSortBy] = useState<SortOption>("cheapest");
   const [showFilters, setShowFilters] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
+  const [intelligence, setIntelligence] = useState<any>(null);
+  const [showAlertForm, setShowAlertForm] = useState(false);
+  const [alertPrice, setAlertPrice] = useState("");
+  const [alertLoading, setAlertLoading] = useState(false);
 
   const { ownedCards, setCards } = useUserStore();
   const { data: session } = useSession();
@@ -536,11 +543,19 @@ function SearchContent() {
       setError(null);
       
       try {
-        const results = await fetchFlights(from, to, date, ownedCards);
+        const [faresResult, intelResult] = await Promise.allSettled([
+          fetchFlights(from, to, date, ownedCards),
+          getIntelligenceCombined(from, to, date),
+        ]);
 
         if (!isMounted) return;
-        setAllFlights(results);
-        setFilteredFlights(results);
+        if (faresResult.status === "fulfilled") {
+          setAllFlights(faresResult.value);
+          setFilteredFlights(faresResult.value);
+        }
+        if (intelResult.status === "fulfilled") {
+          setIntelligence(intelResult.value);
+        }
 
         logSearchAction(from, to, date).catch((e) =>
           console.error("Failed to log search:", e),
@@ -664,6 +679,78 @@ function SearchContent() {
                 animate={{ opacity: 1 }}
                 className="max-w-3xl mx-auto"
               >
+                {/* Intelligence Panel */}
+                {intelligence && (
+                  <div className="mb-4 space-y-3">
+                    {intelligence.prediction?.predicted_price && (
+                      <div className="flex items-center justify-between p-3 rounded-[var(--radius-md)] bg-[var(--accent-primary-dim)] border border-[var(--accent-cta)]/20">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-[var(--accent-cta)]" />
+                          <span className="text-xs font-medium">ML Predicted Price: <strong>{formatPrice(intelligence.prediction.predicted_price)}</strong></span>
+                        </div>
+                        <span className="text-[10px] text-[var(--text-muted)]">{intelligence.prediction.model_version}</span>
+                      </div>
+                    )}
+                    {intelligence.advice?.recommendation && (
+                      <div className="flex items-center justify-between p-3 rounded-[var(--radius-md)] bg-[var(--bg-subtle)] border border-[var(--border-default)]">
+                        <span className="text-xs">Best time to book: <strong>{intelligence.advice.recommendation}</strong></span>
+                        <span className="text-[10px] text-[var(--accent-green)] capitalize">Trend: {intelligence.advice.price_trend}</span>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowAlertForm(!showAlertForm)}
+                        className="flex-1 py-2 text-xs font-medium border border-[var(--border-default)] rounded-[var(--radius-sm)] hover:bg-[var(--accent-primary-dim)] transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <Bell className="w-3 h-3" /> Price Alert
+                      </button>
+                      <button
+                        onClick={() => router.push(`/compare?from=${from}&to=${to}`)}
+                        className="flex-1 py-2 text-xs font-medium border border-[var(--border-default)] rounded-[var(--radius-sm)] hover:bg-[var(--accent-primary-dim)] transition-colors"
+                      >
+                        Compare OTA Prices
+                      </button>
+                      <button
+                        onClick={() => router.push(`/intelligence?from=${from}&to=${to}&date=${date}`)}
+                        className="flex-1 py-2 text-xs font-medium border border-[var(--border-default)] rounded-[var(--radius-sm)] hover:bg-[var(--accent-primary-dim)] transition-colors"
+                      >
+                        Full Analysis
+                      </button>
+                    </div>
+                    {/* Alert Form */}
+                    <AnimatePresence>
+                      {showAlertForm && (
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                          <div className="flex gap-2 p-3 rounded-[var(--radius-md)] bg-[var(--bg-base)] border border-[var(--border-default)]">
+                            <input
+                              type="number"
+                              value={alertPrice}
+                              onChange={(e) => setAlertPrice(e.target.value)}
+                              placeholder="Target price ₹"
+                              className="ghost-input flex-1 text-sm"
+                            />
+                            <button
+                              onClick={async () => {
+                                const target = Number(alertPrice);
+                                if (!target) return;
+                                setAlertLoading(true);
+                                await subscribePriceAlert(from, to, target);
+                                setAlertLoading(false);
+                                setShowAlertForm(false);
+                                setAlertPrice("");
+                              }}
+                              disabled={alertLoading}
+                              className="px-3 py-1.5 bg-[var(--accent-cta)] text-[var(--text-inverse)] text-xs font-semibold rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity"
+                            >
+                              {alertLoading ? "…" : "Set"}
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
                 <GroupBookCTA pax={adults + children + infants} origin={from} destination={to} date={date} />
                 <FareDipAlert origin={from} destination={to} date={date} />
                 <AlternativeItineraries origin={from} destination={to} date={date} />

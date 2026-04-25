@@ -302,3 +302,68 @@ export async function fetchHiddenCityOpportunities(origin: string, destination: 
   const { findHiddenCityOpportunities } = await import("@/lib/flight/splitTicket");
   return findHiddenCityOpportunities(origin, destination, date);
 }
+
+// ─── NEW: AirAPI aggregator integration ──────────────────────
+
+export async function searchAggregatorFlights(
+  fromCode: string,
+  toCode: string,
+  departDate: string,
+  returnDate?: string,
+) {
+  try {
+    return await airApi.aggregatorSearch(
+      fromCode,
+      toCode,
+      departDate,
+      returnDate,
+    );
+  } catch (err) {
+    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+      console.error("Aggregator search error:", err.message);
+      return null;
+    }
+    throw err;
+  }
+}
+
+export async function getFlightStatus(flightNumber: string) {
+  try {
+    return await airApi.getFlightStatus(flightNumber);
+  } catch (err) {
+    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+      console.error("Flight status error:", err.message);
+      return null;
+    }
+    throw err;
+  }
+}
+
+export async function getBestDealForRoute(
+  origin: string,
+  destination: string,
+  bankName?: string,
+  cardType?: string,
+) {
+  try {
+    return await airApi.getBestDeal(origin, destination, bankName, cardType);
+  } catch (err) {
+    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+      console.error("Best deal error:", err.message);
+      return null;
+    }
+    throw err;
+  }
+}
+
+export async function getAirportWeather(iata: string) {
+  try {
+    return await airApi.getAirportWeather(iata);
+  } catch (err) {
+    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+      console.error("Weather error:", err.message);
+      return null;
+    }
+    throw err;
+  }
+}
