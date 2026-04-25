@@ -335,14 +335,14 @@ export async function searchAirports(p: SearchAirportsParams): Promise<AirportsR
   if (q.length < 1) return { airports: [] };
   const key = cacheKey(["airports", q.toLowerCase(), p.limit ?? 10]);
   return cachedRequest(key, CACHE_TTL.airports, () =>
-    requestRaw(`/v1/airports${buildQuery({ q, limit: p.limit ?? 10 })}`, AirportsResponseSchema),
+    requestRaw(`/airports${buildQuery({ q, limit: p.limit ?? 10 })}`, AirportsResponseSchema),
   );
 }
 
 export async function listAirlines(iata?: string): Promise<AirlinesResponse> {
   const key = cacheKey(["airlines", iata ?? "*"]);
   return cachedRequest(key, CACHE_TTL.airlines, () =>
-    requestRaw(`/v1/airlines${buildQuery({ iata })}`, AirlinesResponseSchema),
+    requestRaw(`/airlines${buildQuery({ iata })}`, AirlinesResponseSchema),
   );
 }
 
@@ -358,7 +358,7 @@ export async function searchFares(p: SearchFaresParams): Promise<FaresResponse> 
   ]);
   const fetcher = () =>
     requestRaw(
-      `/v1/fares${buildQuery({
+      `/flights/fares${buildQuery({
         from: p.from,
         to: p.to,
         date: p.date,
@@ -377,7 +377,7 @@ export async function faresCalendar(p: CalendarParams): Promise<CalendarResponse
   const key = cacheKey(["calendar", p.from, p.to, p.month]);
   return cachedRequest(key, CACHE_TTL.calendar, () =>
     requestRaw(
-      `/v1/fares/calendar${buildQuery({ from: p.from, to: p.to, month: p.month })}`,
+      `/flights/calendar${buildQuery({ from: p.from, to: p.to, month: p.month })}`,
       CalendarResponseSchema,
     ),
   );
@@ -394,7 +394,7 @@ export async function listCoupons(p: CouponsParams = {}): Promise<CouponsRespons
   ]);
   return cachedRequest(key, CACHE_TTL.coupons, () =>
     requestRaw(
-      `/v1/coupons${buildQuery({
+      `/coupons${buildQuery({
         airline: p.airline,
         route: p.route,
         bank: p.bank,
@@ -409,20 +409,20 @@ export async function listCoupons(p: CouponsParams = {}): Promise<CouponsRespons
 export async function liveFlights(opts?: { lamin?: number; lamax?: number; lomin?: number; lomax?: number; icao24?: string }): Promise<LiveResponse> {
   const key = cacheKey(["live", opts?.icao24 ?? `${opts?.lamin ?? 0}_${opts?.lamax ?? 0}_${opts?.lomin ?? 0}_${opts?.lomax ?? 0}`]);
   return cachedRequest(key, CACHE_TTL.live, () =>
-    requestRaw(`/v1/live${buildQuery(opts ?? {})}`, LiveResponseSchema),
+    requestRaw(`/flights/live${buildQuery(opts ?? {})}`, LiveResponseSchema),
   );
 }
 
 export async function listRoutes(from?: string, to?: string): Promise<RoutesResponse> {
   const key = cacheKey(["routes", from ?? "_", to ?? "_"]);
   return cachedRequest(key, CACHE_TTL.routes, () =>
-    requestRaw(`/v1/routes${buildQuery({ from, to })}`, RoutesResponseSchema),
+    requestRaw(`/routes${buildQuery({ from, to })}`, RoutesResponseSchema),
   );
 }
 
 export async function sourcesHealth(): Promise<HealthResponse> {
   return cachedRequest(cacheKey(["health"]), CACHE_TTL.health, () =>
-    requestRaw(`/v1/health`, HealthResponseSchema),
+    requestRaw(`/healthz`, HealthResponseSchema),
   );
 }
 
@@ -433,7 +433,7 @@ export async function sourcesHealth(): Promise<HealthResponse> {
 /** Real-time flight status by flight number (e.g. "6E-2345") */
 export async function getFlightStatus(flightNumber: string): Promise<FlightStatus> {
   const { data } = await requestRaw(
-    `/v1/flights/status${buildQuery({ flight_number: flightNumber })}`,
+    `/flights/status${buildQuery({ flight_number: flightNumber })}`,
     FlightStatusSchema,
   );
   return data;
@@ -449,7 +449,7 @@ export async function getBestDeal(
   const key = cacheKey(["best_deal", source, destination, bankName ?? "_", cardType ?? "_"]);
   return cachedRequest(key, 300, () =>
     requestRaw(
-      `/v1/flights/best-deal${buildQuery({
+      `/flights/best-deal${buildQuery({
         source,
         destination,
         bank_name: bankName,
@@ -469,7 +469,7 @@ export async function getCalendarRaw(
   const key = cacheKey(["calendar_raw", source, destination, month]);
   return cachedRequest(key, 1800, () =>
     requestRaw(
-      `/v1/flights/calendar${buildQuery({ source, destination, month })}`,
+      `/flights/calendar${buildQuery({ source, destination, month })}`,
       CalendarRawSchema,
     ),
   );
@@ -590,7 +590,7 @@ export async function getNearbyAirportDeals(
   const key = cacheKey(["nearby", iata, radiusKm]);
   return cachedRequest(key, 3600, () =>
     requestRaw(
-      `/v1/deals/nearby-airports${buildQuery({ iata, radius_km: radiusKm })}`,
+      `/nearby-airports${buildQuery({ iata, radius_km: radiusKm })}`,
       NearbyAirportsSchema,
     ),
   );
@@ -600,7 +600,7 @@ export async function getNearbyAirportDeals(
 export async function getDealsTrends(): Promise<DealsTrends> {
   const key = cacheKey(["deals_trends"]);
   return cachedRequest(key, 600, () =>
-    requestRaw(`/v1/deals/trends`, DealsTrendsSchema),
+    requestRaw(`/trends`, DealsTrendsSchema),
   );
 }
 
@@ -612,7 +612,7 @@ export async function searchBankOffers(
 ): Promise<BankOffer[]> {
   const key = cacheKey(["bank_offers", bank ?? "_", ota ?? "_", limit]);
   const { data } = await requestRaw(
-    `/v1/deals/bank-offers${buildQuery({ bank, ota, limit })}`,
+    `/bank-offers${buildQuery({ bank, ota, limit })}`,
     z.any(), // AirAPI may return array or paginated obj
   );
   if (Array.isArray(data)) return data as BankOffer[];
@@ -621,7 +621,7 @@ export async function searchBankOffers(
 }
 
 // ═════════════════════════════════════════════════════════
-//  NEW — Search group (better than /v1/fares)
+//  NEW — Search group (better than /flights/fares)
 // ═════════════════════════════════════════════════════════
 
 /** Search fares with advanced filters */
@@ -843,7 +843,7 @@ export async function getAirportWeather(iata: string): Promise<AirportWeather> {
   const key = cacheKey(["weather", iata]);
   return cachedRequest(key, 1800, () =>
     requestRaw(
-      `/v1/airports/${iata.toUpperCase()}/weather`,
+      `/airports/${iata.toUpperCase()}/weather`,
       AirportWeatherSchema,
     ),
   );
