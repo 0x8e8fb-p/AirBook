@@ -2,6 +2,7 @@
 
 import { useRef, useMemo, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 import {
   earthVertexShader,
@@ -11,6 +12,7 @@ import {
   atmosphereVertexShader,
   atmosphereFragmentShader,
 } from "./shaders";
+import { getGlowDotTexture, getStarTexture } from "./textures";
 
 // ─── ROUTE DATA ───────────────────────────────────────────────────────────
 const ROUTES = [
@@ -25,7 +27,7 @@ const ROUTES = [
 ];
 
 function latLonToVec3(lat: number, lon: number, radius = 1.02) {
-  const phi   = (90 - lat)  * (Math.PI / 180);
+  const phi   = (90 - lat) * (Math.PI / 180);
   const theta = (lon + 180) * (Math.PI / 180);
   return new THREE.Vector3(
     -radius * Math.sin(phi) * Math.cos(theta),
@@ -40,7 +42,7 @@ function Earth() {
 
   useFrame(({ clock }) => {
     if (earthRef.current) {
-      earthRef.current.rotation.y += 0.0008;
+      earthRef.current.rotation.y += 0.00055;
       const mat = earthRef.current.material as THREE.ShaderMaterial;
       if (mat.uniforms?.uTime) {
         mat.uniforms.uTime.value = clock.getElapsedTime();
@@ -50,14 +52,14 @@ function Earth() {
 
   return (
     <mesh ref={earthRef}>
-      <sphereGeometry args={[1, 64, 64]} />
+      <sphereGeometry args={[1, 96, 96]} />
       <shaderMaterial
         vertexShader={earthVertexShader}
         fragmentShader={earthFragmentShader}
         uniforms={{
           uTime:      { value: 0 },
-          uNightSide: { value: 0.6 },
-          uCityGlow:  { value: 0.4 },
+          uNightSide: { value: 0.65 },
+          uCityGlow:  { value: 0.5 },
         }}
       />
     </mesh>
@@ -70,7 +72,7 @@ function Clouds() {
   const cloudRef = useRef<THREE.Mesh>(null);
 
   useFrame(({ clock }) => {
-    if (cloudRef.current) cloudRef.current.rotation.y += 0.001;
+    if (cloudRef.current) cloudRef.current.rotation.y += 0.00075;
     if (materialRef.current) {
       materialRef.current.uniforms.uTime.value = clock.getElapsedTime();
     }
@@ -78,7 +80,7 @@ function Clouds() {
 
   return (
     <mesh ref={cloudRef}>
-      <sphereGeometry args={[1.007, 48, 48]} />
+      <sphereGeometry args={[1.011, 64, 64]} />
       <shaderMaterial
         ref={materialRef}
         vertexShader={cloudVertexShader}
@@ -91,27 +93,52 @@ function Clouds() {
   );
 }
 
-// ─── ATMOSPHERE ───────────────────────────────────────────────────────────
+// ─── ATMOSPHERE (multi-layer for depth) ───────────────────────────────────
 function Atmosphere() {
   return (
-    <mesh>
-      <sphereGeometry args={[1.08, 48, 48]} />
-      <shaderMaterial
-        vertexShader={atmosphereVertexShader}
-        fragmentShader={atmosphereFragmentShader}
-        uniforms={{ uColor: { value: new THREE.Color(0x0066FF) } }}
-        transparent
-        side={THREE.BackSide}
-        depthWrite={false}
-      />
-    </mesh>
+    <>
+      <mesh>
+        <sphereGeometry args={[1.055, 48, 48]} />
+        <shaderMaterial
+          vertexShader={atmosphereVertexShader}
+          fragmentShader={atmosphereFragmentShader}
+          uniforms={{ uColor: { value: new THREE.Color(0x0A3A7A) } }}
+          transparent
+          side={THREE.BackSide}
+          depthWrite={false}
+        />
+      </mesh>
+      <mesh>
+        <sphereGeometry args={[1.12, 32, 32]} />
+        <shaderMaterial
+          vertexShader={`
+            varying float vF;
+            void main() {
+              vec3 vn = normalize(mat3(modelMatrix) * normal);
+              vec3 vd = normalize(cameraPosition - (modelMatrix * vec4(position,1.0)).xyz);
+              vF = 1.0 - max(dot(vn, vd), 0.0);
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+          `}
+          fragmentShader={`
+            varying float vF;
+            void main() {
+              float f = pow(vF, 4.0);
+              gl_FragColor = vec4(0.08, 0.25, 0.55, f * 0.15);
+            }
+          `}
+          transparent
+          side={THREE.BackSide}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+    </>
   );
 }
 
 // ─── FLIGHT ARC ───────────────────────────────────────────────────────────
-function FlightArc({
-  lat1, lon1, lat2, lon2,
-}: {
+function FlightArc({ lat1, lon1, lat2, lon2 }: {
   lat1: number; lon1: number; lat2: number; lon2: number;
 }) {
   const progressRef = useRef(Math.random());
@@ -119,11 +146,11 @@ function FlightArc({
   const { points } = useMemo(() => {
     const p1 = latLonToVec3(lat1, lon1);
     const p2 = latLonToVec3(lat2, lon2);
-    const mid  = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+    const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
     const dist = p1.distanceTo(p2);
     const ctrl = mid.clone().normalize().multiplyScalar(1.02 + dist * 0.35);
     const curve = new THREE.QuadraticBezierCurve3(p1, ctrl, p2);
-    return { curve, points: curve.getPoints(80) };
+    return { points: curve.getPoints(80) };
   }, [lat1, lon1, lat2, lon2]);
 
   const color = useMemo(() => new THREE.Color(0xF5C842), []);
@@ -136,19 +163,29 @@ function FlightArc({
   }, []);
 
   const lineMat = useMemo(() => new THREE.LineBasicMaterial({
-    color, transparent: true, opacity: 0.7, linewidth: 1,
+    color, transparent: true, opacity: 0.5, linewidth: 1,
   }), [color]);
 
-  const dotMat = useMemo(() => new THREE.MeshBasicMaterial({ color, transparent: true }), [color]);
+  const dotMat = useMemo(() => {
+    const tex = getGlowDotTexture();
+    return new THREE.SpriteMaterial({
+      map: tex,
+      color,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      opacity: 0.9,
+    });
+  }, [color]);
 
   const lineObj = useMemo(() => new THREE.Line(geometry, lineMat), [geometry, lineMat]);
-  const dotMeshRef = useRef<THREE.Mesh>(null);
+  const spriteRef = useRef<THREE.Sprite>(null);
 
   useFrame((_, delta) => {
-    progressRef.current = (progressRef.current + 0.12 * delta) % 2;
+    progressRef.current = (progressRef.current + 0.10 * delta) % 2;
     const progress = progressRef.current;
-    const dot = dotMeshRef.current;
-    if (!dot) return;
+    const sprite = spriteRef.current;
+    if (!sprite) return;
 
     if (progress <= 1.0) {
       const trailFrac = 0.22;
@@ -166,40 +203,44 @@ function FlightArc({
       }
       lineObj.geometry.setDrawRange(0, segCount + 1);
       posAttr.needsUpdate = true;
-      dot.position.copy(points[headIdx]);
+
+      const headPt = points[headIdx];
+      sprite.position.copy(headPt);
+
       const fade = Math.sin(head * Math.PI);
-      dotMat.opacity = fade * 0.9;
-      lineMat.opacity = fade * 0.65;
+      sprite.material.opacity = fade * 0.85;
+      sprite.scale.setScalar(0.038 * fade);
+      lineMat.opacity = fade * 0.45;
+
       lineObj.visible = true;
-      dot.visible = true;
+      sprite.visible = true;
     } else {
       lineObj.visible = false;
-      dot.visible = false;
+      sprite.visible = false;
     }
   });
 
   return (
     <group>
       <primitive object={lineObj} />
-      <mesh ref={dotMeshRef} material={dotMat}>
-        <sphereGeometry args={[0.006, 8, 8]} />
-      </mesh>
+      <sprite ref={spriteRef} material={dotMat} />
     </group>
   );
 }
 
-// ─── PARTICLES ────────────────────────────────────────────────────────────
-function Particles({ count }: { count: number }) {
+// ─── SOFT PARTICLE STARFIELD ──────────────────────────────────────────────
+function StarField({ count }: { count: number }) {
   const pointsRef = useRef<THREE.Points>(null);
-  const speedsRef = useRef<Float32Array>(new Float32Array(count));
 
-  const geometry = useMemo(() => {
+  const memo = useMemo(() => {
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     const sizes = new Float32Array(count);
+    const twinkle = new Float32Array(count);
+    const phases = new Float32Array(count);
 
     for (let i = 0; i < count; i++) {
-      const r = 1.1 + Math.random() * 1.4;
+      const r = 1.8 + Math.random() * 2.8;
       const phi = Math.acos(2 * Math.random() - 1);
       const theta = Math.random() * Math.PI * 2;
       positions[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
@@ -207,53 +248,110 @@ function Particles({ count }: { count: number }) {
       positions[i * 3 + 2] = r * Math.cos(phi);
 
       const t = Math.random();
-      if (t < 0.6) {
-        colors[i * 3]     = 0.7 + Math.random() * 0.3;
-        colors[i * 3 + 1] = 0.75 + Math.random() * 0.25;
-        colors[i * 3 + 2] = 0.9 + Math.random() * 0.1;
-      } else if (t < 0.85) {
+      if (t < 0.35) {
+        colors[i * 3]     = 1.00;
+        colors[i * 3 + 1] = 0.96;
+        colors[i * 3 + 2] = 0.88;
+      } else if (t < 0.65) {
+        colors[i * 3]     = 0.78;
+        colors[i * 3 + 1] = 0.85;
+        colors[i * 3 + 2] = 1.00;
+      } else if (t < 0.82) {
         colors[i * 3]     = 0.95;
         colors[i * 3 + 1] = 0.78;
         colors[i * 3 + 2] = 0.25;
       } else {
-        colors[i * 3]     = 0.0;
-        colors[i * 3 + 1] = 0.9;
-        colors[i * 3 + 2] = 0.8;
+        colors[i * 3]     = 0.00;
+        colors[i * 3 + 1] = 0.92;
+        colors[i * 3 + 2] = 0.82;
       }
-      sizes[i] = Math.random() * 2.5 + 0.5;
-      speedsRef.current[i] = (Math.random() - 0.5) * 0.002;
+
+      const sizeRoll = Math.random();
+      if (sizeRoll < 0.92) {
+        sizes[i] = 0.008 + Math.random() * 0.015;
+      } else {
+        sizes[i] = 0.035 + Math.random() * 0.04;
+      }
+
+      twinkle[i] = Math.random() > 0.6 ? 1.0 + Math.random() * 2.0 : 0.2;
+      phases[i] = Math.random() * Math.PI * 2;
     }
 
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
     geo.setAttribute("size", new THREE.BufferAttribute(sizes, 1));
-    return geo;
+    geo.setAttribute("twinkle", new THREE.BufferAttribute(twinkle, 1));
+    geo.setAttribute("phase", new THREE.BufferAttribute(phases, 1));
+
+    return {
+      geometry: geo,
+      baseSizes: new Float32Array(sizes),
+      tex: getStarTexture(),
+    };
   }, [count]);
 
-  useFrame(() => {
+  const material = useMemo(() => new THREE.PointsMaterial({
+    map: memo.tex,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.85,
+    sizeAttenuation: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  }), [memo.tex]);
+
+  useFrame(({ clock }) => {
     if (!pointsRef.current) return;
-    const pos = pointsRef.current.geometry.attributes.position as THREE.BufferAttribute;
-    for (let i = 0; i < Math.min(pos.count, count); i++) {
-      pos.setY(i, pos.getY(i) + speedsRef.current[i]);
-      if (Math.abs(pos.getY(i)) > 2.6) speedsRef.current[i] *= -1;
+    const sizesAttr = pointsRef.current.geometry.attributes.size as THREE.BufferAttribute;
+    const phases = pointsRef.current.geometry.attributes.phase.array as Float32Array;
+    const twinkleArray = pointsRef.current.geometry.attributes.twinkle.array as Float32Array;
+    const elapsed = clock.getElapsedTime();
+
+    for (let i = 0; i < sizesAttr.count; i++) {
+      const t = twinkleArray[i];
+      if (t > 0.5) {
+        const wobble = 0.75 + 0.25 * Math.sin(elapsed * t + phases[i]);
+        sizesAttr.setX(i, memo.baseSizes[i] * wobble);
+      }
     }
-    pos.needsUpdate = true;
-    pointsRef.current.rotation.y += 0.0002;
+    sizesAttr.needsUpdate = true;
+    pointsRef.current.rotation.y += 0.00008;
   });
 
   return (
-    <points ref={pointsRef} geometry={geometry}>
-      <pointsMaterial
-        size={0.012}
-        vertexColors
-        transparent
-        opacity={0.65}
-        sizeAttenuation
-        depthWrite={false}
-      />
-    </points>
+    <points ref={pointsRef} geometry={memo.geometry} material={material} />
   );
+}
+
+// ─── BACKGROUND STAR DOME ─────────────────────────────────────────────────
+function BackgroundStars({ count }: { count: number }) {
+  const { geometry, material } = useMemo(() => {
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const r = 20 + Math.random() * 15;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const theta = Math.random() * Math.PI * 2;
+      positions[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+      positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+      positions[i * 3 + 2] = r * Math.cos(phi);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+
+    const mat = new THREE.PointsMaterial({
+      color: 0xFFFFFF,
+      vertexColors: false,
+      transparent: true,
+      opacity: 0.3,
+      size: 0.25,
+      sizeAttenuation: true,
+      depthWrite: false,
+    });
+    return { geometry: geo, material: mat };
+  }, [count]);
+
+  return <points geometry={geometry} material={material} />;
 }
 
 // ─── SCENE WRAPPER ────────────────────────────────────────────────────────
@@ -262,8 +360,6 @@ export function GlobeSceneR3F() {
   const { camera } = useThree();
   const mouseSmooth = useRef(new THREE.Vector2(0, 0));
   const mouseDelta = useRef(new THREE.Vector2(0, 0));
-  const frameSkip = useRef(false);
-  const lastUpdate = useRef(0);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -284,29 +380,32 @@ export function GlobeSceneR3F() {
   }, []);
 
   useFrame(({ clock }) => {
-    const now = performance.now();
-    if (now - lastUpdate.current < 16) return; // ~60fps cap
-    lastUpdate.current = now;
+    if (typeof document !== "undefined" && document.hidden) return;
+
+    const elapsed = clock.getElapsedTime();
+    if (groupRef.current) groupRef.current.rotation.y += 0.00055;
 
     mouseSmooth.current.x += (mouseDelta.current.x - mouseSmooth.current.x) * 0.04;
     mouseSmooth.current.y += (mouseDelta.current.y - mouseSmooth.current.y) * 0.04;
-    const elapsed = clock.getElapsedTime();
     camera.position.x = Math.sin(elapsed * 0.05) * 0.15 + mouseSmooth.current.x * 0.3;
     camera.position.y = Math.sin(elapsed * 0.03) * 0.08 + mouseSmooth.current.y * 0.2;
     camera.lookAt(0, 0, 0);
-
-    if (groupRef.current) groupRef.current.rotation.y += 0.0008;
   });
 
   return (
     <>
-      <ambientLight color={0x112233} intensity={0.4} />
-      <directionalLight color={0xFFEECC} intensity={1.8} position={[-5, 3, 4]} />
+      <ambientLight color={0x0A1528} intensity={0.35} />
+      <directionalLight color={0xFFE5B4} intensity={1.6} position={[-5, 2.5, 4]} />
+      <directionalLight color={0x4A6FA5} intensity={0.12} position={[5, -1, -4]} />
+      <directionalLight color={0x1A3060} intensity={0.08} position={[0, -4, 0]} />
+
+      <BackgroundStars count={300} />
 
       <group ref={groupRef}>
         <Earth />
         <Clouds />
         <Atmosphere />
+
         {ROUTES.map((route, i) => (
           <FlightArc
             key={i}
@@ -314,8 +413,19 @@ export function GlobeSceneR3F() {
             lat2={route[2]} lon2={route[3]}
           />
         ))}
-        <Particles count={800} />
+
+        <StarField count={600} />
       </group>
+
+      {/* Soft bloom on bright elements (cities, arcs, stars) */}
+      <EffectComposer renderPriority={1}>
+        <Bloom
+          intensity={0.35}
+          luminanceThreshold={0.55}
+          luminanceSmoothing={0.35}
+          mipmapBlur
+        />
+      </EffectComposer>
     </>
   );
 }

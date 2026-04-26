@@ -163,11 +163,14 @@ h1, h2, h3, h4, h5, h6 {
   50% { opacity: 1; transform: scaleY(1.2); }
 }
 
-/* Globe fallback */
-@keyframes globeRotate {
-  from { box-shadow: inset -20px -20px 40px rgba(0,0,0,0.5), 0 0 80px rgba(0,100,255,0.1); }
-  50%  { box-shadow: inset 20px -20px 40px rgba(0,0,0,0.5),  0 0 80px rgba(0,100,200,0.15); }
-  to   { box-shadow: inset -20px -20px 40px rgba(0,0,0,0.5), 0 0 80px rgba(0,100,255,0.1); }
+/* Globe fallback animations */
+@keyframes globeBreathe {
+  0%, 100% { box-shadow: inset -30px -30px 60px rgba(0,0,0,0.6), inset 15px 15px 40px rgba(60,130,200,0.15), 0 0 60px rgba(30,90,180,0.12), 0 0 160px rgba(20,60,140,0.08); }
+  50% { box-shadow: inset -35px -20px 50px rgba(0,0,0,0.55), inset 20px 20px 50px rgba(60,130,200,0.2), 0 0 70px rgba(30,90,180,0.15), 0 0 180px rgba(20,60,140,0.1); }
+}
+@keyframes globeRotateBand {
+  from { transform: rotate(-15deg); }
+  to { transform: rotate(345deg); }
 }
 
 /* Marquee */
