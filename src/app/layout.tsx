@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Playfair_Display, DM_Sans, JetBrains_Mono } from "next/font/google";
+import { DM_Sans, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { cookies } from "next/headers";
@@ -10,34 +10,32 @@ import { ThemeFab } from "@/components/theme/ThemeFab";
 import { EnvWarningBanner } from "@/components/layout/EnvWarningBanner";
 import type { ThemeMode, ThemeName } from "@/lib/theme/types";
 
-const playfair = Playfair_Display({
+const geist = Geist({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-display",
-  weight: ["400", "600", "700"],
+  variable: "--font-geist",
+});
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-geist-mono",
 });
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-ui",
+  variable: "--font-dm-sans",
   weight: ["300", "400", "500", "600", "700"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-data",
-  weight: ["400", "600"],
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "AirBook — The sky is not the limit. It's the beginning.",
+    default: "AirBook — Find Flights. Break the Price.",
     template: "%s | AirBook",
   },
   description:
-    "Discover the cheapest flights with real-time fare tracking, price alerts, ML-powered predictions, and verified bank offers. The smartest way to book flights in India.",
+    "Discover the cheapest flights with real-time fare tracking, price alerts, and deal analysis. The smartest way to book flights.",
   keywords: [
     "cheap flights",
     "flight deals",
@@ -45,19 +43,18 @@ export const metadata: Metadata = {
     "flight comparison",
     "airbook",
     "price alerts",
-    "india flights",
   ],
   authors: [{ name: "AirBook" }],
   openGraph: {
-    title: "AirBook — Find Your Perfect Flight At The Best Price",
-    description: "Real-time flight deals, fare tracking, and price predictions.",
+    title: "AirBook — Find Flights. Break the Price.",
+    description: "Real-time flight deals, fare tracking, and price alerts.",
     type: "website",
     locale: "en_IN",
     siteName: "AirBook",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AirBook — Find Your Perfect Flight At The Best Price",
+    title: "AirBook — Find Flights. Break the Price.",
     description: "Real-time flight deals and fare tracking.",
   },
   robots: { index: true, follow: true },
@@ -67,7 +64,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#03050A",
+  themeColor: "#09090B",
 };
 
 export default async function RootLayout({
@@ -81,11 +78,12 @@ export default async function RootLayout({
 
   const mode: ThemeMode = themeModeCookie === "manual" ? "manual" : "system";
   const themeFromCookie =
-    themeCookie === "warm" || themeCookie === "matte"
+    themeCookie === "warm" ||
+    themeCookie === "matte"
       ? (themeCookie satisfies ThemeName)
       : null;
 
-  const initialTheme: ThemeName = mode === "manual" ? (themeFromCookie ?? "matte") : "matte";
+  const initialTheme: ThemeName = mode === "manual" ? (themeFromCookie ?? "warm") : "warm";
 
   return (
     <html
@@ -93,7 +91,7 @@ export default async function RootLayout({
       suppressHydrationWarning
       data-theme={initialTheme}
       data-theme-mode={mode}
-      className={`${playfair.variable} ${dmSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${geist.variable} ${geistMono.variable} ${dmSans.variable} h-full antialiased`}
     >
       <head>
         <script

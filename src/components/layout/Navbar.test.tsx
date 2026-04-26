@@ -33,7 +33,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("framer-motion", async () => {
   const React = await import("react");
   const passthrough =
-    (tag: string) =>
+    (Tag: keyof JSX.IntrinsicElements) =>
     function MotionComponent({
       children,
       layoutId: _layoutId,
@@ -54,7 +54,7 @@ vi.mock("framer-motion", async () => {
       void _transition;
       void _whileHover;
       void _whileTap;
-      return React.createElement(tag, props, children);
+      return React.createElement(Tag, props, children);
     };
 
   return {
@@ -64,7 +64,7 @@ vi.mock("framer-motion", async () => {
         get: () => passthrough("div"),
       }
     ),
-    AnimatePresence: ({ children }: { children?: React.ReactNode }) => React.createElement(React.Fragment, {}, children),
+    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   };
 });
 
