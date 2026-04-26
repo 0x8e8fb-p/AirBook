@@ -1,10 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 @import "../styles/tokens.css";
 
 @layer base {
   :root {
-    --font-body: 'Dubai', 'Outfit', system-ui, -apple-system, sans-serif;
+    --font-body: var(--font-ui);
   }
 }
 
@@ -18,8 +17,8 @@
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
   --font-display: var(--font-display);
-  --font-mono: var(--font-mono);
-  --font-sans: var(--font-body);
+  --font-mono: var(--font-data);
+  --font-sans: var(--font-ui);
 }
 
 html {
@@ -39,48 +38,49 @@ html[data-theme-swap] *::after {
 body {
   background-color: var(--bg-base);
   color: var(--text-primary);
-  font-family: var(--font-body);
+  font-family: var(--font-ui);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Noise texture only in matte dark mode */
 html[data-theme="matte"] body {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.008'/%3E%3C/svg%3E");
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-body);
+  font-family: var(--font-display);
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 
 .font-mono-price {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: var(--font-data);
   font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--accent-primary) 22%, transparent);
+  background: rgba(245, 200, 66, 0.25);
   color: var(--text-primary);
 }
 
-/* Scrollbar — minimal */
+/* Scrollbar — minimal aurora tint */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text-primary) 12%, transparent); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--text-primary) 18%, transparent); }
-* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text-primary) 12%, transparent) transparent; }
+::-webkit-scrollbar-thumb { background: rgba(100, 149, 237, 0.2); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(100, 149, 237, 0.35); }
+* { scrollbar-width: thin; scrollbar-color: rgba(100, 149, 237, 0.2) transparent; }
 
-/* Focus ring — only on buttons/links, not inputs */
+/* Focus ring — aurora gold */
 :focus-visible {
   outline: 1.5px solid var(--border-focus);
   outline-offset: 2px;
 }
 
-/* Ghost input — no browser chrome at all */
+/* Ghost input — no browser chrome */
 .ghost-input,
 .ghost-input:focus,
 .ghost-input:focus-visible,
@@ -94,22 +94,25 @@ h1, h2, h3, h4, h5, h6 {
   background: transparent;
 }
 
-/* Remove date input default icon on some browsers */
 .ghost-input::-webkit-inner-spin-button,
 .ghost-input::-webkit-calendar-picker-indicator {
   opacity: 0.4;
   cursor: pointer;
 }
 
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-/* Base styles & Utility classes */
-
+/* ── GLASS CARD UTILITY ── */
 @layer utilities {
+  .glass-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(24px) saturate(1.5);
+    -webkit-backdrop-filter: blur(24px) saturate(1.5);
+    box-shadow:
+      0 1px 0 var(--glass-shine) inset,
+      0 32px 80px rgba(0, 0, 0, 0.5),
+      0 0 0 0.5px rgba(100, 149, 237, 0.08);
+  }
+
   .container-app {
     width: 100%;
     max-width: 1200px;
@@ -123,6 +126,64 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* Shimmer */
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+/* Skeleton */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--deep) 0%, var(--surface) 50%, var(--deep) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* Icon sizes */
+.icon-xs  { width: 14px; height: 14px; }
+.icon-sm  { width: 18px; height: 18px; }
+.icon-md  { width: 24px; height: 24px; }
+.icon-lg  { width: 32px; height: 32px; }
+.icon-xl  { width: 48px; height: 48px; }
+
+/* Live pulse */
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* Scroll indicator */
+@keyframes scrollPulse {
+  0%, 100% { opacity: 0.3; transform: scaleY(1); }
+  50% { opacity: 1; transform: scaleY(1.2); }
+}
+
+/* Globe fallback */
+@keyframes globeRotate {
+  from { box-shadow: inset -20px -20px 40px rgba(0,0,0,0.5), 0 0 80px rgba(0,100,255,0.1); }
+  50%  { box-shadow: inset 20px -20px 40px rgba(0,0,0,0.5),  0 0 80px rgba(0,100,200,0.15); }
+  to   { box-shadow: inset -20px -20px 40px rgba(0,0,0,0.5), 0 0 80px rgba(0,100,255,0.1); }
+}
+
+/* Marquee */
+@keyframes marqueeScroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* Plane slide */
+@keyframes planeSlide {
+  0%   { transform: translateX(-40px); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateX(40px); opacity: 0; }
+}
+
 .theme-transition-overlay {
   position: fixed;
   inset: 0;
@@ -134,7 +195,7 @@ h1, h2, h3, h4, h5, h6 {
 
 html[data-theme-transition="wipe"] .theme-transition-overlay {
   background: var(--tt-to-bg-base);
-  animation: tt-radial-wipe 680ms var(--ease-out) forwards;
+  animation: tt-radial-wipe 680ms var(--ease-expo) forwards;
 }
 
 @keyframes tt-radial-wipe {

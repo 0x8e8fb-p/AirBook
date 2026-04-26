@@ -1,85 +1,95 @@
 :root {
-  /* ── SURFACES — near-black with barely perceptible warmth ── */
-  --bg-base:        #09090B;
-  --bg-subtle:      #111113;
-  --bg-elevated:    #18181B;
-  --bg-overlay:     #1E1E22;
+  /* ── MIDNIGHT SKY — Oceanic Luxury ── */
+  --void:        #03050A;
+  --abyss:       #060B14;
+  --deep:        #0A1628;
+  --surface:     #0F1F3D;
+  --mist:        #162849;
 
-  /* ── BORDERS — white at low opacity, nothing colored ── */
-  --border-default: rgba(255, 255, 255, 0.06);
-  --border-muted:   rgba(255, 255, 255, 0.04);
-  --border-strong:  rgba(255, 255, 255, 0.10);
-  --border-focus:   rgba(255, 255, 255, 0.30);
+  /* ── AURORA ACCENTS ── */
+  --aurora-gold:     #F5C842;
+  --aurora-gold-dim: #C49A20;
+  --aurora-teal:     #00E5CC;
+  --aurora-teal-dim: #009E8E;
+  --aurora-violet:   #8B5CF6;
+  --aurora-rose:     #F43F5E;
 
-  /* ── SINGLE ACCENT — muted warm white/gold, used sparingly ── */
-  --accent-primary:     #E4E4E7;    /* near-white — links, active states */
-  --accent-primary-dim: rgba(228, 228, 231, 0.08);
-  --accent-cta:         #FAFAFA;    /* pure bright white — primary CTAs */
-  --accent-green:       #4ADE80;    /* success only */
-  --accent-red:         #F87171;    /* error/urgency only */
-  --accent-muted:       #A1A1AA;    /* secondary interactive */
+  /* ── TEXT ── */
+  --text-primary:   #F0F4FF;
+  --text-secondary: #8BA4CC;
+  --text-muted:     #4A6080;
+  --text-inverse:   #03050A;
 
-  /* ── TEXT — three tiers, no color ── */
-  --text-primary:   #FAFAFA;
-  --text-secondary: #A1A1AA;
-  --text-muted:     #52525B;
-  --text-inverse:   #09090B;
+  /* ── GLASS ── */
+  --glass-bg:     rgba(15, 31, 61, 0.72);
+  --glass-border: rgba(100, 149, 237, 0.15);
+  --glass-hover:  rgba(22, 40, 73, 0.88);
+  --glass-shine:  rgba(255, 255, 255, 0.04);
 
-  /* ── SHADOWS — subtle, no color bleed ── */
-  --shadow-sm:   0 1px 2px rgba(0,0,0,0.5);
-  --shadow-md:   0 4px 12px rgba(0,0,0,0.4);
-  --shadow-lg:   0 12px 40px rgba(0,0,0,0.5);
+  /* ── GLOW ── */
+  --glow-gold:   0 0 24px rgba(245, 200, 66, 0.35);
+  --glow-teal:   0 0 24px rgba(0, 229, 204, 0.30);
+  --glow-violet: 0 0 24px rgba(139, 92, 246, 0.30);
+
+  /* ── SURFACES (mapped from old vars for compatibility) ── */
+  --bg-base:        var(--void);
+  --bg-subtle:      var(--abyss);
+  --bg-elevated:    var(--deep);
+  --bg-overlay:     var(--surface);
+
+  /* ── BORDERS (mapped) ── */
+  --border-default: var(--glass-border);
+  --border-muted:   rgba(100, 149, 237, 0.08);
+  --border-strong:  rgba(100, 149, 237, 0.18);
+  --border-focus:   rgba(245, 200, 66, 0.50);
+
+  /* ── ACCENTS (mapped) ── */
+  --accent-primary:     var(--text-primary);
+  --accent-primary-dim: rgba(240, 244, 255, 0.08);
+  --accent-cta:         var(--aurora-gold);
+  --accent-green:       #22C55E;
+  --accent-red:         var(--aurora-rose);
+  --accent-muted:       var(--text-secondary);
 
   /* ── TYPOGRAPHY ── */
-  --font-display: 'Geist', system-ui, sans-serif;
-  --font-mono:    'Geist Mono', ui-monospace, monospace;
-  --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-display: 'Playfair Display', 'Georgia', serif;
+  --font-ui:      'DM Sans', 'Segoe UI', sans-serif;
+  --font-data:    'JetBrains Mono', 'Courier New', monospace;
 
-  /* ── SPACING (8pt grid) ── */
+  /* ── MOTION ── */
+  --ease-silk:   cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-expo:   cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:     cubic-bezier(0.55, 0, 1, 0.45);
+  --duration-fast:  150ms;
+  --duration-base:  300ms;
+  --duration-slow:  600ms;
+
+  /* ── SPACING (8px grid) ── */
   --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
   --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
   --space-12: 48px; --space-16: 64px; --space-20: 80px;
 
   /* ── RADII ── */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  --radius-sm:   6px;
+  --radius-md:   12px;
+  --radius-lg:   20px;
+  --radius-xl:   32px;
   --radius-full: 9999px;
 
-  /* ── MOTION ── */
-  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --duration-fast: 120ms;
-  --duration-base: 200ms;
-  --duration-slow: 400ms;
+  /* ── SHADOWS ── */
+  --shadow-sm:   0 1px 2px rgba(0,0,0,0.5);
+  --shadow-md:   0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg:   0 12px 40px rgba(0,0,0,0.5);
 }
 
+/* ── THEME: matte (dark, inherits root) ── */
 html[data-theme="matte"],
 [data-theme="matte"] {
-  --bg-base:        #0A0A0A;
-  --bg-subtle:      #121212;
-  --bg-elevated:    #1A1A1A;
-  --bg-overlay:     #222222;
-
-  --border-default: rgba(255, 255, 255, 0.06);
-  --border-muted:   rgba(255, 255, 255, 0.04);
-  --border-strong:  rgba(255, 255, 255, 0.12);
-  --border-focus:   rgba(255, 255, 255, 0.25);
-
-  --accent-primary:     #E4E4E7;
-  --accent-primary-dim: rgba(228, 228, 231, 0.08);
-  --accent-cta:         #FAFAFA;
-  --accent-green:       #4ADE80;
-  --accent-red:         #F87171;
-  --accent-muted:       #A1A1AA;
-
-  --text-primary:   #FAFAFA;
-  --text-secondary: #A1A1AA;
-  --text-muted:     #52525B;
-  --text-inverse:   #09090B;
+  /* Root dark theme is already Midnight Sky — no overrides needed */
 }
 
+/* ── THEME: warm (light) ── */
 html[data-theme="warm"],
 [data-theme="warm"] {
   --bg-base:        #F5F1EA;
@@ -90,7 +100,7 @@ html[data-theme="warm"],
   --border-default: rgba(8, 8, 10, 0.08);
   --border-muted:   rgba(8, 8, 10, 0.06);
   --border-strong:  rgba(8, 8, 10, 0.14);
-  --border-focus:   rgba(8, 8, 10, 0.28);
+  --border-focus:   rgba(245, 200, 66, 0.60);
 
   --text-primary:   #0B0B0D;
   --text-secondary: rgba(11, 11, 13, 0.70);
@@ -99,9 +109,19 @@ html[data-theme="warm"],
 
   --accent-primary: #0B0B0D;
   --accent-primary-dim: rgba(11, 11, 13, 0.10);
-  --accent-cta:     #0B0B0D;
+  --accent-cta:     #C49A20;
   --accent-green:   #166534;
   --accent-red:     #B91C1C;
+  --accent-muted:   rgba(11, 11, 13, 0.60);
+
+  --glass-bg:     rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-hover:  rgba(255, 255, 255, 0.88);
+  --glass-shine:  rgba(255, 255, 255, 0.30);
+
+  --glow-gold:   0 0 24px rgba(196, 154, 32, 0.25);
+  --glow-teal:   0 0 24px rgba(0, 158, 142, 0.20);
+  --glow-violet: 0 0 24px rgba(139, 92, 246, 0.20);
 }
 
 @media (prefers-reduced-motion: reduce) {
