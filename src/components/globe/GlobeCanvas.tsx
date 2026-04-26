@@ -1,36 +1,31 @@
 "use client";
 
-import { Suspense, useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
-// Dynamic import to avoid SSR issues
-const Canvas = dynamic(
-  () => import("@react-three/fiber").then((mod) => mod.Canvas),
-  { ssr: false }
-);
+const GlobeGL = dynamic(() => import("./GlobeGL").then((m) => m.GlobeGL), {
+  ssr: false,
+  loading: () => <CssFallback />,
+});
 
-const GlobeSceneR3F = dynamic(
-  () => import("./GlobeScene").then((mod) => mod.GlobeSceneR3F),
-  { ssr: false }
-);
-
-import { CssGlobe } from "./CssGlobe";
-
-function WebGLCheck() {
-  const [hasWebGL, setHasWebGL] = useState(true);
-
-  useEffect(() => {
-    try {
-      const canvas = document.createElement("canvas");
-      const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
-      if (!gl) setHasWebGL(false);
-    } catch {
-      setHasWebGL(false);
-    }
-  }, []);
-
-  if (!hasWebGL) return <CssGlobe />;
-  return null;
+function CssFallback() {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <div
+        className="rounded-full"
+        style={{
+          width: "min(500px, 70vw)",
+          height: "min(500px, 70vw)",
+          background:
+            "radial-gradient(circle at 38% 32%, #1a3a60 0%, #0f2a4a 20%, #0a1a30 50%, #060f1a 80%, #03050A 100%)",
+          boxShadow:
+            "inset -30px -30px 60px rgba(0,0,0,0.6), inset 15px 15px 40px rgba(60,130,200,0.15), 0 0 60px rgba(30,90,180,0.12), 0 0 160px rgba(20,60,140,0.08)",
+          border: "1px solid rgba(60,130,200,0.12)",
+          animation: "globeBreathe 8s ease-in-out infinite",
+        }}
+      />
+    </div>
+  );
 }
 
 export function GlobeCanvas() {
@@ -40,29 +35,11 @@ export function GlobeCanvas() {
     setMounted(true);
   }, []);
 
-  if (!mounted) {
-    return <CssGlobe />;
-  }
+  if (!mounted) return <CssFallback />;
 
   return (
-    <div className="relative w-full h-full">
-      <WebGLCheck />
-      <Suspense fallback={<CssGlobe />}>
-        {typeof window !== "undefined" && Canvas && GlobeSceneR3F && (
-          <Canvas
-            gl={{
-              antialias: true,
-              alpha: true,
-              powerPreference: "high-performance",
-            }}
-            camera={{ position: [0, 0, 2.8], fov: 45, near: 0.1, far: 1000 }}
-            dpr={Math.min(window.devicePixelRatio, 2)}
-            style={{ background: "transparent", position: "absolute", inset: 0 }}
-          >
-            <GlobeSceneR3F />
-          </Canvas>
-        )}
-      </Suspense>
+    <div className="absolute top-1/2 left-[30%] md:left-[45%] -translate-y-1/2 w-[120vw] md:w-[80vw] aspect-square z-0">
+      <GlobeGL />
     </div>
   );
 }
