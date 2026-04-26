@@ -12,7 +12,7 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/SplitText.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lenis@1.0.42/dist/lenis.min.js"></script>
+
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.min.js"></script>
   <link rel="stylesheet" href="style.css">
@@ -24,7 +24,7 @@
   </script>
 </head>
 <body>
-  <a href="#hero" class="skip-link">Skip to content</a>
+  <a href="#heroContent" class="skip-link">Skip to content</a>
 
   <!-- PRELOADER -->
   <div class="preloader" id="preloader" aria-hidden="true">
@@ -61,10 +61,11 @@
         </svg>
       </a>
       <div class="nav__links">
-        <a href="#search">Search</a>
-        <a href="#deals">Deals</a>
-        <a href="#intel">Intelligence</a>
+        <a href="#hero">Search</a>
         <a href="#how">How it Works</a>
+        <a href="#savings">Smart Savings</a>
+        <a href="#offers">Bank Offers</a>
+        <a href="#intel">Intelligence</a>
       </div>
       <div class="nav__actions">
         <button class="nav__btn nav__btn--ghost" id="navSignin">Sign In</button>
@@ -129,18 +130,7 @@
     <canvas id="heroParticles" class="hero__particles" aria-hidden="true"></canvas>
     <div class="hero__vignette" aria-hidden="true"></div>
 
-    <div class="hero__rail hero__rail--left">
-      <div class="hero__rail-label">35,000<span>FT</span></div>
-      <div class="hero__rail-line"></div>
-      <div class="hero__rail-label">N28°36'</div>
-    </div>
-    <div class="hero__rail hero__rail--right">
-      <div class="hero__rail-label" id="utcClock">14:32:08<span>UTC</span></div>
-      <div class="hero__rail-line"></div>
-      <div class="hero__rail-label">892 LIVE</div>
-    </div>
-
-    <div class="hero__top">
+    <div class="hero__top" id="heroContent">
       <div class="hero__eyebrow">
         <span class="dot dot--pulse"></span>
         <span>LIVE / 6 OTAS CONNECTED</span>
@@ -231,10 +221,7 @@
       <span class="console-corner console-corner--tl"></span><span class="console-corner console-corner--tr"></span><span class="console-corner console-corner--bl"></span><span class="console-corner console-corner--br"></span>
     </div>
 
-    <button class="hero__scroll-cue" aria-label="Scroll" data-magnetic="0.4">
-      <span class="hero__scroll-text">SCROLL</span>
-      <div class="hero__scroll-arrow"><svg viewBox="0 0 12 24"><path d="M6 2v18m-4-4l4 4 4-4" stroke="currentColor" stroke-width="1" fill="none"/></svg></div>
-    </button>
+
   </section>
 
   <!-- TICKER -->
@@ -306,13 +293,13 @@
         </article>
         <article class="how__card" data-tilt>
           <div class="how__card-num">02</div>
-          <h3>Compare smartly.</h3>
-          <p>Our ML surfaces the true cheapest fare, factoring in bank offers, coupons, and hidden fees other sites don't show.</p>
+          <h3>Compare across 6 OTAs.</h3>
+          <p>MakeMyTrip, Cleartrip, Yatra, Ixigo, Goibibo, and EaseMyTrip — all queried in parallel. ML ranks the true cheapest with bank offers and hidden fees included.</p>
         </article>
         <article class="how__card" data-tilt>
           <div class="how__card-num">03</div>
-          <h3>Book direct.</h3>
-          <p>Click through to the OTA with the best deal. No markup. No middleman. Just the fare you were meant to pay.</p>
+          <h3>Save real money.</h3>
+          <p>Split-tickets, hidden-city tricks, red-eye hacks, verified bank offers — we surface every genuine saving. No fake discounts. No expired coupons.</p>
         </article>
       </div>
     </div>
@@ -365,6 +352,43 @@
     </div>
   </section>
 
+  <!-- SMART SAVINGS ENGINE -->
+  <section class="savings-engine" id="savings">
+    <div class="container">
+      <span class="overline">— Smart Savings</span>
+      <h2 class="savings-engine__title scroll-target">
+        <span class="mask-line"><span class="mask-line__inner">Every trick</span></span>
+        <span class="mask-line"><span class="mask-line__inner">is <em class="italic-accent">yours</em>.</span></span>
+      </h2>
+      <div class="savings-engine__grid">
+        <article class="savings-card scroll-target">
+          <div class="savings-card__icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke-linecap="round" stroke-width="1.5"><path d="M8 20V12M16 16V8M20 4v16M4 8v8" stroke="#F5C842"/></svg>
+          </div>
+          <h3 class="savings-card__title">Split-ticket savings.</h3>
+          <p class="savings-card__body">Book two separate tickets through a hub. We show the best combinations, layover times, and the exact savings versus a direct fare.</p>
+          <div class="savings-card__num"><span>₹3,200</span> avg saved</div>
+        </article>
+        <article class="savings-card scroll-target">
+          <div class="savings-card__icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke-linecap="round" stroke-width="1.5"><path d="M12 3v18m-9-9h18m-2.12 6.12L12 12m-7.88 5.12L12 12M4.12 4.12L12 12m7.88-7.88L12 12" stroke="#00E5CC"/></svg>
+          </div>
+          <h3 class="savings-card__title">Near-airport swaps.</h3>
+          <p class="savings-card__body">We compare nearby terminals. Sometimes BOM–PNQ is 40% cheaper than BOM–SAG. Your destination stays the same. Your fare drops.</p>
+          <div class="savings-card__num"><span>₹1,800</span> avg saved</div>
+        </article>
+        <article class="savings-card scroll-target">
+          <div class="savings-card__icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke-linecap="round" stroke-width="1.5"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" stroke="#F5C842"/><path d="M12 6v6l4 2" stroke="#F5C842"/></svg>
+          </div>
+          <h3 class="savings-card__title">Red-eye &amp; Tuesday magic.</h3>
+          <p class="savings-card__body">Late-night departures can save 30%. Tuesday/Wednesday departures save an average of 18%. We surface these automatically in every search.</p>
+          <div class="savings-card__num"><span>30%</span> cheaper</div>
+        </article>
+      </div>
+    </div>
+  </section>
+
   <!-- BANK OFFERS -->
   <section class="offers" id="offers">
     <div class="container">
@@ -374,6 +398,34 @@
         <span class="mask-line"><span class="mask-line__inner">is a <em class="italic-accent">discount</em>.</span></span>
       </h2>
       <div class="offers__grid" id="offersGrid"></div>
+    </div>
+  </section>
+
+  <!-- PRICE FREEZE -->
+  <section class="price-freeze" id="freeze">
+    <div class="container">
+      <div class="price-freeze__body">
+        <div class="price-freeze__content">
+          <span class="overline">— Price Freeze</span>
+          <h2 class="price-freeze__title scroll-target">
+            <span class="mask-line"><span class="mask-line__inner">Lock the fare.</span></span>
+            <span class="mask-line"><span class="mask-line__inner">Decide in <em class="italic-accent">24 hours</em>.</span></span>
+          </h2>
+          <p class="price-freeze__sub">Found the perfect flight but need time? Lock the price for 24 hours and compare later — without losing the fare.</p>
+          <ul class="price-freeze__features">
+            <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#00E5CC" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>No extra charges</li>
+            <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#00E5CC" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Full fare protection</li>
+            <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#00E5CC" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Instant confirmation</li>
+          </ul>
+        </div>
+        <div class="price-freeze__badge">
+          <div class="price-freeze__badge-inner">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#F5C842" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span class="price-freeze__hours">24h</span>
+            <span class="price-freeze__label">Protected</span>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -420,7 +472,7 @@
       <div class="footer__display"><span class="footer__display-text" aria-hidden="true">airbook.</span></div>
       <div class="footer__grid">
         <div class="footer__col">
-          <h4>Product</h4><a href="#search">Search</a><a href="#deals">Deals</a><a href="#intel">Intelligence</a><a href="#alerts">Alerts</a>
+          <h4>Product</h4><a href="#hero">Search</a><a href="#deals">Deals</a><a href="#offers">Bank Offers</a><a href="#savings">Smart Savings</a><a href="#intel">Intelligence</a><a href="#alerts">Alerts</a><a href="#freeze">Price Freeze</a>
         </div>
         <div class="footer__col">
           <h4>Company</h4><a href="#">About</a><a href="#">Press</a><a href="#">Careers</a><a href="#">Contact</a>

@@ -699,33 +699,33 @@ function initAuthModal() {
   requestAnimationFrame(() => updateTab('signin'));
 }
 
-// ─── 13. LENIS + SCROLLTRIGGER ───
-function initLenis() {
-  const lenis = new Lenis({ duration: 1.2, easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)), smoothWheel: true, wheelMultiplier: 1, touchMultiplier: 2, infinite: false });
-  lenis.on('scroll', ScrollTrigger.update);
-  gsap.ticker.add(time => lenis.raf(time * 1000));
-  gsap.ticker.lagSmoothing(0);
-  window.lenis = lenis;
-
+// ─── 13. NATIVE SCROLL TRIGGERS (no Lenis — eliminates scroll-to-top lag) ───
+function initScrollTriggers() {
   const hero = document.getElementById('hero');
-  if (window._globe) {
-    ScrollTrigger.create({ trigger: hero, start: 'top top', end: 'bottom top', onUpdate: self => {
-      if (self.progress < 0.3) window._globe.setState('HERO'); else if (self.progress < 0.7) window._globe.setState('AMBIENT'); else window._globe.setState('REST');
-    }});
+  if (window._globe && hero) {
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => { window._globe.setState(e.isIntersecting ? 'HERO' : 'REST'); });
+    }, { threshold: 0 });
+    obs.observe(hero);
   }
 
-  document.querySelectorAll('.scroll-target').forEach(el => {
-    ScrollTrigger.create({ trigger: el, start: 'top 80%', once: true, onEnter: () => el.classList.add('in-view') });
-  });
+  // Mask reveals
+  const revealObs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in-view'); revealObs.unobserve(e.target); } });
+  }, { threshold: 0.05, rootMargin: '0px 0px -5% 0px' });
+  document.querySelectorAll('.scroll-target').forEach(el => revealObs.observe(el));
 
   // Counter animations
-  document.querySelectorAll('[data-counter]').forEach(el => {
-    const target = parseInt(el.dataset.counter);
-    const suffix = el.dataset.suffix || '';
-    ScrollTrigger.create({ trigger: el, start: 'top 85%', once: true, onEnter: () => {
-      gsap.to({ val: 0 }, { val: target, duration: 2, ease: EASE.steady, onUpdate: function() { el.textContent = Math.round(this.targets()[0].val) + suffix; } });
-    }});
-  });
+  const countObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const el = e.target, target = parseInt(el.dataset.counter), suffix = el.dataset.suffix || '';
+        gsap.to({ val: 0 }, { val: target, duration: 2, ease: EASE.steady, onUpdate: function() { el.textContent = Math.round(this.targets()[0].val) + suffix; } });
+        countObs.unobserve(el);
+      }
+    });
+  }, { threshold: 0.3 });
+  document.querySelectorAll('[data-counter]').forEach(el => countObs.observe(el));
 }
 
 // ─── 14. TILT CARDS ───
@@ -796,8 +796,7 @@ function initInsightActions() {
     initNav();
     initAuthModal();
     initSearchConsole();
-
-    try { initLenis(); } catch (e) { console.warn('[airbook] scroll init', e); }
+    initScrollTriggers();
 
     if (typeof THREE !== 'undefined' && DC.tier !== 'NONE' && DC.score >= 15) {
       const canvas = document.getElementById('globe');
