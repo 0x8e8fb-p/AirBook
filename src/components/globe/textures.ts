@@ -7,26 +7,21 @@ import * as THREE from "three";
  * This replaces the sharp square default Three.js points.
  */
 function createGlowTexture(
-  size: number,
-  coreColor: string,
-  rimColor: string,
-  softness: number
+  stops: { pos: number; color: string }[]
 ): THREE.Texture {
+  const size = 128;
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext("2d")!;
 
   const cx = size / 2;
-  const cy = size / 2;
   const radius = size / 2;
 
-  // Radial gradient from center to edge
-  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-  grad.addColorStop(0.0, coreColor);                     // hot center
-  grad.addColorStop(softness * 0.4, rimColor);           // soft transition
-  grad.addColorStop(softness * 0.75, rimColor + "40");    // fading
-  grad.addColorStop(1.0, "rgba(0,0,0,0)");                // transparent edge
+  const grad = ctx.createRadialGradient(cx, cx, 0, cx, cx, radius);
+  for (const s of stops) {
+    grad.addColorStop(s.pos, s.color);
+  }
 
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, size, size);
@@ -44,14 +39,24 @@ let _starTexture: THREE.Texture | null = null;
 
 export function getParticleTexture(): THREE.Texture {
   if (!_particleTexture) {
-    _particleTexture = createGlowTexture(64, "rgba(255,255,255,0.9)", "rgba(200,230,255,0.6)", 1.0);
+    _particleTexture = createGlowTexture([
+      { pos: 0.0,  color: "rgba(255,255,255,0.9)" },
+      { pos: 0.35, color: "rgba(200,230,255,0.5)" },
+      { pos: 0.7,  color: "rgba(200,230,255,0.15)" },
+      { pos: 1.0,  color: "rgba(0,0,0,0)" },
+    ]);
   }
   return _particleTexture;
 }
 
 export function getGlowDotTexture(): THREE.Texture {
   if (!_glowDotTexture) {
-    _glowDotTexture = createGlowTexture(128, "rgba(245,200,66,1.0)", "rgba(245,200,66,0.5)", 0.9);
+    _glowDotTexture = createGlowTexture([
+      { pos: 0.0,  color: "rgba(245,200,66,1.0)" },
+      { pos: 0.35, color: "rgba(245,200,66,0.55)" },
+      { pos: 0.7,  color: "rgba(245,200,66,0.15)" },
+      { pos: 1.0,  color: "rgba(0,0,0,0)" },
+    ]);
   }
   return _glowDotTexture;
 }
