@@ -1,7 +1,7 @@
 # Flight Tracking and Smart-Pricing Engine Design
 
 ## Overview
-AirBook will implement a flight aggregation and pricing engine designed specifically for the Indian market. Unlike global aggregators (Skyscanner, Google Flights) that only show base fares, AirBook will calculate the **True Effective Price** by automatically applying Indian OTA convenience fees and bank/credit card offers. It will also track historical prices to alert users when a flight hits an "all-time low."
+TheWingsScan will implement a flight aggregation and pricing engine designed specifically for the Indian market. Unlike global aggregators (Skyscanner, Google Flights) that only show base fares, TheWingsScan will calculate the **True Effective Price** by automatically applying Indian OTA convenience fees and bank/credit card offers. It will also track historical prices to alert users when a flight hits an "all-time low."
 
 ## Architecture & Components
 

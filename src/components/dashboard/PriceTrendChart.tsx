@@ -17,9 +17,21 @@ interface PriceHistory {
   recordedAt: string;
 }
 
+interface PriceHistoryResponse {
+  success?: boolean;
+  history?: PriceHistory[];
+}
+
+interface PriceChartPoint {
+  time: string;
+  price: number;
+  basePrice: number;
+  airline: string;
+}
+
 export function PriceTrendChart({ origin, destination, date }: { origin: string, destination: string, date: string }) {
   const { data: session } = useSession();
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<PriceChartPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [creatingAlert, setCreatingAlert] = useState(false);
   const [alertSuccess, setAlertSuccess] = useState(false);
@@ -29,7 +41,7 @@ export function PriceTrendChart({ origin, destination, date }: { origin: string,
     async function fetchHistory() {
       try {
         const res = await fetch(`/api/prices/history?origin=${origin}&destination=${destination}&date=${date}`);
-        const json = await res.json();
+        const json = await res.json() as PriceHistoryResponse;
         
         if (json.success && json.history && json.history.length > 0) {
           const formatted = json.history.map((h: PriceHistory) => ({
@@ -138,7 +150,7 @@ export function PriceTrendChart({ origin, destination, date }: { origin: string,
             <Tooltip 
               contentStyle={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-strong)', borderRadius: 'var(--radius-md)', fontSize: '12px' }}
               itemStyle={{ color: 'var(--text-primary)', fontWeight: 600 }}
-              formatter={(value: any) => [formatPrice(Number(value)), 'Price']}
+              formatter={(value: unknown) => [formatPrice(Number(value ?? 0)), 'Price']}
               labelStyle={{ color: 'var(--text-muted)', marginBottom: '4px', fontSize: '10px' }}
             />
             <Area 

@@ -1,14 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Plane, Loader2 } from "lucide-react";
 import { registerUser } from "@/app/actions/authActions";
-import { signIn } from "next-auth/react";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -28,7 +25,7 @@ export default function RegisterPage() {
           setCountryCode(data.country_calling_code);
         }
       })
-      .catch(err => console.log('Could not detect country code'));
+      .catch(() => console.log('Could not detect country code'));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,11 +61,11 @@ export default function RegisterPage() {
         <div className="flex flex-col items-center mb-8">
           <Link href="/" className="flex items-center gap-2 mb-6">
             <Plane className="w-6 h-6 text-[var(--accent-cta)]" />
-            <span className="text-xl font-bold tracking-tight">AirBook</span>
+            <span className="text-xl font-bold">TheWingsScan</span>
           </Link>
           <h1 className="text-2xl font-bold text-center">Create an account</h1>
           <p className="text-[var(--text-secondary)] text-sm mt-2 text-center">
-            Join AirBook to save your credit cards and track flight prices.
+            Join TheWingsScan to save your credit cards and track flight prices.
           </p>
         </div>
 

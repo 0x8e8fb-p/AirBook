@@ -1,22 +1,29 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { searchAggregatorFlights, getAggregatorProviders } from "@/app/actions/aggregatorActions";
-import { formatPrice, formatDuration } from "@/lib/constants";
+import { searchAggregatorFlights } from "@/app/actions/aggregatorActions";
+import { formatPrice } from "@/lib/constants";
 import {
-  Search, Layers, Loader2, ExternalLink, ChevronDown, ArrowRight,
+  Search, Layers, Loader2, ExternalLink, ChevronDown,
 } from "lucide-react";
 
+const TODAY_INPUT_VALUE = new Date().toISOString().split("T")[0];
+
+type AggregatorResult = NonNullable<Awaited<ReturnType<typeof searchAggregatorFlights>>>;
+type AggregatorOption = AggregatorResult["results"][number];
+
+function formatStops(stops: number | null | undefined) {
+  const count = stops ?? 0;
+  return count === 0 ? "Direct" : `${count} stop${count > 1 ? "s" : ""}`;
+}
+
 function AggregatorContent() {
-  const router = useRouter();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [date, setDate] = useState("");
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<AggregatorResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showRaw, setShowRaw] = useState(false);
 
   async function search() {
     if (!from || !to || !date) return;
@@ -56,7 +63,7 @@ function AggregatorContent() {
             </div>
             <div>
               <label className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-widest">Date</label>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} min={new Date().toISOString().split("T")[0]} className="ghost-input w-full text-lg font-semibold py-1 [color-scheme:dark]" />
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} min={TODAY_INPUT_VALUE} className="ghost-input w-full text-lg font-semibold py-1 [color-scheme:dark]" />
             </div>
           </div>
           <button onClick={search} disabled={!from || !to || !date || loading}
@@ -96,7 +103,7 @@ function AggregatorContent() {
                       {cheapest.flight.departure_display} → {cheapest.flight.arrival_display}
                     </div>
                     <div className="text-xs text-[var(--text-muted)]">
-                      {cheapest.flight.duration} · {cheapest.flight.stops === 0 ? "Direct" : `${cheapest.flight.stops} stop${cheapest.flight.stops > 1 ? "s" : ""}`}
+                      {cheapest.flight.duration} · {formatStops(cheapest.flight.stops)}
                     </div>
                     <div className="text-[11px] text-[var(--accent-cta)] mt-1">via {cheapest.provider}</div>
                   </div>
@@ -107,11 +114,6 @@ function AggregatorContent() {
                     {cheapest.priceDetails.savings > 0 && (
                       <div className="text-[11px] text-[var(--accent-green)]">
                         Save {formatPrice(cheapest.priceDetails.savings)}
-                      </div>
-                    )}
-                    {cheapest.priceDetails.applied_offer && (
-                      <div className="text-[11px] text-[var(--text-muted)]">
-                        {cheapest.priceDetails.applied_offer.name}
                       </div>
                     )}
                   </div>
@@ -131,7 +133,7 @@ function AggregatorContent() {
               <div>
                 <h3 className="text-sm font-semibold mb-3">Alternatives</h3>
                 <div className="space-y-2">
-                  {alternatives.map((alt: any, i: number) => (
+                  {alternatives.map((alt: AggregatorOption, i: number) => (
                     <div key={i} className="flex items-center justify-between p-3 rounded-[var(--radius-md)] bg-[var(--bg-base)] border border-[var(--border-default)]">
                       <div>
                         <div className="text-sm font-medium">{alt.flight.airline_name} · {alt.flight.flight_number}</div>

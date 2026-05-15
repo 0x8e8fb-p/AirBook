@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,16 +21,16 @@ export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const user = session?.user;
 
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-[60] transition-all duration-300 bg-[var(--bg-base)]/60 backdrop-blur-xl border-b border-[var(--border-default)]/40">
         <nav className="container-app flex items-center justify-between h-14" aria-label="Main navigation">
-          <Link href="/" className="flex items-center gap-2 group" aria-label="AirBook Home">
+          <Link href="/" className="flex items-center gap-2 group" aria-label="TheWingsScan Home">
             <Plane className="w-4 h-4 text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors" />
-            <span className="text-[15px] font-semibold tracking-tight" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>AirBook</span>
+            <span className="text-[15px] font-semibold" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>TheWingsScan</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-0.5">

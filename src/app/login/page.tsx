@@ -13,16 +13,10 @@ function LoginForm() {
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() => urlError ? `Authentication error: ${urlError}` : "");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [countryCode, setCountryCode] = useState("+91");
-
-  useEffect(() => {
-    if (urlError) {
-      setError(`Authentication error: ${urlError}`);
-    }
-  }, [urlError]);
 
   useEffect(() => {
     // Auto-detect country code based on IP
@@ -33,7 +27,7 @@ function LoginForm() {
           setCountryCode(data.country_calling_code);
         }
       })
-      .catch(err => console.log('Could not detect country code'));
+      .catch(() => console.log('Could not detect country code'));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,14 +61,11 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--bg-subtle)] relative overflow-hidden pt-14">
-      {/* Background Decor */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[var(--accent-cta)]/5 rounded-full blur-[100px] pointer-events-none" />
-
       <div className="w-full max-w-md bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] p-8 shadow-2xl relative z-10">
         <div className="flex flex-col items-center mb-8">
           <Link href="/" className="flex items-center gap-2 mb-6">
             <Plane className="w-6 h-6 text-[var(--accent-cta)]" />
-            <span className="text-xl font-bold tracking-tight">AirBook</span>
+            <span className="text-xl font-bold">TheWingsScan</span>
           </Link>
           <h1 className="text-2xl font-bold text-center">Welcome back</h1>
           <p className="text-[var(--text-secondary)] text-sm mt-2 text-center">
@@ -163,7 +154,7 @@ function LoginForm() {
         </button>
 
         <p className="text-center text-sm text-[var(--text-secondary)] mt-8">
-          Don't have an account?{" "}
+          Do not have an account?{" "}
           <Link href="/register" className="text-[var(--accent-cta)] font-semibold hover:underline">
             Sign up
           </Link>

@@ -1,16 +1,16 @@
 "use server";
 
 import {
-  airApi,
-  AirApiConfigError,
-  AirApiError,
-} from "@/lib/api/airApiClient";
+  travelpayoutsApi,
+  TravelpayoutsConfigError,
+  TravelpayoutsError,
+} from "@/lib/api/travelpayoutsClient";
 
 export async function getOtaComparison(origin: string, destination: string) {
   try {
-    return await airApi.compareOta(origin, destination);
+    return await travelpayoutsApi.compareOta(origin, destination);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("OTA comparison error:", err.message);
       return null;
     }
@@ -20,9 +20,9 @@ export async function getOtaComparison(origin: string, destination: string) {
 
 export async function getAirlineComparison(origin: string, destination: string) {
   try {
-    return await airApi.compareAirline(origin, destination);
+    return await travelpayoutsApi.compareAirline(origin, destination);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Airline comparison error:", err.message);
       return null;
     }
@@ -32,9 +32,9 @@ export async function getAirlineComparison(origin: string, destination: string) 
 
 export async function getBestBankCombo(origin: string, destination: string) {
   try {
-    return await airApi.getBankCombo(origin, destination);
+    return await travelpayoutsApi.getBankCombo(origin, destination);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Bank combo error:", err.message);
       return null;
     }
@@ -48,9 +48,9 @@ export async function getBestForRoute(
   bank?: string,
 ) {
   try {
-    return await airApi.getBestForRoute(origin, destination, bank);
+    return await travelpayoutsApi.getBestForRoute(origin, destination, bank);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Best-for-route error:", err.message);
       return null;
     }
@@ -63,10 +63,10 @@ export async function getFareComparePageData(
   destination: string,
 ) {
   const [ota, airline, combo, routeBest] = await Promise.allSettled([
-    airApi.compareOta(origin, destination),
-    airApi.compareAirline(origin, destination),
-    airApi.getBankCombo(origin, destination),
-    airApi.getBestForRoute(origin, destination),
+    travelpayoutsApi.compareOta(origin, destination),
+    travelpayoutsApi.compareAirline(origin, destination),
+    travelpayoutsApi.getBankCombo(origin, destination),
+    travelpayoutsApi.getBestForRoute(origin, destination),
   ]);
   return {
     ota: ota.status === "fulfilled" ? ota.value : null,

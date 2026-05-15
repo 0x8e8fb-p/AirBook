@@ -11,11 +11,21 @@ import type { Airport } from "@/lib/types";
 import {
   ArrowRightLeft, ChevronDown, X,
   Search, TrendingDown, Shield, Zap, Plane,
-  Brain, Radar, Layers, ArrowRight, TicketPercent,
+  Brain, Layers, ArrowRight, TicketPercent, CalendarDays, Globe2,
 } from "lucide-react";
 import Link from "next/link";
 
 import { Footer } from "@/components/layout/Footer";
+
+const TODAY_INPUT_VALUE = new Date().toISOString().split("T")[0];
+const SEVEN_DAYS_FROM_NOW = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0];
+
+type TrendingDrop = {
+  route: string;
+  drop_pct: number;
+  week_avg: number;
+  current_price: number;
+};
 
 /* ================================================================
    AIRPORT INPUT — borderless, ghost-style
@@ -219,7 +229,7 @@ function SearchPanel() {
               type="date"
               value={departureDate}
               onChange={(e) => setDepartureDate(e.target.value)}
-              min={new Date().toISOString().split("T")[0]}
+              min={TODAY_INPUT_VALUE}
               className="ghost-input w-full text-base font-semibold py-1 [color-scheme:dark] cursor-pointer"
             />
             <div className="h-px mt-1 bg-[var(--border-strong)]" />
@@ -238,7 +248,7 @@ function SearchPanel() {
               type="date"
               value={returnDate}
               onChange={(e) => setReturnDate(e.target.value)}
-              min={departureDate || new Date().toISOString().split("T")[0]}
+              min={departureDate || TODAY_INPUT_VALUE}
               className="ghost-input w-full text-base font-semibold py-1 [color-scheme:dark] cursor-pointer"
             />
             {returnDate && (
@@ -324,7 +334,7 @@ function SearchPanel() {
 export default function HomePage() {
   const [stats, setStats] = useState({ searchesToday: 0, moneySavedMonth: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
-  const [trending, setTrending] = useState<{ biggest_drops?: { route: string; drop_pct: number; week_avg: number; current_price: number }[] } | null>(null);
+  const [trending, setTrending] = useState<{ biggest_drops?: TrendingDrop[] } | null>(null);
 
   useEffect(() => {
     getPlatformStats().then(data => {
@@ -348,22 +358,32 @@ export default function HomePage() {
 
   return (
     <div className="min-h-[100dvh] relative">
-      {/* Decorative ambient background for the entire page */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[var(--accent-cta)]/5 rounded-full blur-[100px] pointer-events-none opacity-50 z-0" />
-
       {/* HERO */}
-      <section className="container-app pt-32 pb-12 flex flex-col items-center min-h-[80dvh] justify-center bg-transparent relative z-10">
+      <section className="relative overflow-hidden">
+        <div
+          className="absolute inset-x-0 top-0 h-[42rem] bg-cover bg-center opacity-55"
+          style={{
+            backgroundImage:
+              "linear-gradient(to bottom, rgba(0,0,0,0.42), var(--bg-base) 88%), url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1800&q=80')",
+          }}
+          aria-hidden="true"
+        />
+        <div className="container-app pt-28 pb-12 flex flex-col items-center min-h-[84dvh] justify-center bg-transparent relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mb-10"
         >
-          <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold leading-[1.08] tracking-tighter mb-4">
-            Find the cheapest<br />flights, instantly.
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/15 bg-black/20 text-white/85 text-[11px] font-semibold uppercase tracking-widest mb-5 backdrop-blur-md">
+            <Plane className="w-3.5 h-3.5" />
+            Travelpayouts-ready fare scanner
+          </div>
+          <h1 className="text-5xl sm:text-6xl lg:text-[4.75rem] font-bold leading-[0.95] mb-5 text-white">
+            TheWingsScan
           </h1>
-          <p className="text-[var(--text-secondary)] text-base sm:text-lg max-w-md mx-auto leading-relaxed">
-            Find the absolute lowest fares and apply all Indian credit card offers automatically to get your true effective price.
+          <p className="text-white/78 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+            A clean, fast flight intelligence page for scanning Travelpayouts fare data, flexible-date prices, airline signals, and secure affiliate booking handoffs.
           </p>
         </motion.div>
 
@@ -385,28 +405,29 @@ export default function HomePage() {
           {statsLoading ? (
             <span className="animate-pulse bg-[var(--border-strong)] w-32 h-4 rounded"></span>
           ) : (
-            <span>{stats.searchesToday.toLocaleString()} Total Searches</span>
+            <span>{stats.searchesToday.toLocaleString()} Searches Tracked</span>
           )}
           <span className="w-px h-3 bg-[var(--border-strong)]" />
           {statsLoading ? (
             <span className="animate-pulse bg-[var(--border-strong)] w-32 h-4 rounded"></span>
           ) : (
-            <span>{formatLakhs(stats.moneySavedMonth)} Total Savings</span>
+            <span>{formatLakhs(stats.moneySavedMonth)} Recorded Savings</span>
           )}
         </motion.div>
+        </div>
       </section>
 
 
 
       {/* HOW IT WORKS */}
       <section className="container-app py-16 border-t border-[var(--border-muted)] relative z-10">
-        <h2 className="text-lg font-semibold tracking-tight mb-8">How it works</h2>
+        <h2 className="text-lg font-semibold mb-8">How it works</h2>
 
         <div className="grid md:grid-cols-3 gap-8">
           {[
-            { icon: Search, title: "Search", desc: "Enter your route and dates. We check multiple sources in real-time." },
-            { icon: TrendingDown, title: "Compare", desc: "See every option sorted by price, duration, or value." },
-            { icon: Zap, title: "Book", desc: "Pick the best deal and book directly with the airline." },
+            { icon: Search, title: "Scan", desc: "Enter a route and date. The server reads Travelpayouts fare data without exposing your token." },
+            { icon: TrendingDown, title: "Read signals", desc: "Compare prices, nearby dates, calendar lows, and route intelligence before deciding." },
+            { icon: Zap, title: "Open booking", desc: "Real-time bookings generate the Travelpayouts agency link only after you click." },
           ].map((step) => (
             <div key={step.title} className="space-y-2.5">
               <step.icon className="w-4 h-4 text-[var(--text-muted)]" />
@@ -421,10 +442,10 @@ export default function HomePage() {
       <section className="container-app py-16 border-t border-[var(--border-muted)] relative z-10">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { icon: Zap, title: "Real-time", desc: "Prices updated every 15 minutes." },
-            { icon: Shield, title: "No hidden fees", desc: "What you see is what you pay." },
-            { icon: TrendingDown, title: "Price history", desc: "Know if now is the right time to book." },
-            { icon: Plane, title: "All airlines", desc: "IndiGo, Air India, Akasa Air, Vistara and more." },
+            { icon: Globe2, title: "Global data", desc: "Airports, airlines, popular routes, and cached fare calendars." },
+            { icon: Shield, title: "Secret-safe", desc: "Travelpayouts token stays server-side behind actions and route handlers." },
+            { icon: TrendingDown, title: "Flexible dates", desc: "Calendar prices help customers avoid expensive departure days." },
+            { icon: Plane, title: "Search-ready", desc: "Prepared for Aviasales real-time search with marker-based redirects." },
           ].map((item) => (
             <div key={item.title} className="p-4 rounded-[var(--radius-lg)] bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] transition-colors">
               <item.icon className="w-4 h-4 text-[var(--text-muted)] mb-2.5" />
@@ -437,13 +458,13 @@ export default function HomePage() {
 
       {/* FEATURE DISCOVERY */}
       <section className="container-app py-16 border-t border-[var(--border-muted)] relative z-10">
-        <h2 className="text-lg font-semibold tracking-tight mb-8">Powered by AirAPI</h2>
+        <h2 className="text-lg font-semibold mb-8">Travelpayouts Surface Area</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { icon: Brain, href: "/intelligence", title: "Intelligence", desc: "ML price prediction + booking advice" },
-            { icon: Layers, href: "/compare", title: "Compare", desc: "OTA comparison + bank combos" },
-            { icon: Radar, href: "/status", title: "Tracker", desc: "Real-time flight positions via ADS-B" },
-            { icon: TicketPercent, href: "/deals", title: "Deals", desc: "Trending routes + bank offers" },
+            { icon: CalendarDays, href: "/deals", title: "Price calendar", desc: "Cheapest known fares by day and route" },
+            { icon: Brain, href: "/intelligence", title: "Fare intelligence", desc: "Median, range, and booking-window guidance" },
+            { icon: Layers, href: "/compare", title: "Route compare", desc: "Airline and cached-provider comparison" },
+            { icon: TicketPercent, href: "/aggregator", title: "Affiliate handoff", desc: "Search now, generate buy link on click" },
           ].map((feat) => (
             <Link
               key={feat.title}
@@ -464,17 +485,17 @@ export default function HomePage() {
       {/* TRENDING ROUTES */}
       {trending && trending.biggest_drops && trending.biggest_drops.length > 0 && (
         <section className="container-app py-16 border-t border-[var(--border-muted)] relative z-10">
-          <h2 className="text-lg font-semibold tracking-tight mb-8">Trending Price Drops</h2>
+          <h2 className="text-lg font-semibold mb-8">Trending Price Drops</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {trending.biggest_drops.slice(0, 6).map((drop: any, i: number) => (
+            {trending.biggest_drops.slice(0, 6).map((drop: TrendingDrop, i: number) => (
               <Link
                 key={i}
-                href={`/search?from=${drop.route.split("-")[0]}&to=${drop.route.split("-")[1]}&date=${new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0]}&adults=1`}
+                href={`/search?from=${drop.route.split("-")[0]}&to=${drop.route.split("-")[1]}&date=${SEVEN_DAYS_FROM_NOW}&adults=1`}
                 className="p-4 rounded-[var(--radius-lg)] bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] border border-transparent hover:border-[var(--border-strong)] transition-all"
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">{drop.route.split("-")[0]} → {drop.route.split("-")[1]}</span>
-                  <span className="text-[11px] font-bold text-[var(--accent-green)]">{drop.drop_pct}% down</span>
+                  <span className="text-[11px] font-bold text-[var(--accent-green)]">from ₹{Math.round(drop.current_price).toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
                   <span>₹{Math.round(drop.week_avg).toLocaleString()} → ₹{Math.round(drop.current_price).toLocaleString()}</span>

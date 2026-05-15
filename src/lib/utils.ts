@@ -1,5 +1,5 @@
 // ============================================
-// AirBook — Utility Functions
+// TheWingsScan — Utility Functions
 // ============================================
 
 import { type ClassValue, clsx } from 'clsx';

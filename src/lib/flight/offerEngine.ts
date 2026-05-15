@@ -1,5 +1,5 @@
-import { airApi, AirApiConfigError, AirApiError } from "@/lib/api/airApiClient";
-import type { Coupon } from "@/lib/api/airApiTypes";
+import { travelpayoutsApi, TravelpayoutsConfigError, TravelpayoutsError } from "@/lib/api/travelpayoutsClient";
+import type { Coupon } from "@/lib/api/travelpayoutsTypes";
 
 export interface BankOffer {
   id: string;
@@ -127,15 +127,15 @@ function couponMatchesContext(c: Coupon, airlineCode: string | undefined, route:
 
 async function fetchCoupons(airlineCode?: string): Promise<BankOffer[]> {
   try {
-    const { coupons } = await airApi.listCoupons({ airline: airlineCode });
+    const { coupons } = await travelpayoutsApi.listCoupons({ airline: airlineCode });
     return coupons
       .filter((c) => couponMatchesContext(c, airlineCode, undefined))
       .map(couponToBankOffer);
   } catch (err) {
-    if (err instanceof AirApiConfigError) {
-      console.warn("AirAPI not configured; offers disabled");
-    } else if (err instanceof AirApiError) {
-      console.error(`AirAPI ${err.status} on listCoupons:`, err.message);
+    if (err instanceof TravelpayoutsConfigError) {
+      console.warn("Travelpayouts not configured; offers disabled");
+    } else if (err instanceof TravelpayoutsError) {
+      console.error(`Travelpayouts ${err.status} on listCoupons:`, err.message);
     } else {
       console.error("Failed to fetch coupons:", err);
     }

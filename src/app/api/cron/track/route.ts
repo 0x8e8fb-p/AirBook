@@ -64,10 +64,10 @@ export async function GET(request: Request) {
                       ? `<p><strong>${trend.verdict === "RISING" ? "⏰ Book now" : trend.verdict === "DROP_LIKELY" ? "📉 May drop further" : "📊 Stable"}:</strong> ${trend.message}.</p>`
                       : "";
                     await resend.emails.send({
-                      from: 'AirBook Alerts <alerts@updates.airbook.com>',
+                      from: 'TheWingsScan Alerts <alerts@updates.thewingsscan.com>',
                       to: alert.user.email,
                       subject: `🚨 Price Drop: ${route.origin} to ${route.destination} is now ₹${lowestPrice}`,
-                      html: `<p>Good news! The flight from ${route.origin} to ${route.destination} has dropped to ₹${lowestPrice}, which is below your target of ₹${alert.targetPrice}.</p>${trendLine}<p>Book now on AirBook!</p>`
+                      html: `<p>Good news! The flight from ${route.origin} to ${route.destination} has dropped to ₹${lowestPrice}, which is below your target of ₹${alert.targetPrice}.</p>${trendLine}<p>Book now on TheWingsScan!</p>`
                     });
                   }
                   

@@ -1,10 +1,10 @@
 "use server";
 
 import {
-  airApi,
-  AirApiConfigError,
-  AirApiError,
-} from "@/lib/api/airApiClient";
+  travelpayoutsApi,
+  TravelpayoutsConfigError,
+  TravelpayoutsError,
+} from "@/lib/api/travelpayoutsClient";
 
 export async function searchAggregatorFlights(
   fromCode: string,
@@ -14,7 +14,7 @@ export async function searchAggregatorFlights(
   providers?: string[],
 ) {
   try {
-    return await airApi.aggregatorSearch(
+    return await travelpayoutsApi.aggregatorSearch(
       fromCode,
       toCode,
       departDate,
@@ -22,7 +22,7 @@ export async function searchAggregatorFlights(
       providers,
     );
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Aggregator search error:", err.message);
       return null;
     }
@@ -32,9 +32,9 @@ export async function searchAggregatorFlights(
 
 export async function getAggregatorProviders() {
   try {
-    return await airApi.listProviders();
+    return await travelpayoutsApi.listProviders();
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Providers error:", err.message);
       return null;
     }
@@ -44,9 +44,9 @@ export async function getAggregatorProviders() {
 
 export async function getProviderOffers(provider: string) {
   try {
-    return await airApi.getProviderOffers(provider);
+    return await travelpayoutsApi.getProviderOffers(provider);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Provider offers error:", err.message);
       return [];
     }
@@ -60,9 +60,9 @@ export async function getAggregatorBestDeal(
   departDate: string,
 ) {
   try {
-    return await airApi.aggregatorBestDeal(fromCode, toCode, departDate);
+    return await travelpayoutsApi.aggregatorBestDeal(fromCode, toCode, departDate);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Aggregator best deal error:", err.message);
       return null;
     }
@@ -75,9 +75,9 @@ export async function searchMultiCity(
   passengers = 1,
 ) {
   try {
-    return await airApi.multiCitySearch(legs, passengers);
+    return await travelpayoutsApi.multiCitySearch(legs, passengers);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Multi-city error:", err.message);
       return null;
     }

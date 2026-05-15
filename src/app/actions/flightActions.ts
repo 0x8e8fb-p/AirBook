@@ -1,8 +1,8 @@
 "use server";
 
 import { getServerSession } from "next-auth/next";
-import { airApi, AirApiConfigError, AirApiError } from "@/lib/api/airApiClient";
-import type { Fare } from "@/lib/api/airApiTypes";
+import { travelpayoutsApi, TravelpayoutsConfigError, TravelpayoutsError } from "@/lib/api/travelpayoutsClient";
+import type { Fare } from "@/lib/api/travelpayoutsTypes";
 import { calculateBestEffectivePrice, type FlightPriceDetails } from "@/lib/flight/offerEngine";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
@@ -17,6 +17,9 @@ export interface EnrichedFlight {
   durationMinutes: number | null;
   pricing: FlightPriceDetails;
   stops: number;
+  bookingToken?: string | null;
+  searchId?: string | null;
+  gateId?: string | number | null;
 }
 
 async function getSessionUserId(): Promise<string | null> {
@@ -59,6 +62,9 @@ async function enrichFares(fares: Fare[], userCards?: string[]): Promise<Enriche
         arrivalTime: fare.arrivalTime ?? fare.departureDate,
         durationMinutes: fare.durationMinutes ?? null,
         stops: fare.stops ?? 0,
+        bookingToken: fare.bookingToken ?? null,
+        searchId: fare.searchId ?? null,
+        gateId: fare.gateId ?? null,
         pricing,
       };
     }),
@@ -120,7 +126,7 @@ export async function searchFlightsAction(
   opts: { pax?: number; cabin?: "economy" | "premium_economy" | "business" | "first"; fresh?: boolean } = {},
 ): Promise<EnrichedFlight[]> {
   try {
-    const { fares } = await airApi.searchFares({
+    const { fares } = await travelpayoutsApi.searchFares({
       from: origin,
       to: destination,
       date: dateString,
@@ -140,12 +146,12 @@ export async function searchFlightsAction(
 
     return enriched;
   } catch (err) {
-    if (err instanceof AirApiConfigError) {
-      console.error("AirAPI not configured:", err.message);
+    if (err instanceof TravelpayoutsConfigError) {
+      console.error("Travelpayouts not configured:", err.message);
       return [];
     }
-    if (err instanceof AirApiError) {
-      console.error(`AirAPI ${err.status} on searchFares:`, err.message);
+    if (err instanceof TravelpayoutsError) {
+      console.error(`Travelpayouts ${err.status} on searchFares:`, err.message);
       return [];
     }
     console.error("Flight search failed:", err);
@@ -258,7 +264,7 @@ export async function getCheapestNearbyDays(
     await Promise.all(
       Array.from(months).map(async (month) => {
         try {
-          const { days } = await airApi.faresCalendar({ from: origin, to: destination, month });
+          const { days } = await travelpayoutsApi.faresCalendar({ from: origin, to: destination, month });
           for (const d of days) if (d.cheapest !== null && d.cheapest > 0) byDate.set(d.date, d.cheapest);
         } catch {
           // tolerate per-month failure
@@ -285,7 +291,7 @@ export async function getCheapestNearbyDays(
     results.sort((a, b) => a.price - b.price);
     return { selectedPrice, cheapest: results.slice(0, 3) };
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       return { selectedPrice: null, cheapest: [] };
     }
     console.error("getCheapestNearbyDays failed:", err);
@@ -303,7 +309,7 @@ export async function fetchHiddenCityOpportunities(origin: string, destination: 
   return findHiddenCityOpportunities(origin, destination, date);
 }
 
-// ─── NEW: AirAPI aggregator integration ──────────────────────
+// ─── NEW: Travelpayouts aggregator integration ──────────────────────
 
 export async function searchAggregatorFlights(
   fromCode: string,
@@ -312,14 +318,14 @@ export async function searchAggregatorFlights(
   returnDate?: string,
 ) {
   try {
-    return await airApi.aggregatorSearch(
+    return await travelpayoutsApi.aggregatorSearch(
       fromCode,
       toCode,
       departDate,
       returnDate,
     );
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Aggregator search error:", err.message);
       return null;
     }
@@ -329,10 +335,34 @@ export async function searchAggregatorFlights(
 
 export async function getFlightStatus(flightNumber: string) {
   try {
-    return await airApi.getFlightStatus(flightNumber);
+    return await travelpayoutsApi.getFlightStatus(flightNumber);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Flight status error:", err.message);
+      return null;
+    }
+    throw err;
+  }
+}
+
+export async function getLiveFlightsSnapshot(bounds?: { lamin: number; lamax: number; lomin: number; lomax: number }) {
+  try {
+    return await travelpayoutsApi.liveFlights(bounds);
+  } catch (err) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
+      console.error("Live flights error:", err.message);
+      return { flights: [] };
+    }
+    throw err;
+  }
+}
+
+export async function createBookingLinkAction(searchId: string, bookingToken: string) {
+  try {
+    return await travelpayoutsApi.createBookingLink(searchId, bookingToken);
+  } catch (err) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
+      console.error("Booking link error:", err.message);
       return null;
     }
     throw err;
@@ -346,9 +376,9 @@ export async function getBestDealForRoute(
   cardType?: string,
 ) {
   try {
-    return await airApi.getBestDeal(origin, destination, bankName, cardType);
+    return await travelpayoutsApi.getBestDeal(origin, destination, bankName, cardType);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Best deal error:", err.message);
       return null;
     }
@@ -358,9 +388,9 @@ export async function getBestDealForRoute(
 
 export async function getAirportWeather(iata: string) {
   try {
-    return await airApi.getAirportWeather(iata);
+    return await travelpayoutsApi.getAirportWeather(iata);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Weather error:", err.message);
       return null;
     }

@@ -13,30 +13,30 @@
 ## File Map (What changes where)
 
 **Modify**
-- `file:///Users/prabha/Desktop/Plan2 - AirBook/src/styles/tokens.css`  
+- `file:///Users/prabha/Desktop/Plan2 - TheWingsScan/src/styles/tokens.css`  
   Add theme blocks for warm/white/amoled; keep current `:root` as matte baseline.
-- `file:///Users/prabha/Desktop/Plan2 - AirBook/src/app/globals.css`  
+- `file:///Users/prabha/Desktop/Plan2 - TheWingsScan/src/app/globals.css`  
   Replace hard-coded white/opacity for selection/scrollbar/focus with token variables; add transition helpers.
-- `file:///Users/prabha/Desktop/Plan2 - AirBook/src/app/layout.tsx`  
+- `file:///Users/prabha/Desktop/Plan2 - TheWingsScan/src/app/layout.tsx`  
   Read theme cookies and set `data-theme` / `data-theme-mode` server-side; render ThemeFab.
 
 **Create**
-- `file:///Users/prabha/Desktop/Plan2 - AirBook/src/lib/theme/types.ts`  
+- `file:///Users/prabha/Desktop/Plan2 - TheWingsScan/src/lib/theme/types.ts`  
   Theme enums/types.
-- `file:///Users/prabha/Desktop/Plan2 - AirBook/src/lib/theme/storage.ts`  
+- `file:///Users/prabha/Desktop/Plan2 - TheWingsScan/src/lib/theme/storage.ts`  
   localStorage + cookie helpers (client/server-safe).
-- `file:///Users/prabha/Desktop/Plan2 - AirBook/src/lib/theme/resolve.ts`  
+- `file:///Users/prabha/Desktop/Plan2 - TheWingsScan/src/lib/theme/resolve.ts`  
   System mapping logic (light→warm, dark→matte).
-- `file:///Users/prabha/Desktop/Plan2 - AirBook/src/components/theme/ThemeFab.tsx`  
+- `file:///Users/prabha/Desktop/Plan2 - TheWingsScan/src/components/theme/ThemeFab.tsx`  
   Floating button + 4-mode picker UI.
-- `file:///Users/prabha/Desktop/Plan2 - AirBook/src/components/theme/ThemeTransitionOverlay.tsx`  
+- `file:///Users/prabha/Desktop/Plan2 - TheWingsScan/src/components/theme/ThemeTransitionOverlay.tsx`  
   Overlay animation component.
-- `file:///Users/prabha/Desktop/Plan2 - AirBook/src/components/theme/useThemeController.ts`  
+- `file:///Users/prabha/Desktop/Plan2 - TheWingsScan/src/components/theme/useThemeController.ts`  
   Hook coordinating theme state + transitions.
 
 **Tests**
-- `file:///Users/prabha/Desktop/Plan2 - AirBook/src/lib/theme/resolve.test.ts`
-- `file:///Users/prabha/Desktop/Plan2 - AirBook/src/components/theme/ThemeFab.test.tsx`
+- `file:///Users/prabha/Desktop/Plan2 - TheWingsScan/src/lib/theme/resolve.test.ts`
+- `file:///Users/prabha/Desktop/Plan2 - TheWingsScan/src/components/theme/ThemeFab.test.tsx`
 
 ---
 
@@ -116,11 +116,11 @@ Create `src/lib/theme/storage.ts`:
 ```ts
 import type { ThemeMode, ThemeName } from "./types";
 
-export const THEME_COOKIE = "airbook_theme";
-export const THEME_MODE_COOKIE = "airbook_theme_mode";
+export const THEME_COOKIE = "thewingsscan_theme";
+export const THEME_MODE_COOKIE = "thewingsscan_theme_mode";
 
-export const THEME_LS_KEY = "airbook:theme";
-export const THEME_MODE_LS_KEY = "airbook:theme_mode";
+export const THEME_LS_KEY = "thewingsscan:theme";
+export const THEME_MODE_LS_KEY = "thewingsscan:theme_mode";
 
 export function readLocalStorageTheme(): ThemeName | null {
   if (typeof window === "undefined") return null;
@@ -740,7 +740,7 @@ Expected: PASS.
 - [ ] **Step 1: Read cookies server-side and set html data attributes**
 
 Edit `src/app/layout.tsx` to:
-- Read `cookies()` and parse `airbook_theme_mode` and `airbook_theme`.
+- Read `cookies()` and parse `thewingsscan_theme_mode` and `thewingsscan_theme`.
 - Resolve theme when mode=system using a safe server default:
   - Use `warm` as SSR default for system mode (client will correct if system is dark; but to avoid flash, also write a small inline script below).
 - Add a tiny inline script in `<head>` to resolve system scheme before paint when mode=system:
@@ -825,7 +825,7 @@ Expected: PASS.
 ## Execution Handoff
 
 Plan saved to:
-`file:///Users/prabha/Desktop/Plan2 - AirBook/docs/superpowers/plans/2026-04-16-theme-modes-and-transition.md`
+`file:///Users/prabha/Desktop/Plan2 - TheWingsScan/docs/superpowers/plans/2026-04-16-theme-modes-and-transition.md`
 
 Two execution options:
 

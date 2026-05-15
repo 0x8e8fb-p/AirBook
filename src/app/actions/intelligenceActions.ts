@@ -1,10 +1,10 @@
 "use server";
 
 import {
-  airApi,
-  AirApiConfigError,
-  AirApiError,
-} from "@/lib/api/airApiClient";
+  travelpayoutsApi,
+  TravelpayoutsConfigError,
+  TravelpayoutsError,
+} from "@/lib/api/travelpayoutsClient";
 
 export async function getPriceForecast(
   origin: string,
@@ -12,9 +12,9 @@ export async function getPriceForecast(
   days = 30,
 ) {
   try {
-    return await airApi.getForecast(origin, destination, days);
+    return await travelpayoutsApi.getForecast(origin, destination, days);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Forecast error:", err.message);
       return null;
     }
@@ -29,9 +29,9 @@ export async function getMlPricePrediction(
   departDate: string,
 ) {
   try {
-    return await airApi.predictPrice(origin, destination, airline, departDate);
+    return await travelpayoutsApi.predictPrice(origin, destination, airline, departDate);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Predict error:", err.message);
       return null;
     }
@@ -44,9 +44,9 @@ export async function getBookingAdvice(
   destination: string,
 ) {
   try {
-    return await airApi.getBestTimeToBook(origin, destination);
+    return await travelpayoutsApi.getBestTimeToBook(origin, destination);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Booking advice error:", err.message);
       return null;
     }
@@ -56,9 +56,9 @@ export async function getBookingAdvice(
 
 export async function getTrendingRoutes(limit = 20) {
   try {
-    return await airApi.getTrendingRoutes(limit);
+    return await travelpayoutsApi.getTrendingRoutes(limit);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Trending routes error:", err.message);
       return null;
     }
@@ -73,9 +73,9 @@ export async function getIntelligenceCombined(
   airline = "6E",
 ) {
   const [forecast, prediction, advice] = await Promise.allSettled([
-    airApi.getForecast(origin, destination, 30),
-    airApi.predictPrice(origin, destination, airline, date),
-    airApi.getBestTimeToBook(origin, destination),
+    travelpayoutsApi.getForecast(origin, destination, 30),
+    travelpayoutsApi.predictPrice(origin, destination, airline, date),
+    travelpayoutsApi.getBestTimeToBook(origin, destination),
   ]);
   return {
     forecast: forecast.status === "fulfilled" ? forecast.value : null,

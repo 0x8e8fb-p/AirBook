@@ -84,7 +84,7 @@ function ResetPasswordForm() {
       <div className="flex flex-col items-center mb-8">
         <Link href="/" className="flex items-center gap-2 mb-6">
           <Plane className="w-6 h-6 text-[var(--accent-cta)]" />
-          <span className="text-xl font-bold tracking-tight">AirBook</span>
+          <span className="text-xl font-bold">TheWingsScan</span>
         </Link>
         <h1 className="text-2xl font-bold text-center">Create new password</h1>
         <p className="text-[var(--text-secondary)] text-sm mt-2 text-center">

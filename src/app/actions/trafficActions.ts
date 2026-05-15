@@ -1,10 +1,10 @@
 "use server";
 
 import {
-  airApi,
-  AirApiConfigError,
-  AirApiError,
-} from "@/lib/api/airApiClient";
+  travelpayoutsApi,
+  TravelpayoutsConfigError,
+  TravelpayoutsError,
+} from "@/lib/api/travelpayoutsClient";
 
 export async function getTrafficDaily(
   fromDate?: string,
@@ -13,9 +13,9 @@ export async function getTrafficDaily(
   month?: number,
 ) {
   try {
-    return await airApi.getTrafficDaily({ fromDate, toDate, year, month });
+    return await travelpayoutsApi.getTrafficDaily({ fromDate, toDate, year, month });
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Traffic daily error:", err.message);
       return [];
     }
@@ -25,9 +25,9 @@ export async function getTrafficDaily(
 
 export async function getTrafficSummary() {
   try {
-    return await airApi.getTrafficSummary();
+    return await travelpayoutsApi.getTrafficSummary();
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Traffic summary error:", err.message);
       return null;
     }
@@ -37,8 +37,8 @@ export async function getTrafficSummary() {
 
 export async function getDomesticTraffic() {
   const [daily, summary] = await Promise.allSettled([
-    airApi.getTrafficDaily({ limit: 10 }),
-    airApi.getTrafficSummary(),
+    travelpayoutsApi.getTrafficDaily({ limit: 10 }),
+    travelpayoutsApi.getTrafficSummary(),
   ]);
   return {
     daily: daily.status === "fulfilled" ? daily.value : [],

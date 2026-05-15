@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { calendarRequestSchema } from "@/lib/validators";
-import { airApi, AirApiConfigError, AirApiError } from "@/lib/api/airApiClient";
+import { travelpayoutsApi, TravelpayoutsConfigError, TravelpayoutsError } from "@/lib/api/travelpayoutsClient";
 import { getHolidays } from "@/lib/holidays";
 import type { CalendarDay, FlightSource } from "@/lib/types";
 
@@ -32,7 +32,7 @@ function buildDayMap(
     days.push({
       date: dateStr,
       cheapestPrice: price,
-      source: price !== null ? ("master_api" as FlightSource) : null,
+      source: price !== null ? ("travelpayouts_calendar" as FlightSource) : null,
       isHoliday: Boolean(holidayName),
       holidayName,
       priceLevel: null,
@@ -83,7 +83,7 @@ export async function GET(request: Request) {
   );
 
   try {
-    const { days: apiDays } = await airApi.faresCalendar({
+    const { days: apiDays } = await travelpayoutsApi.faresCalendar({
       from: origin,
       to: destination,
       month: monthStr,
@@ -100,13 +100,13 @@ export async function GET(request: Request) {
       { headers: { "Cache-Control": "public, max-age=3600" } },
     );
   } catch (err) {
-    if (err instanceof AirApiConfigError) {
+    if (err instanceof TravelpayoutsConfigError) {
       return NextResponse.json(
-        { error: "Fare calendar unavailable: AirAPI is not configured" },
+        { error: "Fare calendar unavailable: Travelpayouts is not configured" },
         { status: 503 },
       );
     }
-    const status = err instanceof AirApiError ? err.status : 502;
+    const status = err instanceof TravelpayoutsError ? err.status : 502;
     console.error("Calendar fetch failed:", err);
     return NextResponse.json(
       { error: "Failed to load fare calendar", upstreamStatus: status },

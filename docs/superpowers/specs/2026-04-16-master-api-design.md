@@ -1,10 +1,10 @@
-# The AirBook "Master API" Architecture (Zero Limits)
+# The TheWingsScan "Master API" Architecture (Zero Limits)
 
 ## The Problem
 All major flight aggregators (Skyscanner, Amadeus, Tequila) strictly gatekeep their live pricing APIs behind massive paywalls, rate limits, or closed B2B partnerships. They do this because live flight pricing is the most expensive data to compute in the travel industry.
 
 ## The Solution: A Superior Master API
-To have zero limits and be superior to competitors, AirBook will bypass official API channels and build a **Distributed Web Scraping Engine** that queries Indian Online Travel Agencies (OTAs) directly. We will create our own internal "Master API" that acts as the central brain.
+To have zero limits and be superior to competitors, TheWingsScan will bypass official API channels and build a **Distributed Web Scraping Engine** that queries Indian Online Travel Agencies (OTAs) directly. We will create our own internal "Master API" that acts as the central brain.
 
 ### Why is it Superior?
 1. **No Rate Limits:** We don't pay per query to an aggregator.
@@ -22,7 +22,7 @@ Instead, we will use headless browsers (Playwright) to:
 - Extract the raw JSON from the `window.__INITIAL_STATE__` or intercept the background XHR requests.
 
 #### 2. The Aggregator Node (The Master API)
-When a user searches on AirBook:
+When a user searches on TheWingsScan:
 1. The Next.js backend receives the request.
 2. It spawns 3 concurrent scraping tasks targeting 3 different providers (e.g., Ixigo, Paytm Flights, Cleartrip).
 3. It waits for the fastest 2 to return results.

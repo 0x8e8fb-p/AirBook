@@ -1,5 +1,5 @@
-import { airApi, AirApiConfigError, AirApiError } from "@/lib/api/airApiClient";
-import type { Fare } from "@/lib/api/airApiTypes";
+import { travelpayoutsApi, TravelpayoutsConfigError, TravelpayoutsError } from "@/lib/api/travelpayoutsClient";
+import type { Fare } from "@/lib/api/travelpayoutsTypes";
 
 const HUB_CANDIDATES = ["DEL", "BOM", "BLR", "HYD", "MAA", "CCU"];
 const MIN_LAYOVER_MIN = 90;
@@ -36,7 +36,7 @@ export async function findSplitTickets(
   if (origin === destination) return [];
 
   try {
-    const direct = await airApi.searchFares({ from: origin, to: destination, date });
+    const direct = await travelpayoutsApi.searchFares({ from: origin, to: destination, date });
     const directFare = cheapestFare(direct.fares);
     if (!directFare) return [];
 
@@ -47,8 +47,8 @@ export async function findSplitTickets(
       hubs.map(async (hub) => {
         try {
           const [leg1Res, leg2Res] = await Promise.all([
-            airApi.searchFares({ from: origin, to: hub, date }),
-            airApi.searchFares({ from: hub, to: destination, date }),
+            travelpayoutsApi.searchFares({ from: origin, to: hub, date }),
+            travelpayoutsApi.searchFares({ from: hub, to: destination, date }),
           ]);
           return { hub, leg1: cheapestFare(leg1Res.fares), leg2: cheapestFare(leg2Res.fares) };
         } catch {
@@ -86,7 +86,7 @@ export async function findSplitTickets(
     suggestions.sort((a, b) => b.savings - a.savings);
     return suggestions.slice(0, 3);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) return [];
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) return [];
     console.error("findSplitTickets failed:", err);
     return [];
   }
@@ -113,7 +113,7 @@ export async function findHiddenCityOpportunities(
   if (origin === destination) return [];
 
   try {
-    const direct = await airApi.searchFares({ from: origin, to: destination, date });
+    const direct = await travelpayoutsApi.searchFares({ from: origin, to: destination, date });
     const directFare = cheapestFare(direct.fares);
     if (!directFare) return [];
 
@@ -123,7 +123,7 @@ export async function findHiddenCityOpportunities(
     const probes = await Promise.all(
       throughCandidates.map(async (city) => {
         try {
-          const { fares } = await airApi.searchFares({ from: origin, to: city, date });
+          const { fares } = await travelpayoutsApi.searchFares({ from: origin, to: city, date });
           const candidate = fares.find((f) => {
             if (f.price <= 0) return false;
             if ((f.stops ?? 0) === 0) return false;
@@ -151,7 +151,7 @@ export async function findHiddenCityOpportunities(
     suggestions.sort((a, b) => b.savings - a.savings);
     return suggestions.slice(0, 2);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) return [];
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) return [];
     console.error("findHiddenCityOpportunities failed:", err);
     return [];
   }

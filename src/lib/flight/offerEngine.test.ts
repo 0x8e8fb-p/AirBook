@@ -3,11 +3,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 const ORIGINAL_ENV = { ...process.env };
 
 beforeEach(() => {
-  process.env.AIRAPI_URL = "https://api.test";
-  process.env.AIRAPI_CLIENT_ID = "cid";
-  process.env.AIRAPI_KEY = "secret";
+  process.env.TRAVELPAYOUTS_TOKEN = "token";
   delete process.env.UPSTASH_REDIS_REST_URL;
   delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  delete process.env.TRAVELPAYOUTS_PARTNER_OFFERS_JSON;
   vi.resetModules();
 });
 
@@ -17,10 +16,7 @@ afterEach(() => {
 });
 
 function mockCoupons(coupons: Array<Record<string, unknown>>) {
-  const fetchMock = vi
-    .fn()
-    .mockResolvedValue(new Response(JSON.stringify({ coupons }), { status: 200 }));
-  vi.stubGlobal("fetch", fetchMock);
+  process.env.TRAVELPAYOUTS_PARTNER_OFFERS_JSON = JSON.stringify(coupons);
 }
 
 const baseCoupon = {

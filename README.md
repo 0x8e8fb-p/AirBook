@@ -1,94 +1,97 @@
-# AirBook: Smart Indian Flight Tracker & Deal Engine
+# TheWingsScan
 
-AirBook is a modern flight search engine specifically optimized for the Indian market. It aggregates live flight data from multiple OTAs (Google Flights, Ixigo, MakeMyTrip, Cleartrip) and intelligently applies real-time Indian Credit Card & Bank offers to calculate your true "Effective Price".
+TheWingsScan is a clean, India-first flight discovery app built around Travelpayouts and Aviasales data. It helps users scan fares, compare effective prices with saved card offers, track route history, create fare alerts, and hand off booking clicks through a production-safe affiliate flow.
 
-## Key Features
-- **Multi-OTA Aggregation**: Custom Playwright API bypasses restrictive affiliate limits to scrape Google Flights and top Indian OTAs in real-time.
-- **Smart Wallet Engine**: Users select which credit cards they own (HDFC, SBI, ICICI, etc.), and the engine automatically recalculates the absolute lowest price possible using available bank discounts.
-- **Auto-Tracking & Price Drops**: A Vercel/GitHub Cron Job automatically scrapes popular routes 7, 14, and 30 days into the future.
-- **Email Alerts**: Set a target price and receive instant emails via Resend when the flight drops below your budget.
-- **NextAuth Accounts**: Cloud-synced user profiles via Supabase PostgreSQL.
+## What It Does
 
-## Architecture
-- **Frontend**: Next.js 14 (App Router), React, Tailwind CSS, Framer Motion, Zustand.
-- **Backend API**: Next.js Route Handlers + Server Actions.
-- **Scraper Engine**: Playwright Headless Browsers.
-- **Database**: Prisma + Supabase (PostgreSQL).
-- **Authentication**: NextAuth.js (Auth.js v4) with Google OAuth.
-- **Emails**: Resend API.
+- **Travelpayouts fare search**: Uses Travelpayouts Data API for airports, fare calendars, route intelligence, and cached price discovery.
+- **Aviasales real-time ready**: Includes the server-only marker, token, host, user IP, signature, polling, and click-link plumbing needed for real-time search.
+- **Modern TheWingsScan experience**: First-screen branded search, lightweight animations, responsive sections, and simplified route-to-booking copy.
+- **Effective price engine**: Applies saved card and bank offers to show the best practical fare for each user.
+- **Alerts and history**: Stores search history, price history, booking clicks, and authenticated price alerts in Supabase through Prisma.
+- **Secure affiliate handoff**: Generates Travelpayouts booking links server-side when a real-time fare includes the required booking token.
 
-## Getting Started Locally
+## Stack
 
-### 1. Prerequisites
-You need Node.js 18+ installed. Since this app uses Playwright for web scraping, you must install the browser binaries:
+- **App**: Next.js 16 App Router, React 19, TypeScript
+- **UI**: Tailwind CSS v4, Framer Motion, GSAP, Lenis
+- **State**: Zustand
+- **Data**: Travelpayouts / Aviasales APIs, Prisma, Supabase PostgreSQL
+- **Auth**: NextAuth.js with credentials and Google OAuth
+- **Email**: Resend
+- **Tests**: Vitest
+
+## Local Setup
+
+Install dependencies and generate Prisma client:
+
 ```bash
-npx playwright install chromium
-```
-
-### 2. Environment Variables
-Create a `.env.local` file in the root directory:
-```env
-# 1. Supabase Database Connection
-# Connect to Supabase via connection pooling with Supavisor.
-DATABASE_URL="postgres://postgres.your_project_id:your_db_password@aws-0-eu-central-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
-
-# Direct connection to the database. Used for migrations.
-DIRECT_URL="postgres://postgres.your_project_id:your_db_password@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"
-
-# 2. NextAuth
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=generate_a_random_secret_key_here
-
-# 3. Google OAuth (For login)
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-
-# 4. Cron Job Security
-CRON_SECRET=airbook_super_secret_dev_key_12345
-
-# 5. Emails (Optional, for Price Drop Alerts)
-RESEND_API_KEY=re_your_resend_key
-```
-
-### 3. Database Setup (Supabase)
-We use Prisma with a Supabase PostgreSQL database. Update the `DATABASE_URL` and `DIRECT_URL` in `.env.local` with your Supabase credentials, then push the schema:
-```bash
+npm install
 npx prisma generate
+```
+
+Create `.env.local` from `.env.example`, then fill in at least:
+
+```env
+DATABASE_URL="postgres://..."
+DIRECT_URL="postgres://..."
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=replace_me
+
+TRAVELPAYOUTS_TOKEN=your_travelpayouts_token
+TRAVELPAYOUTS_MARKER=your_marker_id
+NEXT_PUBLIC_TRAVELPAYOUTS_MARKER=your_marker_id
+TRAVELPAYOUTS_HOST=your-production-domain.com
+TRAVELPAYOUTS_ENABLE_REALTIME_SEARCH=false
+```
+
+Push the schema when your database is ready:
+
+```bash
 npx prisma db push
 ```
 
-### 4. Run the Development Server
+Run the app:
+
 ```bash
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Background Cron Jobs
-To trigger the background auto-tracker that populates the Price Trend Charts:
+Open [http://localhost:3000](http://localhost:3000).
+
+## Travelpayouts Notes
+
+The Data API token is server-only. Real-time Aviasales flight search should only be enabled in production with a real host, a real user IP strategy, and the required Travelpayouts marker. Local development defaults to calendar/search data so the app remains useful without exposing secrets or generating invalid click links.
+
+Useful environment variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `TRAVELPAYOUTS_TOKEN` | Server-only Travelpayouts API token |
+| `TRAVELPAYOUTS_MARKER` | Server-only affiliate marker |
+| `NEXT_PUBLIC_TRAVELPAYOUTS_MARKER` | Public fallback marker for Aviasales handoff links |
+| `TRAVELPAYOUTS_HOST` | Production host sent to real-time search |
+| `TRAVELPAYOUTS_DEFAULT_USER_IP` | Fallback non-localhost user IP for real-time search |
+| `TRAVELPAYOUTS_ENABLE_REALTIME_SEARCH` | Enables Aviasales real-time search when set to `true` |
+| `TRAVELPAYOUTS_API_BASE` | Optional override for the Travelpayouts API base URL |
+| `TRAVELPAYOUTS_PARTNER_OFFERS_JSON` | Optional JSON payload for curated partner/card offers |
+
+## Verification
+
 ```bash
-./scripts/trigger-cron.sh local
+npm test
+npm run lint
+npm run build
 ```
 
-## Production Deployment (Vercel)
+## Deployment
 
-Deploying to Vercel requires two architectural considerations due to Serverless limitations:
-
-1. **Playwright in Serverless**:
-   Vercel functions do not include Chromium by default. You must either:
-   - Use `@sparticuz/chromium` in your build.
-   - **Recommended**: Host the `/api/cron/track` scraper on a separate Railway/Render Node.js server, OR use the provided GitHub Actions workflow (`.github/workflows/track-flights.yml`) to run the cron job on GitHub's generous Ubuntu runners, which then pushes data to your database.
-
-2. **Supabase Database**:
-   The project is pre-configured to use a Supabase PostgreSQL database. Make sure you have pushed your Prisma schema to Supabase before deploying:
-   ```bash
-   npx prisma db push
-   ```
-   Then, add your `DATABASE_URL` and `DIRECT_URL` (found in your Supabase project settings -> Database -> Connection string) to your Vercel Environment Variables.
+Deploy on Vercel or any Node-compatible host with the same environment variables. The cron tracker uses Travelpayouts-powered search and local price history; no Chromium or Playwright browser binaries are required for flight search.
 
 ```bash
-# Push to Vercel
 vercel --prod
 ```
 
 ## License
-MIT License. Built for educational and portfolio purposes.
+
+MIT

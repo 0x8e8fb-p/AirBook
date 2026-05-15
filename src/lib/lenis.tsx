@@ -23,7 +23,7 @@ export function SmoothScrollProvider({ children }: { children: ReactNode }) {
     });
 
     lenisRef.current = lenis;
-    (window as unknown as { __airbookLenis?: Lenis }).__airbookLenis = lenis;
+    (window as unknown as { __thewingsscanLenis?: Lenis }).__thewingsscanLenis = lenis;
 
     function raf(time: number) {
       lenis.raf(time);
@@ -34,7 +34,7 @@ export function SmoothScrollProvider({ children }: { children: ReactNode }) {
 
     return () => {
       lenis.destroy();
-      delete (window as unknown as { __airbookLenis?: Lenis }).__airbookLenis;
+      delete (window as unknown as { __thewingsscanLenis?: Lenis }).__thewingsscanLenis;
     };
   }, []);
 

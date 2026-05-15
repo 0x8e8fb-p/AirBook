@@ -3,12 +3,15 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { searchAirports } from "@/lib/airports";
 import { getIntelligenceCombined } from "@/app/actions/intelligenceActions";
 import {
-  TrendingUp, Brain, CalendarDays, Search, ArrowRight,
-  Sparkles, Loader2, Zap, TrendingDown,
+  TrendingUp, Brain, CalendarDays, ArrowRight,
+  Sparkles, Loader2, Zap,
 } from "lucide-react";
+
+const TODAY_INPUT_VALUE = new Date().toISOString().split("T")[0];
+
+type IntelligenceResult = Awaited<ReturnType<typeof getIntelligenceCombined>>;
 
 function IntelligenceContent() {
   const router = useRouter();
@@ -16,7 +19,7 @@ function IntelligenceContent() {
   const [from, setFrom] = useState(params.get("from") ?? "");
   const [to, setTo] = useState(params.get("to") ?? "");
   const [date, setDate] = useState(params.get("date") ?? "");
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<IntelligenceResult | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function analyze() {
@@ -26,9 +29,6 @@ function IntelligenceContent() {
     setResult(data);
     setLoading(false);
   }
-
-  const originLabel = searchAirports(from, 1)[0];
-  const destLabel = searchAirports(to, 1)[0];
 
   return (
     <div className="min-h-[100dvh] pt-24 pb-20">
@@ -79,7 +79,7 @@ function IntelligenceContent() {
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
+                min={TODAY_INPUT_VALUE}
                 className="ghost-input w-full text-lg font-semibold py-1 [color-scheme:dark]"
               />
             </div>

@@ -9,7 +9,7 @@ import { sortFlights, formatPlatformName, formatBankName, isWalletMatch } from "
 import { getAirportDisplay } from "@/lib/airports";
 import { AIRLINES, SORT_OPTIONS, formatPrice, formatDuration, formatTime, getAirlineCodeFromFlight, getAirlineLogoForFlight } from "@/lib/constants";
 import { AVAILABLE_BANK_CARDS } from "@/lib/banks";
-import { Plane, ArrowLeft, ArrowRight, SlidersHorizontal, X, ExternalLink, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent, Wallet, Frown } from "lucide-react";
+import { ArrowLeft, ArrowRight, SlidersHorizontal, X, AlertCircle, Loader2, Sparkles, CreditCard, TicketPercent, Wallet, Frown } from "lucide-react";
 import { fetchFlights } from "@/lib/api/live-flight-mapper";
 import { useUserStore } from "@/stores/user-store";
 import { useCheckoutStore } from "@/stores/checkout-store";
@@ -27,34 +27,6 @@ import { GroupBookCTA } from "@/components/ui/GroupBookCTA";
 import { getIntelligenceCombined } from "@/app/actions/intelligenceActions";
 import { subscribePriceAlert } from "@/app/actions/alertActions";
 import { Bell } from "lucide-react";
-
-/* ─── Loading ──── */
-function SearchingAnimation() {
-  return (
-    <div className="flex flex-col items-center justify-center py-16">
-      <div className="relative w-12 h-12 mb-4">
-        <div className="absolute inset-0 rounded-full border border-[var(--border-strong)] border-t-[var(--text-secondary)] animate-spin" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Plane className="w-4 h-4 text-[var(--text-muted)] -rotate-45" />
-        </div>
-      </div>
-      <p className="text-sm text-[var(--text-muted)]">Searching fares...</p>
-    </div>
-  );
-}
-
-/* ─── Skeleton ──── */
-function SkeletonCard() {
-  return (
-    <div className="border border-[var(--border-default)] rounded-[var(--radius-lg)] p-5 animate-pulse">
-      <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--border-muted)]" />
-        <div className="flex-1 space-y-2"><div className="h-4 bg-[var(--border-muted)] rounded w-28" /><div className="h-3 bg-[var(--border-muted)] rounded w-20" /></div>
-        <div className="h-6 bg-[var(--border-muted)] rounded w-20" />
-      </div>
-    </div>
-  );
-}
 
 /* ─── Loading Skeleton ──── */
 function FlightCardSkeleton() {
@@ -513,7 +485,7 @@ function SearchContent() {
   const [sortBy, setSortBy] = useState<SortOption>("cheapest");
   const [showFilters, setShowFilters] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
-  const [intelligence, setIntelligence] = useState<any>(null);
+  const [intelligence, setIntelligence] = useState<Awaited<ReturnType<typeof getIntelligenceCombined>> | null>(null);
   const [showAlertForm, setShowAlertForm] = useState(false);
   const [alertPrice, setAlertPrice] = useState("");
   const [alertLoading, setAlertLoading] = useState(false);
@@ -660,7 +632,7 @@ function SearchContent() {
                 </div>
                 <h3 className="text-lg font-bold mb-2">No flights found</h3>
                 <p className="text-[var(--text-secondary)] text-sm max-w-md">
-                  We couldn't find any flights matching your criteria. Try adjusting your filters or searching for different dates.
+                  We could not find any flights matching your criteria. Try adjusting your filters or searching for different dates.
                 </p>
                 <button 
                   onClick={() => {

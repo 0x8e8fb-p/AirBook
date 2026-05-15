@@ -9,8 +9,15 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+const SEVEN_DAYS_FROM_NOW = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0];
+
+type DealsData = Awaited<ReturnType<typeof getDealsPageData>>;
+type CheapestRoute = NonNullable<NonNullable<DealsData["trends"]>["top_cheapest_routes"]>[number];
+type ActiveAirline = NonNullable<NonNullable<DealsData["trends"]>["most_active_airlines"]>[number];
+type BankOffer = DealsData["bankOffers"][number];
+
 export default function DealsPage() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<DealsData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,10 +58,10 @@ export default function DealsPage() {
                 </div>
                 {data.trends.top_cheapest_routes.length > 0 ? (
                   <div className="grid sm:grid-cols-2 gap-2">
-                    {data.trends.top_cheapest_routes.slice(0, 8).map((route: any, i: number) => (
+                    {data.trends.top_cheapest_routes.slice(0, 8).map((route: CheapestRoute, i: number) => (
                       <Link
                         key={i}
-                        href={`/search?from=${route.source_airport}&to=${route.destination_airport}&date=${new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0]}&adults=1`}
+                        href={`/search?from=${route.source_airport}&to=${route.destination_airport}&date=${SEVEN_DAYS_FROM_NOW}&adults=1`}
                         className="flex items-center justify-between p-3 rounded-[var(--radius-md)] bg-[var(--bg-base)] border border-[var(--border-default)] hover:border-[var(--border-strong)] transition-colors"
                       >
                         <div>
@@ -81,7 +88,7 @@ export default function DealsPage() {
                   <h3 className="text-sm font-semibold">Most Active Airlines</h3>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {data.trends.most_active_airlines.slice(0, 6).map((airline: any) => (
+                  {data.trends.most_active_airlines.slice(0, 6).map((airline: ActiveAirline) => (
                     <span key={airline.airline} className="px-3 py-1.5 rounded-full bg-[var(--bg-base)] border border-[var(--border-default)] text-xs font-medium">
                       {airline.airline} <span className="text-[var(--text-muted)]">({airline.samples})</span>
                     </span>
@@ -98,7 +105,7 @@ export default function DealsPage() {
                   <h3 className="text-sm font-semibold">Bank & Card Offers</h3>
                 </div>
                 <div className="space-y-2">
-                  {data.bankOffers.slice(0, 5).map((offer: any, i: number) => (
+                  {data.bankOffers.slice(0, 5).map((offer: BankOffer, i: number) => (
                     <div key={i} className="p-3 rounded-[var(--radius-md)] bg-[var(--bg-base)] border border-[var(--border-default)]">
                       <div className="flex items-center justify-between mb-1">
                         <div className="text-sm font-medium">{offer.title}</div>

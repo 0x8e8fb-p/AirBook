@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // ═══════════════════════════════════════════════════════════════
-//  Base schemas (what AirAPI stores in Supabase / returns)
+//  Base schemas used by the Travelpayouts facade
 // ═══════════════════════════════════════════════════════════════
 
 export const AirportSchema = z.object({
@@ -42,6 +42,9 @@ export const FareSchema = z.object({
   stops: z.number().int().nonnegative().optional().nullable(),
   sourceApi: z.string(),
   recordedAt: z.string(),
+  bookingToken: z.string().optional().nullable(),
+  searchId: z.string().optional().nullable(),
+  gateId: z.union([z.string(), z.number()]).optional().nullable(),
 });
 export type Fare = z.infer<typeof FareSchema>;
 
@@ -111,7 +114,7 @@ export const SourceHealthSchema = z.object({
 export type SourceHealth = z.infer<typeof SourceHealthSchema>;
 
 // ═══════════════════════════════════════════════════════════════
-//  AirAPI response envelope (what every ok()/err() wrapped ep returns)
+//  Generic response envelope retained for legacy-compatible helper schemas
 // ═══════════════════════════════════════════════════════════════
 
 export const ApiErrorSchema = z.object({
@@ -230,7 +233,7 @@ export interface SearchAirportsParams {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  NEW — Raw AirAPI endpoint response schemas (after envelope unwrap)
+//  NEW — Raw Travelpayouts endpoint response schemas (after envelope unwrap)
 // ═══════════════════════════════════════════════════════════════
 
 // ── /flights/status ─────────────────────────────────────────

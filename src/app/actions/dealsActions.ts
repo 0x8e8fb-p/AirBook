@@ -1,16 +1,16 @@
 "use server";
 
 import {
-  airApi,
-  AirApiConfigError,
-  AirApiError,
-} from "@/lib/api/airApiClient";
+  travelpayoutsApi,
+  TravelpayoutsConfigError,
+  TravelpayoutsError,
+} from "@/lib/api/travelpayoutsClient";
 
 export async function getDealsTrends() {
   try {
-    return await airApi.getDealsTrends();
+    return await travelpayoutsApi.getDealsTrends();
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Deals trends error:", err.message);
       return null;
     }
@@ -20,9 +20,9 @@ export async function getDealsTrends() {
 
 export async function getNearbyAirportDeals(iata: string, radiusKm = 150) {
   try {
-    return await airApi.getNearbyAirportDeals(iata, radiusKm);
+    return await travelpayoutsApi.getNearbyAirportDeals(iata, radiusKm);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Nearby airports error:", err.message);
       return null;
     }
@@ -32,9 +32,9 @@ export async function getNearbyAirportDeals(iata: string, radiusKm = 150) {
 
 export async function getBankOffers(bank?: string, ota?: string, limit = 50) {
   try {
-    return await airApi.searchBankOffers(bank, ota, limit);
+    return await travelpayoutsApi.searchBankOffers(bank, ota, limit);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Bank offers error:", err.message);
       return [];
     }
@@ -50,9 +50,9 @@ export async function getSearchCoupons(
   limit = 50,
 ) {
   try {
-    return await airApi.searchCoupons(q, bank, ota, airline, limit);
+    return await travelpayoutsApi.searchCoupons(q, bank, ota, airline, limit);
   } catch (err) {
-    if (err instanceof AirApiConfigError || err instanceof AirApiError) {
+    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
       console.error("Coupons search error:", err.message);
       return [];
     }
@@ -62,11 +62,11 @@ export async function getSearchCoupons(
 
 export async function getDealsPageData(origin?: string) {
   const [trends, bankOffers] = await Promise.allSettled([
-    airApi.getDealsTrends(),
-    airApi.searchBankOffers(undefined, undefined, 20),
+    travelpayoutsApi.getDealsTrends(),
+    travelpayoutsApi.searchBankOffers(undefined, undefined, 20),
   ]);
   const nearby = origin
-    ? (await Promise.allSettled([airApi.getNearbyAirportDeals(origin)]))[0]
+    ? (await Promise.allSettled([travelpayoutsApi.getNearbyAirportDeals(origin)]))[0]
     : null;
   return {
     trends: trends.status === "fulfilled" ? trends.value : null,

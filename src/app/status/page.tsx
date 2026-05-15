@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { getFlightStatus } from "@/app/actions/flightActions";
-import { liveFlights } from "@/lib/api/airApiClient";
+import { getFlightStatus, getLiveFlightsSnapshot } from "@/app/actions/flightActions";
+import type { FlightStatus, LiveFlight } from "@/lib/api/travelpayoutsTypes";
 import { Search, Plane, Radar, Loader2, MapPin } from "lucide-react";
 import Link from "next/link";
 
+const SEVEN_DAYS_FROM_NOW = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0];
+
 export default function StatusPage() {
   const [flightNum, setFlightNum] = useState("");
-  const [status, setStatus] = useState<any>(null);
-  const [live, setLive] = useState<any>(null);
+  const [status, setStatus] = useState<FlightStatus | null>(null);
+  const [live, setLive] = useState<LiveFlight[] | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function check() {
@@ -18,10 +20,10 @@ export default function StatusPage() {
     setLoading(true);
     const [s, l] = await Promise.allSettled([
       getFlightStatus(flightNum),
-      liveFlights({ lamin: 6, lamax: 37, lomin: 68, lomax: 97.5 }),
+      getLiveFlightsSnapshot({ lamin: 6, lamax: 37, lomin: 68, lomax: 97.5 }),
     ]);
     setStatus(s.status === "fulfilled" ? s.value : null);
-    setLive(l.status === "fulfilled" ? (l.value as any)?.flights?.slice(0, 10) : null);
+    setLive(l.status === "fulfilled" ? l.value.flights.slice(0, 10) : null);
     setLoading(false);
   }
 
@@ -38,10 +40,10 @@ export default function StatusPage() {
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
           <div className="flex items-center gap-2 mb-2">
             <Radar className="w-5 h-5 text-[var(--accent-cta)]" />
-            <h1 className="text-2xl font-bold">Flight Status</h1>
+            <h1 className="text-2xl font-bold">Route Tools</h1>
           </div>
           <p className="text-sm text-[var(--text-secondary)] mb-8">
-            Track real-time flight positions from ADS-B data.
+            Travelpayouts focuses on fares and booking handoffs, so this page keeps lightweight route utilities while live movement data remains disabled.
           </p>
         </motion.div>
 
@@ -111,7 +113,7 @@ export default function StatusPage() {
             </div>
 
             <Link
-              href={`/intelligence?from=${flightNum?.slice(0, 2) || ""}&to=BOM&date=${new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0]}`}
+              href={`/intelligence?from=${flightNum?.slice(0, 2) || ""}&to=BOM&date=${SEVEN_DAYS_FROM_NOW}`}
               className="block w-full py-3 bg-[var(--accent-primary-dim)] border border-[var(--accent-cta)]/20 text-[var(--accent-cta)] font-semibold rounded-[var(--radius-md)] text-center text-sm hover:bg-[var(--accent-cta)] hover:text-[var(--text-inverse)] transition-colors"
             >
               Check Price Intelligence →
@@ -127,13 +129,13 @@ export default function StatusPage() {
               Live over India
             </h3>
             <div className="space-y-2 max-h-80 overflow-y-auto">
-              {live.map((f: any, i: number) => (
+              {live.map((f: LiveFlight, i: number) => (
                 <div key={i} className="flex items-center justify-between p-2.5 rounded-[var(--radius-md)] bg-[var(--bg-base)] border border-[var(--border-default)] text-xs">
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${f.on_ground ? "bg-[var(--text-muted)]" : "bg-[var(--accent-green)]"}`} />
+                    <div className={`w-2 h-2 rounded-full ${f.onGround ? "bg-[var(--text-muted)]" : "bg-[var(--accent-green)]"}`} />
                     <div>
                       <div className="font-medium">{f.callsign || "UNKNOWN"}</div>
-                      <div className="text-[var(--text-muted)]">{f.origin_country}</div>
+                      <div className="text-[var(--text-muted)]">{f.originCountry}</div>
                     </div>
                   </div>
                   <div className="text-[var(--text-muted)]">

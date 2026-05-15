@@ -9,10 +9,16 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+const THREE_DAYS_FROM_NOW = new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0];
+
+type CompareData = Awaited<ReturnType<typeof getFareComparePageData>>;
+type OtaComparisonInfo = NonNullable<CompareData["ota"]>["comparison"][string];
+type RankedAirline = NonNullable<CompareData["airline"]>["ranked_airlines"][number];
+
 function CompareContent() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<CompareData | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function compare() {
@@ -72,7 +78,7 @@ function CompareContent() {
                   )}
                 </div>
                 <div className="space-y-2">
-                  {Object.entries(data.ota.comparison).map(([source, info]: [string, any]) => (
+                  {(Object.entries(data.ota.comparison) as [string, OtaComparisonInfo][]).map(([source, info]) => (
                     <div key={source} className="flex items-center justify-between p-3 rounded-[var(--radius-md)] bg-[var(--bg-base)] border border-[var(--border-default)]">
                       <div>
                         <div className="text-sm font-medium capitalize">{source.replace(/_/g, " ")}</div>
@@ -96,7 +102,7 @@ function CompareContent() {
                   <h3 className="text-sm font-semibold">By Airline</h3>
                 </div>
                 <div className="space-y-2">
-                  {data.airline.ranked_airlines.map((airline: any, i: number) => (
+                  {data.airline.ranked_airlines.map((airline: RankedAirline, i: number) => (
                     <div key={airline.airline} className="flex items-center justify-between p-3 rounded-[var(--radius-md)] bg-[var(--bg-base)] border border-[var(--border-default)]">
                       <div className="flex items-center gap-3">
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${i === 0 ? "bg-[var(--accent-green)] text-white" : "bg-[var(--border-muted)]"}`}>
@@ -131,7 +137,7 @@ function CompareContent() {
                       Base: {formatPrice(data.combo.best_combo.base_price)} · Savings: {formatPrice(data.combo.best_combo.bank_savings)} · Effective: {formatPrice(data.combo.best_combo.effective_price)}
                     </div>
                     <div className="text-[11px] text-[var(--text-muted)] mt-1">
-                      {data.combo.best_combo.best_bank_offer?.bank_name} · {data.combo.best_combo.best_bank_offer?.card_type}
+                      Travelpayouts fare baseline with wallet savings ready.
                     </div>
                   </div>
                 )}
@@ -139,7 +145,7 @@ function CompareContent() {
             )}
 
             <Link
-              href={`/search?from=${from}&to=${to}&date=${new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0]}&adults=1`}
+              href={`/search?from=${from}&to=${to}&date=${THREE_DAYS_FROM_NOW}&adults=1`}
               className="block w-full py-3 bg-[var(--accent-cta)] text-[var(--text-inverse)] font-semibold rounded-[var(--radius-md)] text-center text-sm hover:opacity-90 transition-opacity"
             >
               Search Flights on {from}–{to} →

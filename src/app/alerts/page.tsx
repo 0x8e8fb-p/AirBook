@@ -1,32 +1,40 @@
 "use client";
 
-import { useState, useCallback, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState, Suspense } from "react";
 import { motion } from "framer-motion";
 import { subscribePriceAlert, getPriceAlerts, removePriceAlert } from "@/app/actions/alertActions";
 import { Bell, Plus, Trash2, Loader2, AlertTriangle } from "lucide-react";
 
 function AlertsContent() {
-  const router = useRouter();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [price, setPrice] = useState("");
-  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<Awaited<ReturnType<typeof getPriceAlerts>>>([]);
   const [loading, setLoading] = useState(false);
   const [alertsLoading, setAlertsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load alerts on mount
-  useState(() => {
-    loadAlerts();
-  });
-
-  async function loadAlerts() {
-    setAlertsLoading(true);
+  const loadAlerts = useCallback(async (showLoading = true) => {
+    if (showLoading) setAlertsLoading(true);
     const data = await getPriceAlerts();
     setAlerts(data);
     setAlertsLoading(false);
-  }
+  }, []);
+
+  // Load alerts on mount
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchAlerts() {
+      const data = await getPriceAlerts();
+      if (cancelled) return;
+      setAlerts(data);
+      setAlertsLoading(false);
+    }
+    fetchAlerts();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleSubscribe() {
     if (!from || !to || !price) return;
@@ -34,7 +42,7 @@ function AlertsContent() {
     setError(null);
     const res = await subscribePriceAlert(from, to, Number(price));
     if (!res) {
-      setError("Could not create alert. Please check your AirAPI credentials.");
+      setError("Please sign in before creating a fare alert.");
     } else {
       setFrom("");
       setTo("");

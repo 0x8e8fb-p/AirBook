@@ -1,5 +1,5 @@
 // ============================================
-// AirBook — Application Constants
+// TheWingsScan — Application Constants
 // ============================================
 
 import type { FlightResult } from "./types";

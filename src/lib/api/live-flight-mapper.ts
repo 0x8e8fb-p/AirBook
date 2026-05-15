@@ -26,6 +26,8 @@ function resolveSource(raw: string | undefined): FlightSource {
     "makemytrip",
     "cleartrip",
     "master_api",
+    "travelpayouts_calendar",
+    "travelpayouts_realtime",
   ];
   return (known as string[]).includes(raw ?? "") ? (raw as FlightSource) : "master_api";
 }
@@ -76,6 +78,9 @@ function mapEnrichedFlightToResult(
     durationMinutes: durationMinutes ?? 0,
     stops: flight.stops ?? 0,
     stopCities: [],
+    bookingToken: flight.bookingToken ?? null,
+    searchId: flight.searchId ?? null,
+    gateId: flight.gateId ?? null,
 
     baggage: {
       cabin: { included: true, weight: 7 },

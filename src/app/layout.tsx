@@ -31,8 +31,8 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "AirBook — Find Flights. Break the Price.",
-    template: "%s | AirBook",
+    default: "TheWingsScan — Find Flights. Break the Price.",
+    template: "%s | TheWingsScan",
   },
   description:
     "Discover the cheapest flights with real-time fare tracking, price alerts, and deal analysis. The smartest way to book flights.",
@@ -41,20 +41,20 @@ export const metadata: Metadata = {
     "flight deals",
     "fare tracker",
     "flight comparison",
-    "airbook",
+    "thewingsscan",
     "price alerts",
   ],
-  authors: [{ name: "AirBook" }],
+  authors: [{ name: "TheWingsScan" }],
   openGraph: {
-    title: "AirBook — Find Flights. Break the Price.",
+    title: "TheWingsScan — Find Flights. Break the Price.",
     description: "Real-time flight deals, fare tracking, and price alerts.",
     type: "website",
     locale: "en_IN",
-    siteName: "AirBook",
+    siteName: "TheWingsScan",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AirBook — Find Flights. Break the Price.",
+    title: "TheWingsScan — Find Flights. Break the Price.",
     description: "Real-time flight deals and fare tracking.",
   },
   robots: { index: true, follow: true },
@@ -73,8 +73,8 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const cookieStore = await cookies();
-  const themeModeCookie = cookieStore.get("airbook_theme_mode")?.value;
-  const themeCookie = cookieStore.get("airbook_theme")?.value;
+  const themeModeCookie = cookieStore.get("thewingsscan_theme_mode")?.value;
+  const themeCookie = cookieStore.get("thewingsscan_theme")?.value;
 
   const mode: ThemeMode = themeModeCookie === "manual" ? "manual" : "system";
   const themeFromCookie =

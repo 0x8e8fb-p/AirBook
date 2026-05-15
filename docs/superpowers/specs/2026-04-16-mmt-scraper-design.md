@@ -1,7 +1,7 @@
 # Master API Expansion: MakeMyTrip Scraper Design
 
 ## Overview
-To ensure AirBook finds the absolute lowest price, our Master API must race multiple providers concurrently. We currently scrape Ixigo successfully. We will now add a scraper for **MakeMyTrip (MMT)**, the largest Online Travel Agency in India.
+To ensure TheWingsScan finds the absolute lowest price, our Master API must race multiple providers concurrently. We currently scrape Ixigo successfully. We will now add a scraper for **MakeMyTrip (MMT)**, the largest Online Travel Agency in India.
 
 ## Architecture
 

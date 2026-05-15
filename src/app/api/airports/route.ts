@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { airApi, AirApiConfigError, AirApiError } from "@/lib/api/airApiClient";
+import { travelpayoutsApi, TravelpayoutsConfigError, TravelpayoutsError } from "@/lib/api/travelpayoutsClient";
 import { searchAirports as searchLocalAirports } from "@/lib/airports";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -15,15 +15,15 @@ export async function GET(request: Request) {
   }
 
   try {
-    const { airports } = await airApi.searchAirports({ q: query, limit });
+    const { airports } = await travelpayoutsApi.searchAirports({ q: query, limit });
     if (airports.length > 0) {
       return NextResponse.json(airports, {
         headers: { "Cache-Control": "public, max-age=86400" },
       });
     }
   } catch (err) {
-    if (!(err instanceof AirApiConfigError) && !(err instanceof AirApiError)) {
-      console.error("AirAPI airport search error:", err);
+    if (!(err instanceof TravelpayoutsConfigError) && !(err instanceof TravelpayoutsError)) {
+      console.error("Travelpayouts airport search error:", err);
     }
   }
 

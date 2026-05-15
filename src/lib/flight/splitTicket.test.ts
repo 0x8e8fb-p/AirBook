@@ -2,12 +2,12 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 
 const searchFares = vi.fn();
 
-vi.mock("@/lib/api/airApiClient", () => ({
-  airApi: {
+vi.mock("@/lib/api/travelpayoutsClient", () => ({
+  travelpayoutsApi: {
     searchFares: (...a: unknown[]) => searchFares(...a),
   },
-  AirApiConfigError: class AirApiConfigError extends Error {},
-  AirApiError: class AirApiError extends Error {
+  TravelpayoutsConfigError: class TravelpayoutsConfigError extends Error {},
+  TravelpayoutsError: class TravelpayoutsError extends Error {
     status = 500;
   },
 }));

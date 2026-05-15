@@ -1,26 +1,24 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Plane, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { verifyEmail } from "@/app/actions/authActions";
 
 function VerifyEmailContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const email = searchParams.get("email");
+  const hasVerificationParams = Boolean(token && email);
 
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const [errorMsg, setErrorMsg] = useState("");
+  const [status, setStatus] = useState<"loading" | "success" | "error">(
+    hasVerificationParams ? "loading" : "error",
+  );
+  const [errorMsg, setErrorMsg] = useState(hasVerificationParams ? "" : "Invalid verification link.");
 
   useEffect(() => {
-    if (!token || !email) {
-      setStatus("error");
-      setErrorMsg("Invalid verification link.");
-      return;
-    }
+    if (!token || !email) return;
 
     const verify = async () => {
       const formData = new FormData();
@@ -43,7 +41,7 @@ function VerifyEmailContent() {
     <div className="flex flex-col items-center text-center">
       <Link href="/" className="flex items-center gap-2 mb-6">
         <Plane className="w-6 h-6 text-[var(--accent-cta)]" />
-        <span className="text-xl font-bold tracking-tight">AirBook</span>
+        <span className="text-xl font-bold">TheWingsScan</span>
       </Link>
 
       {status === "loading" && (
@@ -94,8 +92,6 @@ function VerifyEmailContent() {
 export default function VerifyEmailPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--bg-subtle)] relative overflow-hidden pt-14">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[var(--accent-cta)]/5 rounded-full blur-[100px] pointer-events-none" />
-
       <div className="w-full max-w-md bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] p-8 shadow-2xl relative z-10">
         <Suspense fallback={<Loader2 className="w-8 h-8 animate-spin mx-auto text-[var(--accent-cta)]" />}>
           <VerifyEmailContent />

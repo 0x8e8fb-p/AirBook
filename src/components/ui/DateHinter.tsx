@@ -19,7 +19,6 @@ export function DateHinter({ origin, destination, selectedDate, onPickDate }: Pr
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     getCheapestNearbyDays(origin, destination, selectedDate)
       .then((r) => {
         if (cancelled) return;

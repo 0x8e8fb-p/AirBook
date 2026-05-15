@@ -1,7 +1,7 @@
 # Codebase Cleanup Design
 
 ## Overview
-A targeted cleanup of the AirBook codebase to remove throwaway scripts and dead utility exports while intentionally preserving UI components and animation libraries for future development.
+A targeted cleanup of the TheWingsScan codebase to remove throwaway scripts and dead utility exports while intentionally preserving UI components and animation libraries for future development.
 
 ## 1. Remove Throwaway Root Scripts
 The following scripts in the root directory were identified as one-off testing, debugging, or database query utilities and will be removed:

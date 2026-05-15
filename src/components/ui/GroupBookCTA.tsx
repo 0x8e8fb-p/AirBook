@@ -16,7 +16,7 @@ export function GroupBookCTA({ pax, origin, destination, date }: Props) {
     `Group booking request: ${origin} → ${destination} on ${date} (${pax} pax)`,
   );
   const body = encodeURIComponent(
-    `Hi AirBook team,\n\nPlease send me a group-fare quote:\n\nRoute: ${origin} → ${destination}\nDate: ${date}\nPassengers: ${pax}\n\nThanks.`,
+    `Hi TheWingsScan team,\n\nPlease send me a group-fare quote:\n\nRoute: ${origin} → ${destination}\nDate: ${date}\nPassengers: ${pax}\n\nThanks.`,
   );
 
   return (
@@ -33,7 +33,7 @@ export function GroupBookCTA({ pax, origin, destination, date }: Props) {
             the best group price.
           </div>
           <a
-            href={`mailto:groups@airbook.com?subject=${subject}&body=${body}`}
+            href={`mailto:groups@thewingsscan.com?subject=${subject}&body=${body}`}
             className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium px-3 py-1.5 rounded-[var(--radius-md)] bg-[var(--accent-cta)] text-[var(--text-inverse)] hover:opacity-90 transition-opacity"
           >
             <Mail className="w-3.5 h-3.5" />

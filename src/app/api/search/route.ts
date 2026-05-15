@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     // Log search regardless of whether user is logged in
     await prisma.searchHistory.create({
       data: {
-        userId: session?.user ? (session.user as any).id : null,
+        userId: session?.user?.id ?? null,
         origin,
         destination,
         departureDate: new Date(date),
@@ -29,13 +29,12 @@ export async function GET(request: Request) {
       }
     }).catch(err => console.error("Failed to log search history", err));
 
-    // Since we now do actual searching via Server Actions (flightActions.ts),
-    // this API route is mainly for backward compatibility or simple history logging.
-    // For a real integration, we'd trigger the background search here or return a job ID.
+    // Flight lookup runs through Server Actions so token-bearing API calls stay server-only.
+    // This route remains as a compatibility/history endpoint for older clients.
     
     return NextResponse.json({ 
       success: true, 
-      message: 'Search logged successfully. Note: Actual scraping is handled by Server Actions.' 
+      message: 'Search logged successfully. Flight lookup is handled by server-side Travelpayouts actions.' 
     });
 
   } catch (error) {

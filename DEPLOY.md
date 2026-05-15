@@ -1,4 +1,4 @@
-# AirBook — Vercel Deploy Checklist
+# TheWingsScan — Vercel Deploy Checklist
 
 One-page runbook for shipping to production. Do each step in order.
 
@@ -30,9 +30,13 @@ Set these in **Vercel → Project → Settings → Environment Variables** for `
 | `GOOGLE_CLIENT_ID` | optional | all | OAuth disabled if empty |
 | `GOOGLE_CLIENT_SECRET` | optional | all | OAuth disabled if empty |
 | `RESEND_API_KEY` | optional | server | email disabled if empty |
-| `AIRAPI_URL` | yes | server | no trailing slash |
-| `AIRAPI_CLIENT_ID` | yes | server | from AirAPI dashboard |
-| `AIRAPI_KEY` | yes | server | rotate quarterly |
+| `TRAVELPAYOUTS_TOKEN` | yes | server | Travelpayouts Profile API token |
+| `TRAVELPAYOUTS_MARKER` | yes | server | Travelpayouts partner ID / marker |
+| `NEXT_PUBLIC_TRAVELPAYOUTS_MARKER` | optional | public | same marker for generic fallback links |
+| `TRAVELPAYOUTS_HOST` | yes | server | production host registered with Travelpayouts |
+| `TRAVELPAYOUTS_API_BASE` | optional | server | defaults to `https://api.travelpayouts.com` |
+| `TRAVELPAYOUTS_ENABLE_REALTIME_SEARCH` | optional | server | set `true` only after Aviasales Search API approval |
+| `TRAVELPAYOUTS_DEFAULT_USER_IP` | realtime only | server | public user IP fallback; never localhost |
 | `UPSTASH_REDIS_REST_URL` | recommended | server | falls back to in-memory if absent |
 | `UPSTASH_REDIS_REST_TOKEN` | recommended | server | — |
 | `CRON_SECRET` | yes | server | `openssl rand -hex 32` — Vercel auto-injects as `Authorization: Bearer` |

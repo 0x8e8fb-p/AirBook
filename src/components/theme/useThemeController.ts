@@ -71,7 +71,7 @@ export function useThemeController() {
     const x = window.scrollX;
     const y = window.scrollY;
     const lenis =
-      (window as unknown as { __airbookLenis?: LenisLike }).__airbookLenis ?? null;
+      (window as unknown as { __thewingsscanLenis?: LenisLike }).__thewingsscanLenis ?? null;
     lenis?.stop();
 
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;

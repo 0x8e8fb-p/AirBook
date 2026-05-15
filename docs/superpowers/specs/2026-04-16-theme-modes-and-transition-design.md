@@ -1,7 +1,7 @@
 # Theme Modes + Extraordinary Transitions (Design)
 
 Date: 2026-04-16  
-Project: AirBook (Next.js)  
+Project: TheWingsScan (Next.js)  
 Scope: UI theming (4 modes), floating theme picker, extraordinary theme-switch transitions, prevent flashes and UI glitches, no feature regressions.
 
 ## Goals
@@ -57,8 +57,8 @@ We persist both:
 - Cookie for SSR so the first server render matches the user preference
 
 Cookie format:
-- `airbook_theme_mode=system|manual`
-- `airbook_theme=warm|white|matte|amoled` (only meaningful when mode=manual)
+- `thewingsscan_theme_mode=system|manual`
+- `thewingsscan_theme=warm|white|matte|amoled` (only meaningful when mode=manual)
 
 SSR responsibility:
 - `RootLayout` reads cookies and sets initial `data-theme-mode` and `data-theme`.

@@ -2,7 +2,6 @@ import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { Navbar } from "./Navbar";
-import type { User } from "@supabase/supabase-js";
 
 afterEach(() => cleanup());
 
@@ -75,16 +74,18 @@ vi.mock("next-auth/react", () => ({
 
 describe("Navbar", () => {
   it("shows Profile immediately when session exists", async () => {
-    const useSessionMock = await import("next-auth/react").then(m => m.useSession as any);
-    useSessionMock.mockReturnValue({ data: { user: { email: "a@b.com" } }, status: "authenticated" });
+    const { useSession } = await import("next-auth/react");
+    const useSessionMock = vi.mocked(useSession);
+    useSessionMock.mockReturnValue({ data: { user: { email: "a@b.com" }, expires: "2099-01-01T00:00:00Z" }, status: "authenticated", update: vi.fn() });
     
     render(<Navbar />);
     expect(screen.getByText("Profile")).toBeInTheDocument();
   });
 
   it("shows Sign In when session is null", async () => {
-    const useSessionMock = await import("next-auth/react").then(m => m.useSession as any);
-    useSessionMock.mockReturnValue({ data: null, status: "unauthenticated" });
+    const { useSession } = await import("next-auth/react");
+    const useSessionMock = vi.mocked(useSession);
+    useSessionMock.mockReturnValue({ data: null, status: "unauthenticated", update: vi.fn() });
     
     render(<Navbar />);
     expect(screen.getAllByText("Sign In").length).toBeGreaterThan(0);

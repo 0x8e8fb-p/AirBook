@@ -16,7 +16,7 @@ export const useCheckoutStore = create<CheckoutState>()(
       clear: () => set({ selectedFlight: null }),
     }),
     {
-      name: "airbook-checkout-store",
+      name: "thewingsscan-checkout-store",
       storage: createJSONStorage(() => sessionStorage),
     }
   )

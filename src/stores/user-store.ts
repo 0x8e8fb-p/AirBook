@@ -22,7 +22,7 @@ export const useUserStore = create<UserState>()(
       clearCards: () => set({ ownedCards: [] }),
     }),
     {
-      name: 'airbook-user-storage',
+      name: 'thewingsscan-user-storage',
     }
   )
 );

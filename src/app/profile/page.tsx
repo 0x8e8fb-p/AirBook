@@ -24,7 +24,7 @@ function ProfileContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<Awaited<ReturnType<typeof getAlerts>>>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(false);
   const [isCreatingAlert, setIsCreatingAlert] = useState(false);
   const [newAlertOrigin, setNewAlertOrigin] = useState("");
@@ -52,9 +52,9 @@ function ProfileContent() {
     if (user) {
       setEditForm({
         name: user.name || "",
-        username: (user as any).username || "",
-        mobile: (user as any).mobile || "",
-        dob: (user as any).dob ? new Date((user as any).dob).toISOString().split('T')[0] : ""
+        username: user.username || "",
+        mobile: user.mobile || "",
+        dob: user.dob ? new Date(user.dob).toISOString().split('T')[0] : ""
       });
     }
   }, [user]);
@@ -63,7 +63,7 @@ function ProfileContent() {
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!(user as any)?.id) return;
+    if (!user?.id) return;
     setIsSavingProfile(true);
     setProfileError("");
 
@@ -73,7 +73,7 @@ function ProfileContent() {
     formData.append("mobile", editForm.mobile);
     formData.append("dob", editForm.dob);
 
-    const res = await updateProfile((user as any).id, formData);
+    const res = await updateProfile(user.id, formData);
     if (res.success) {
       setIsEditingProfile(false);
       window.location.reload(); // Refresh to update session
@@ -96,7 +96,7 @@ function ProfileContent() {
       } else {
         setResetError(res.error || "Failed to send reset link.");
       }
-    } catch (e) {
+    } catch {
       setResetError("An error occurred.");
     } finally {
       setResetLoading(false);
@@ -181,7 +181,7 @@ function ProfileContent() {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    const userId = (user as any)?.id;
+    const userId = user?.id;
     if (!file || !userId) return;
     
     setIsUploading(true);
@@ -214,15 +214,15 @@ function ProfileContent() {
         img.src = base64;
       };
       reader.readAsDataURL(file);
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
       setIsUploading(false);
     }
   };
 
   const handleDeleteAccount = async () => {
-    const userId = (user as any)?.id;
-    const userUsername = (user as any)?.username;
+    const userId = user?.id;
+    const userUsername = user?.username;
     
     if (!userId) return;
     
@@ -405,9 +405,9 @@ function ProfileContent() {
                             if (user) {
                               setEditForm({
                                 name: user.name || "",
-                                username: (user as any).username || "",
-                                mobile: (user as any).mobile || "",
-                                dob: (user as any).dob ? new Date((user as any).dob).toISOString().split('T')[0] : ""
+                                username: user.username || "",
+                                mobile: user.mobile || "",
+                                dob: user.dob ? new Date(user.dob).toISOString().split('T')[0] : ""
                               });
                             }
                           }}
@@ -430,20 +430,20 @@ function ProfileContent() {
                         <div className="flex-1">
                           <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">Username</label>
                           <div className="px-4 py-3 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] font-medium">
-                            {(user as any)?.username || "Not set"}
+                            {user?.username || "Not set"}
                           </div>
                         </div>
                         <div className="flex-1">
                           <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">DOB</label>
                           <div className="px-4 py-3 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] font-medium">
-                            {(user as any)?.dob ? new Date((user as any).dob).toLocaleDateString() : "Not set"}
+                            {user?.dob ? new Date(user.dob).toLocaleDateString() : "Not set"}
                           </div>
                         </div>
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">Mobile Number</label>
                         <div className="px-4 py-3 bg-[var(--bg-subtle)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] font-medium">
-                          {(user as any)?.mobile || "Not set"}
+                          {user?.mobile || "Not set"}
                         </div>
                       </div>
                       <div>
@@ -520,7 +520,7 @@ function ProfileContent() {
                     <Wallet className="w-5 h-5 text-[var(--accent-cta)]" />
                     My Card Wallet
                   </h2>
-                  <p className="text-sm text-[var(--text-secondary)]">Select the credit/debit cards you own. AirBook will automatically calculate your personalized lowest flight prices across all Indian OTAs.</p>
+                  <p className="text-sm text-[var(--text-secondary)]">Select the credit/debit cards you own. TheWingsScan will automatically calculate your personalized lowest flight prices across all Indian OTAs.</p>
                 </div>
                 
                 <div className="p-6">
@@ -567,7 +567,7 @@ function ProfileContent() {
                     <Bell className="w-5 h-5 text-[var(--accent-cta)]" />
                     Price Drop Alerts
                   </h2>
-                  <p className="text-sm text-[var(--text-secondary)]">We'll email you when the lowest price for these routes drops below your target.</p>
+                  <p className="text-sm text-[var(--text-secondary)]">We will email you when the lowest price for these routes drops below your target.</p>
                 </div>
                 
                 <div className="p-6">
@@ -626,9 +626,9 @@ function ProfileContent() {
                       {alerts.map(alert => (
                         <div key={alert.id} className="flex items-center justify-between p-4 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-subtle)]">
                           <div>
-                            <div className="font-semibold text-sm mb-1">{alert.origin} → {alert.destination}</div>
+                            <div className="font-semibold text-sm mb-1">{alert.source_airport} → {alert.destination_airport}</div>
                             <div className="text-xs text-[var(--text-muted)]">
-                              Target: <span className="font-mono-price font-medium text-[var(--text-primary)]">{formatPrice(alert.targetPrice)}</span>
+                              Target: <span className="font-mono-price font-medium text-[var(--text-primary)]">{formatPrice(alert.target_price)}</span>
                             </div>
                           </div>
                           <div className="flex items-center gap-4">

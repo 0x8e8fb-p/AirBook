@@ -1,5 +1,5 @@
 // ============================================
-// AirBook — Search State Store (Zustand)
+// TheWingsScan — Search State Store (Zustand)
 // ============================================
 
 import { create } from 'zustand';

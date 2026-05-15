@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Clean up the AirBook codebase by removing throwaway scripts and dead utility exports while preserving UI components and animation libraries.
+**Goal:** Clean up the TheWingsScan codebase by removing throwaway scripts and dead utility exports while preserving UI components and animation libraries.
 
 **Architecture:** Targeted file deletions and dead-code removal across the `src/lib/` directory.
 

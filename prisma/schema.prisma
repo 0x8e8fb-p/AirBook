@@ -82,7 +82,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   
-  // Custom AirBook Fields
+  // Custom TheWingsScan Fields
   savedCards    String?   // JSON string array of bank IDs e.g. '["HDFC", "SBI"]'
   searches      SearchHistory[]
   alerts        PriceAlert[]

@@ -1,5 +1,5 @@
 // ============================================
-// AirBook — Global Airport Database
+// TheWingsScan — Global Airport Database
 // ============================================
 // 600+ airports covering every continent, major hubs, and all Indian airports
 

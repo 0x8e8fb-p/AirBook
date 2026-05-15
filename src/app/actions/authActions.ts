@@ -7,6 +7,10 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
 export async function registerUser(formData: FormData) {
   const name = formData.get("name") as string;
   const username = formData.get("username") as string;
@@ -48,7 +52,7 @@ export async function registerUser(formData: FormData) {
 
     console.log("[Auth] Attempting to create user in database:", email);
 
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
         name,
         username: username.toLowerCase(),
@@ -76,11 +80,11 @@ export async function registerUser(formData: FormData) {
 
     if (process.env.RESEND_API_KEY) {
       await resend.emails.send({
-        from: "AirBook <noreply@resend.dev>",
+        from: "TheWingsScan <noreply@resend.dev>",
         to: email.toLowerCase(),
-        subject: "Verify your AirBook account",
+        subject: "Verify your TheWingsScan account",
         html: `
-          <h1>Welcome to AirBook!</h1>
+          <h1>Welcome to TheWingsScan!</h1>
           <p>Please click the link below to verify your email address and activate your account.</p>
           <a href="${verifyLink}">Verify Email</a>
           <p>This link will expire in 24 hours.</p>
@@ -91,9 +95,9 @@ export async function registerUser(formData: FormData) {
     }
 
     return { success: true, message: "Please check your email to verify your account before logging in." };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Auth] Registration error details:", error);
-    return { success: false, error: error?.message || "Something went wrong in the database" };
+    return { success: false, error: errorMessage(error, "Something went wrong in the database") };
   }
 }
 
@@ -128,12 +132,12 @@ export async function sendPasswordResetEmail(email: string) {
 
     if (process.env.RESEND_API_KEY) {
       await resend.emails.send({
-        from: "AirBook <noreply@resend.dev>", // Or your verified domain
+        from: "TheWingsScan <noreply@resend.dev>", // Or your verified domain
         to: email.toLowerCase(),
-        subject: "Reset your AirBook password",
+        subject: "Reset your TheWingsScan password",
         html: `
           <h1>Reset Your Password</h1>
-          <p>Click the link below to reset your password for AirBook. This link will expire in 1 hour.</p>
+          <p>Click the link below to reset your password for TheWingsScan. This link will expire in 1 hour.</p>
           <a href="${resetLink}">Reset Password</a>
           <p>If you didn't request this, you can safely ignore this email.</p>
         `
@@ -144,7 +148,7 @@ export async function sendPasswordResetEmail(email: string) {
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Auth] Password reset error:", error);
     return { success: false, error: "Failed to send reset email" };
   }
@@ -190,7 +194,7 @@ export async function verifyEmail(formData: FormData) {
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Auth] Verify email error:", error);
     return { success: false, error: "Failed to verify email" };
   }
@@ -236,7 +240,7 @@ export async function updateProfile(userId: string, formData: FormData) {
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Auth] Update profile error:", error);
     return { success: false, error: "Failed to update profile" };
   }
@@ -250,7 +254,7 @@ export async function deleteAccount(userId: string) {
       where: { id: userId }
     });
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Auth] Delete account error:", error);
     return { success: false, error: "Failed to delete account" };
   }
@@ -265,7 +269,7 @@ export async function updateProfileImage(userId: string, imageUrl: string) {
       data: { image: imageUrl }
     });
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Auth] Update profile image error:", error);
     return { success: false, error: "Failed to update profile image" };
   }
@@ -313,7 +317,7 @@ export async function updatePassword(formData: FormData) {
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Auth] Update password error:", error);
     return { success: false, error: "Failed to update password" };
   }

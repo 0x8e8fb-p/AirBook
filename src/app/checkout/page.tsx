@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCheckoutStore } from "@/stores/checkout-store";
 import { ArrowLeft, Plane, ShieldCheck, Briefcase, ExternalLink, TicketPercent, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import { formatPrice, formatDuration, formatTime, getAirlineLogoForFlight, getAirlineCodeFromFlight } from "@/lib/constants";
-import { logBookingClick, fetchCheckoutOffers } from "@/app/actions/flightActions";
+import { createBookingLinkAction, logBookingClick, fetchCheckoutOffers } from "@/app/actions/flightActions";
 import { getAirportDisplay } from "@/lib/airports";
 import { Footer } from "@/components/layout/Footer";
 import { OfferClaimGuide } from "@/components/ui/OfferClaimGuide";
@@ -18,21 +18,19 @@ import type { BankOffer } from "@/lib/flight/offerEngine";
 import type { FlightResult } from "@/lib/types";
 
 const PLATFORM_URLS: Record<string, string> = {
-  ixigo: "https://www.ixigo.com/flights",
-  makemytrip: "https://www.makemytrip.com/flights",
-  cleartrip: "https://www.cleartrip.com/flights",
-  goibibo: "https://www.goibibo.com/flights",
-  easemytrip: "https://www.easemytrip.com/flights",
-  yatra: "https://flights.yatra.com",
-  google_flights: "https://www.google.com/travel/flights",
+  travelpayouts_calendar: "https://www.aviasales.com",
+  travelpayouts_realtime: "https://www.aviasales.com",
 };
 
 function resolveBookingUrl(flight: FlightResult): string {
+  if (flight.deepLink || flight.bookingUrl) return flight.deepLink || flight.bookingUrl || "https://www.aviasales.com";
   const platform = flight.appliedOffer?.platform?.toLowerCase();
   if (platform && PLATFORM_URLS[platform]) return PLATFORM_URLS[platform];
   const src = flight.source?.toLowerCase();
   if (src && PLATFORM_URLS[src]) return PLATFORM_URLS[src];
-  return PLATFORM_URLS.google_flights;
+  const marker = process.env.NEXT_PUBLIC_TRAVELPAYOUTS_MARKER;
+  const params = marker ? `?marker=${encodeURIComponent(marker)}` : "";
+  return `https://www.aviasales.com${params}`;
 }
 
 function CheckoutContent() {
@@ -89,7 +87,6 @@ function CheckoutContent() {
   if (!isHydrated || !selectedFlight) return null;
 
   const logoUrl = getAirlineLogoForFlight(selectedFlight);
-  const code = getAirlineCodeFromFlight(selectedFlight);
 
   const convenienceFee = 350;
   const baseFare = selectedFlight.basePrice || selectedFlight.price;
@@ -107,11 +104,14 @@ function CheckoutContent() {
       discountAmount > 0 ? discountAmount : 0
     );
 
-    setTimeout(() => {
-      const otaUrl = resolveBookingUrl(selectedFlight);
-      window.open(otaUrl, "_blank", "noopener,noreferrer");
-      setIsRedirecting(false);
-    }, 800);
+    let otaUrl = resolveBookingUrl(selectedFlight);
+    if (selectedFlight.searchId && selectedFlight.bookingToken) {
+      const generated = await createBookingLinkAction(selectedFlight.searchId, selectedFlight.bookingToken);
+      if (generated?.url) otaUrl = generated.url;
+    }
+
+    window.open(otaUrl, "_blank", "noopener,noreferrer");
+    setIsRedirecting(false);
   };
 
   const displayedOffers = showAllOffers ? applicableOffers : applicableOffers.slice(0, 2);

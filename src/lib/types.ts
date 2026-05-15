@@ -1,5 +1,5 @@
 // ============================================
-// AirBook — Core Type Definitions
+// TheWingsScan — Core Type Definitions
 // ============================================
 
 import { BankOffer } from './flight/offerEngine';
@@ -10,14 +10,13 @@ export type FlightSource =
   | 'kiwi'
   | 'serpapi'
   | 'amadeus'
-  | 'scrape_indigo'
-  | 'scrape_airindia'
-  | 'scrape_spicejet'
   | 'google_flights'
   | 'ixigo'
   | 'makemytrip'
   | 'cleartrip'
-  | 'master_api';
+  | 'master_api'
+  | 'travelpayouts_calendar'
+  | 'travelpayouts_realtime';
 
 /** Cabin class options */
 export type CabinClass = 'economy' | 'premium_economy' | 'business' | 'first';
@@ -113,6 +112,9 @@ export interface FlightResult {
   // Booking
   bookingUrl?: string;
   deepLink?: string;
+  bookingToken?: string | null;
+  searchId?: string | null;
+  gateId?: string | number | null;
   
   // Additional info
   baggage: BaggageInfo;
@@ -156,4 +158,3 @@ export interface CalendarDay {
   holidayName?: string;
   priceLevel: 'cheap' | 'average' | 'expensive' | null;
 }
-
