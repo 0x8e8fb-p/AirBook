@@ -17,20 +17,21 @@ import { useSession } from "next-auth/react";
 import type { BankOffer } from "@/lib/flight/offerEngine";
 import type { FlightResult } from "@/lib/types";
 
+const AVIASALES_AFFILIATE =
+  "https://tp.media/r?marker=728497&trs=529383&p=4114&u=https%3A%2F%2Faviasales.com&campaign_id=100";
+
 const PLATFORM_URLS: Record<string, string> = {
-  travelpayouts_calendar: "https://www.aviasales.com",
-  travelpayouts_realtime: "https://www.aviasales.com",
+  travelpayouts_calendar: AVIASALES_AFFILIATE,
+  travelpayouts_realtime: AVIASALES_AFFILIATE,
 };
 
 function resolveBookingUrl(flight: FlightResult): string {
-  if (flight.deepLink || flight.bookingUrl) return flight.deepLink || flight.bookingUrl || "https://www.aviasales.com";
+  if (flight.deepLink || flight.bookingUrl) return flight.deepLink || flight.bookingUrl || AVIASALES_AFFILIATE;
   const platform = flight.appliedOffer?.platform?.toLowerCase();
   if (platform && PLATFORM_URLS[platform]) return PLATFORM_URLS[platform];
   const src = flight.source?.toLowerCase();
   if (src && PLATFORM_URLS[src]) return PLATFORM_URLS[src];
-  const marker = process.env.NEXT_PUBLIC_TRAVELPAYOUTS_MARKER;
-  const params = marker ? `?marker=${encodeURIComponent(marker)}` : "";
-  return `https://www.aviasales.com${params}`;
+  return AVIASALES_AFFILIATE;
 }
 
 function CheckoutContent() {
