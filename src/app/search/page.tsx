@@ -648,9 +648,10 @@ function SearchContent() {
   const [alertLoading, setAlertLoading] = useState(false);
   const [alertFeedback, setAlertFeedback] = useState<AlertFeedback | null>(null);
 
-  const passengerCount = adults + children + infants;
-  const routeKey = `${from}-${to}-${date}`;
+  const passengerCount = useMemo(() => adults + children + infants, [adults, children, infants]);
+  const routeKey = useMemo(() => `${from}-${to}-${date}`, [from, to, date]);
   const hasRequiredSearchParams = Boolean(from && to && date);
+  const ownedCardsKey = useMemo(() => ownedCards.sort().join(","), [ownedCards]);
 
   useEffect(() => {
     if (session?.user) {
@@ -719,7 +720,7 @@ function SearchContent() {
     return () => {
       isMounted = false;
     };
-  }, [cabin, date, from, hasRequiredSearchParams, ownedCards, passengerCount, refreshKey, to]);
+  }, [cabin, date, from, hasRequiredSearchParams, ownedCardsKey, passengerCount, refreshKey, to]);
 
   const avgPrice = useMemo(() => {
     if (allFlights.length === 0) return 0;

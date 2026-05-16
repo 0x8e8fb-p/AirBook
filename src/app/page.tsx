@@ -26,6 +26,7 @@ import {
 import { getPlatformStats } from "@/app/actions/flightActions";
 import { getTrendingRoutes } from "@/app/actions/intelligenceActions";
 import { Footer } from "@/components/layout/Footer";
+import { ParticleBackground } from "@/components/ui/ParticleBackground";
 import { searchAirports } from "@/lib/airports";
 import type { Airport, CabinClass } from "@/lib/types";
 import { useSearchStore } from "@/stores/search-store";
@@ -79,114 +80,116 @@ function AirportInput({
   value,
   onChange,
   placeholder,
+  highlight,
 }: {
   id: string;
   label: string;
   value: string;
-  onChange: (iata: string) => void;
+  onChange: (value: string) => void;
   placeholder: string;
+  highlight: boolean;
 }) {
-  const [suggestions, setSuggestions] = useState<Airport[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [isFocused, setIsFocused] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [results, setResults] = useState<Airport[]>([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const selectedLabel = useMemo(() => {
-    if (!value) return "";
-    const airport = searchAirports(value, 1)[0];
-    if (!airport) return value;
-    return `${airport.city} (${airport.iata})`;
-  }, [value]);
-
-  const handleSearch = useCallback((nextQuery: string) => {
-    setQuery(nextQuery);
-    if (nextQuery.trim().length >= 1) {
-      const results = searchAirports(nextQuery, 6);
-      setSuggestions(results);
-      setIsOpen(results.length > 0);
-      return;
+  const handleInput = (raw: string) => {
+    const upper = raw.toUpperCase().replace(/[^A-Z ]/g, "");
+    onChange(upper);
+    if (upper.length >= 1) {
+      setResults(searchAirports(upper).slice(0, 6));
+      setDropdownOpen(true);
+    } else {
+      setResults([]);
+      setDropdownOpen(false);
     }
+  };
 
-    setSuggestions([]);
-    setIsOpen(false);
-  }, []);
+  const selectAirport = (airport: Airport) => {
+    onChange(airport.iata);
+    setDropdownOpen(false);
+    inputRef.current?.blur();
+    setFocused(false);
+  };
 
-  const handleSelect = useCallback(
-    (airport: Airport) => {
-      onChange(airport.iata);
-      setQuery("");
-      setIsOpen(false);
-      inputRef.current?.blur();
-    },
-    [onChange],
-  );
+  const displayValue = value || "";
+  const showLabel = focused || !!displayValue;
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+        setFocused(false);
       }
     }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   return (
-    <div ref={wrapperRef} className="relative flex-1">
-      <label htmlFor={id} className="block text-[11px] font-medium text-[var(--text-muted)] mb-1.5 uppercase tracking-widest">
+    <div ref={ref} className="relative w-full">
+      <label
+        htmlFor={id}
+        className={`absolute left-4 transition-all duration-200 pointer-events-none z-10 ${
+          showLabel
+            ? "top-2 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]"
+            : "top-1/2 -translate-y-1/2 text-[13px] text-[var(--text-muted)]"
+        }`}
+      >
         {label}
       </label>
-      <div className="rounded-[22px] border border-[var(--border-default)] bg-[color-mix(in_srgb,var(--bg-base)_72%,transparent)] px-4 py-3 transition-colors focus-within:border-[var(--border-strong)]">
-        <input
-          ref={inputRef}
-          id={id}
-          type="text"
-          value={isFocused ? query : selectedLabel || query}
-          onChange={(event) => handleSearch(event.target.value)}
-          onFocus={() => {
-            setIsFocused(true);
-            setQuery("");
-            if (suggestions.length > 0) setIsOpen(true);
-          }}
-          onBlur={() => setIsFocused(false)}
-          placeholder={placeholder}
-          className="ghost-input w-full text-base md:text-lg font-semibold placeholder:text-[var(--text-muted)]/50 truncate caret-[var(--text-secondary)]"
-          autoComplete="off"
-        />
-        <div className={`h-px mt-2 transition-all duration-300 ${isFocused ? "bg-[var(--accent-cta)]" : "bg-[var(--border-strong)]"}`} />
-      </div>
+      <input
+        ref={inputRef}
+        id={id}
+        type="text"
+        autoComplete="off"
+        role="combobox"
+        aria-expanded={dropdownOpen}
+        aria-autocomplete="list"
+        value={displayValue}
+        onChange={(e) => handleInput(e.target.value)}
+        onFocus={() => setFocused(true)}
+        placeholder={showLabel ? "" : placeholder}
+        className={`ghost-input w-full h-[56px] rounded-[22px] bg-[var(--bg-elevated)] px-4 pt-3.5 pb-1 text-[15px] font-medium font-[var(--font-mono)] tracking-wider transition-all duration-200 border ${
+          dropdownOpen
+            ? "border-[var(--border-strong)] shadow-[0_0_0_4px_rgba(255,255,255,0.03)]"
+            : "border-[var(--border-default)] hover:border-[var(--border-strong)]"
+        } ${highlight ? "!border-[var(--accent-cta)]/40 shadow-[0_0_0_4px_rgba(250,250,250,0.04)]" : ""}`}
+      />
 
       <AnimatePresence>
-        {isOpen && suggestions.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.98 }}
-            transition={{ duration: 0.16 }}
-            className="absolute z-50 w-full mt-3 surface-panel rounded-[22px] overflow-hidden"
+        {dropdownOpen && results.length > 0 ? (
+          <motion.ul
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.18 }}
+            className="absolute left-0 right-0 top-[60px] z-30 rounded-[22px] border border-[var(--border-strong)] bg-[var(--bg-elevated)] py-2 shadow-[var(--shadow-lg)] max-h-[260px] overflow-y-auto backdrop-blur-xl"
+            role="listbox"
           >
-            {suggestions.map((airport) => (
-              <button
-                key={airport.iata}
-                type="button"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => handleSelect(airport)}
-                className="w-full text-left px-4 py-3 hover:bg-[var(--accent-primary-dim)] transition-colors flex items-center gap-3 border-b border-[var(--border-muted)] last:border-0"
-              >
-                <span className="text-[11px] font-mono font-semibold text-[var(--text-muted)] w-8">{airport.iata}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{airport.city}</div>
-                  <div className="text-[11px] text-[var(--text-muted)] truncate">
-                    {airport.name} · {airport.country}
+            {results.map((airport) => (
+              <li key={airport.iata}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={false}
+                  onClick={() => selectAirport(airport)}
+                  className="w-full text-left px-5 py-3 hover:bg-[var(--accent-primary-dim)] transition-colors flex items-center justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">{airport.city}, {airport.country}</div>
+                    <div className="text-[11px] text-[var(--text-muted)] mt-0.5 truncate">{airport.name}</div>
                   </div>
-                </div>
-              </button>
+                  <span className="shrink-0 rounded-full border border-[var(--border-default)] bg-[var(--accent-primary-dim)] px-2.5 py-1 text-[11px] font-bold font-mono">
+                    {airport.iata}
+                  </span>
+                </button>
+              </li>
             ))}
-          </motion.div>
-        )}
+          </motion.ul>
+        ) : null}
       </AnimatePresence>
     </div>
   );
@@ -194,235 +197,219 @@ function AirportInput({
 
 function SearchPanel() {
   const router = useRouter();
-  const {
-    origin,
-    destination,
-    departureDate,
-    returnDate,
-    adults,
-    children: childCount,
-    infants,
-    cabinClass,
-    setOrigin,
-    setDestination,
-    swapAirports,
-    setDepartureDate,
-    setReturnDate,
-    setPassengers,
-    setCabinClass,
-    isSearching,
-    setSearching,
-  } = useSearchStore();
+  const { origin, setOrigin, destination, setDestination, cabinClass, setCabinClass } = useSearchStore();
 
+  const [departureDate, setDepartureDate] = useState("");
+  const [returnDate, setReturnDate] = useState("");
+  const [adults, setAdults] = useState(1);
+  const [children, setChildren] = useState(0);
+  const [infants, setInfants] = useState(0);
   const [showPassengers, setShowPassengers] = useState(false);
-  const [isSwapping, setIsSwapping] = useState(false);
-  const passRef = useRef<HTMLDivElement>(null);
+  const [showReturn, setShowReturn] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
-  useEffect(() => {
-    setSearching(false);
-  }, [setSearching]);
+  const passengerLabel = useMemo(() => {
+    const total = adults + children + infants;
+    return `${total} traveller${total > 1 ? "s" : ""}`;
+  }, [adults, children, infants]);
 
-  useEffect(() => {
-    function handleClick(event: MouseEvent) {
-      if (passRef.current && !passRef.current.contains(event.target as Node)) {
-        setShowPassengers(false);
-      }
+  const setPassengers = useCallback((a: number, c: number, i: number) => {
+    const total = a + c + i;
+    if (total <= 9 && a >= 1 && c <= 8 && i <= a) {
+      setAdults(a);
+      setChildren(c);
+      setInfants(i);
     }
-
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const totalTravellers = adults + childCount + infants;
-
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     if (!origin || !destination || !departureDate) return;
+    setIsSearching(true);
 
-    setSearching(true);
     const params = new URLSearchParams({
       from: origin,
       to: destination,
       date: departureDate,
-      adults: adults.toString(),
-      children: childCount.toString(),
-      infants: infants.toString(),
+      adults: String(adults),
+      children: String(children),
+      infants: String(infants),
       cabin: cabinClass,
-      ...(returnDate ? { return: returnDate } : {}),
     });
 
-    router.push(`/search?${params.toString()}`);
-  };
+    if (returnDate && showReturn) {
+      params.set("return", returnDate);
+    }
 
-  const handleSwap = () => {
-    setIsSwapping(true);
-    swapAirports();
-    window.setTimeout(() => setIsSwapping(false), 300);
-  };
+    router.push(`/search?${params.toString()}`);
+  }, [origin, destination, departureDate, returnDate, adults, children, infants, cabinClass, showReturn, router]);
+
+  const todayStr = TODAY_INPUT_VALUE;
 
   return (
-    <div className="surface-panel rounded-[32px] p-5 md:p-6 lg:p-7 w-full max-w-3xl ml-auto">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
-        <div>
-          <p className="text-sm font-semibold">Plan with flexibility</p>
-          <p className="text-xs text-[var(--text-secondary)] mt-1">Search cleaner fares, smarter dates, and wallet-aware effective prices.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {CABIN_OPTIONS.map((option) => {
-            const active = cabinClass === option.value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setCabinClass(option.value)}
-                className={`rounded-full px-3 py-1.5 text-[11px] font-medium border transition-colors ${
-                  active
-                    ? "bg-[var(--accent-cta)] text-[var(--text-inverse)] border-transparent"
-                    : "border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)]"
-                }`}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+    <div className="w-full surface-panel rounded-[32px] p-5 md:p-7 shadow-[var(--shadow-xl)] relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-cyan)]/3 via-transparent to-[var(--accent-purple)]/3 pointer-events-none" />
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[color-mix(in_srgb,var(--accent-cta)_30%,transparent)] to-transparent" />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
-        <AirportInput id="origin" label="From" value={origin} onChange={setOrigin} placeholder="Delhi" />
-
-        <div className="flex items-center justify-center lg:pt-6">
-          <button
-            type="button"
-            onClick={handleSwap}
-            className="w-10 h-10 rounded-full border border-[var(--border-strong)] bg-[var(--bg-base)] flex items-center justify-center shrink-0 hover:bg-[var(--bg-elevated)] transition-colors active:scale-95 group overflow-hidden relative"
-            aria-label="Swap airports"
-          >
-            <motion.div
-              animate={{ rotate: isSwapping ? 180 : 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className="relative flex items-center justify-center"
+      <div className="relative z-10 space-y-4 md:space-y-5">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <AirportInput
+            id="origin"
+            label="From"
+            value={origin}
+            onChange={setOrigin}
+            placeholder="City or airport"
+            highlight={!origin}
+          />
+          <div className="relative">
+            <AirportInput
+              id="destination"
+              label="To"
+              value={destination}
+              onChange={setDestination}
+              placeholder="City or airport"
+              highlight={!destination}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const temp = origin;
+                setOrigin(destination);
+                setDestination(temp);
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--bg-elevated)] hover:bg-[var(--accent-primary-dim)] transition-colors shadow-[var(--shadow-sm)]"
+              aria-label="Swap origin and destination"
             >
-              <ArrowRightLeft className={`w-4 h-4 text-[var(--text-muted)] transition-colors group-hover:text-[var(--text-primary)] ${isSwapping ? "opacity-50" : "opacity-100"}`} />
-            </motion.div>
-
-            <AnimatePresence>
-              {isSwapping && (
-                <motion.span
-                  initial={{ scale: 0, opacity: 0.5 }}
-                  animate={{ scale: 2, opacity: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="absolute inset-0 bg-[var(--accent-cta)] rounded-full pointer-events-none"
-                />
-              )}
-            </AnimatePresence>
-          </button>
+              <ArrowRightLeft className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
+            </button>
+          </div>
         </div>
 
-        <AirportInput id="destination" label="To" value={destination} onChange={setDestination} placeholder="Mumbai" />
-      </div>
-
-      <div className="glow-divider my-6" />
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div>
-          <label htmlFor="dep-date" className="block text-[11px] font-medium text-[var(--text-muted)] mb-1.5 uppercase tracking-widest">
-            Departure
-          </label>
-          <div className="rounded-[22px] border border-[var(--border-default)] bg-[color-mix(in_srgb,var(--bg-base)_72%,transparent)] px-4 py-3">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="relative">
+            <label
+              htmlFor="departureDate"
+              className="absolute left-4 top-2 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)] z-10 pointer-events-none"
+            >
+              Departure
+            </label>
             <input
-              id="dep-date"
+              id="departureDate"
               type="date"
               value={departureDate}
-              onChange={(event) => setDepartureDate(event.target.value)}
-              min={TODAY_INPUT_VALUE}
-              className="ghost-input w-full text-base font-semibold [color-scheme:dark] cursor-pointer"
+              onChange={(e) => setDepartureDate(e.target.value)}
+              min={todayStr}
+              className="ghost-input w-full h-[56px] rounded-[22px] bg-[var(--bg-elevated)] px-4 pt-3.5 pb-1 text-[15px] font-medium transition-all duration-200 border border-[var(--border-default)] hover:border-[var(--border-strong)]"
             />
-            <div className="h-px mt-2 bg-[var(--border-strong)]" />
           </div>
-        </div>
 
-        <div>
-          <label htmlFor="ret-date" className="block text-[11px] font-medium text-[var(--text-muted)] mb-1.5 uppercase tracking-widest">
-            Return
-            <span className="text-[var(--text-muted)]/60 ml-1 normal-case tracking-normal">optional</span>
-          </label>
-          <div className="rounded-[22px] border border-[var(--border-default)] bg-[color-mix(in_srgb,var(--bg-base)_72%,transparent)] px-4 py-3 relative">
-            <input
-              id="ret-date"
-              type="date"
-              value={returnDate}
-              onChange={(event) => setReturnDate(event.target.value)}
-              min={departureDate || TODAY_INPUT_VALUE}
-              className="ghost-input w-full text-base font-semibold [color-scheme:dark] cursor-pointer pr-7"
-            />
-            {returnDate && (
+          <div className="relative">
+            {showReturn ? (
+              <>
+                <label
+                  htmlFor="returnDate"
+                  className="absolute left-4 top-2 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)] z-10 pointer-events-none"
+                >
+                  Return
+                </label>
+                <input
+                  id="returnDate"
+                  type="date"
+                  value={returnDate}
+                  onChange={(e) => setReturnDate(e.target.value)}
+                  min={departureDate || todayStr}
+                  className="ghost-input w-full h-[56px] rounded-[22px] bg-[var(--bg-elevated)] px-4 pt-3.5 pb-1 text-[15px] font-medium transition-all duration-200 border border-[var(--border-default)] hover:border-[var(--border-strong)]"
+                />
+                <button
+                  type="button"
+                  onClick={() => { setShowReturn(false); setReturnDate(""); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex h-9 w-9 items-center justify-center rounded-full hover:bg-[var(--accent-primary-dim)] transition-colors"
+                  aria-label="Remove return date"
+                >
+                  <X className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+                </button>
+              </>
+            ) : (
               <button
                 type="button"
-                onClick={() => setReturnDate("")}
-                className="absolute right-4 top-4 w-6 h-6 flex items-center justify-center rounded-full hover:bg-[var(--accent-primary-dim)] transition-colors"
-                aria-label="Clear return date"
+                onClick={() => setShowReturn(true)}
+                className="w-full h-[56px] rounded-[22px] border border-dashed border-[var(--border-strong)] bg-[var(--bg-elevated)]/50 flex items-center justify-center gap-2 text-[12px] text-[var(--text-muted)] hover:border-[var(--accent-cta)]/30 hover:text-[var(--text-secondary)] transition-all duration-200"
               >
-                <X className="w-3 h-3 text-[var(--text-muted)]" />
+                <span>+ Add return date</span>
               </button>
             )}
-            <div className="h-px mt-2 bg-[var(--border-strong)]" />
           </div>
         </div>
 
-        <div ref={passRef} className="relative">
-          <label className="block text-[11px] font-medium text-[var(--text-muted)] mb-1.5 uppercase tracking-widest">
-            Travellers
-          </label>
-          <button
-            type="button"
-            onClick={() => setShowPassengers((current) => !current)}
-            className="w-full rounded-[22px] border border-[var(--border-default)] bg-[color-mix(in_srgb,var(--bg-base)_72%,transparent)] px-4 py-3 text-left flex items-center justify-between gap-2"
-          >
-            <div>
-              <div className="text-base font-semibold">
-                {totalTravellers} {totalTravellers === 1 ? "Traveller" : "Travellers"}
-              </div>
-              <div className="text-[11px] text-[var(--text-muted)] mt-1 capitalize">{cabinClass.replace(/_/g, " ")}</div>
-            </div>
-            <ChevronDown className={`w-4 h-4 text-[var(--text-muted)] transition-transform duration-200 ${showPassengers ? "rotate-180" : ""}`} />
-          </button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <label className="absolute left-4 top-2 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)] z-10 pointer-events-none">
+              Passengers
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowPassengers(!showPassengers)}
+              className="ghost-input w-full h-[56px] rounded-[22px] bg-[var(--bg-elevated)] px-4 pt-3.5 pb-1 text-[15px] font-medium transition-all duration-200 border border-[var(--border-default)] hover:border-[var(--border-strong)] flex items-center justify-between"
+            >
+              <span>{passengerLabel}</span>
+              <ChevronDown
+                className={`w-4 h-4 text-[var(--text-muted)] transition-transform duration-200 ${showPassengers ? "rotate-180" : ""}`}
+              />
+            </button>
 
-          <AnimatePresence>
-            {showPassengers && (
-              <motion.div
-                initial={{ opacity: 0, y: 6, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 6, scale: 0.98 }}
-                transition={{ duration: 0.15 }}
-                className="absolute z-50 right-0 left-0 top-full mt-3 surface-panel rounded-[24px] p-3"
-              >
-                {[
-                  { label: "Adults", sub: "12+ years", val: adults, set: (v: number) => setPassengers(v, childCount, infants), min: 1, max: 9 },
-                  { label: "Children", sub: "2–11 years", val: childCount, set: (v: number) => setPassengers(adults, v, infants), min: 0, max: 8 },
-                  { label: "Infants", sub: "Under 2", val: infants, set: (v: number) => setPassengers(adults, childCount, v), min: 0, max: adults },
-                ].map(({ label, sub, val, set, min, max }) => (
-                  <div key={label} className="flex items-center justify-between py-3 border-b border-[var(--border-muted)] last:border-0">
-                    <div>
-                      <div className="text-sm font-medium">{label}</div>
-                      <div className="text-[11px] text-[var(--text-muted)]">{sub}</div>
+            <AnimatePresence>
+              {showPassengers ? (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.18 }}
+                  className="absolute left-0 right-0 top-[60px] z-30 rounded-[22px] border border-[var(--border-strong)] bg-[var(--bg-elevated)] p-4 shadow-[var(--shadow-lg)]"
+                >
+                  {[
+                    { label: "Adults", sub: "12+ years", val: adults, set: (v: number) => setPassengers(v, children, infants), min: 1, max: 9 },
+                    { label: "Children", sub: "2–11 years", val: children, set: (v: number) => setPassengers(adults, v, infants), min: 0, max: 8 },
+                    { label: "Infants", sub: "Under 2", val: infants, set: (v: number) => setPassengers(adults, children, v), min: 0, max: adults },
+                  ].map(({ label, sub, val, set, min, max }) => (
+                    <div key={label} className="flex items-center justify-between py-3 border-b border-[var(--border-muted)] last:border-0">
+                      <div>
+                        <div className="text-sm font-medium">{label}</div>
+                        <div className="text-[11px] text-[var(--text-muted)]">{sub}</div>
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        <button type="button" onClick={() => val > min && set(val - 1)} disabled={val <= min} className="w-8 h-8 rounded-full border border-[var(--border-strong)] flex items-center justify-center disabled:opacity-20 text-xs hover:bg-[var(--accent-primary-dim)] transition-colors">−</button>
+                        <span className="w-5 text-center font-mono text-sm">{val}</span>
+                        <button type="button" onClick={() => val < max && set(val + 1)} disabled={val >= max} className="w-8 h-8 rounded-full border border-[var(--border-strong)] flex items-center justify-center disabled:opacity-20 text-xs hover:bg-[var(--accent-primary-dim)] transition-colors">+</button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2.5">
-                      <button type="button" onClick={() => val > min && set(val - 1)} disabled={val <= min} className="w-8 h-8 rounded-full border border-[var(--border-strong)] flex items-center justify-center disabled:opacity-20 text-xs hover:bg-[var(--accent-primary-dim)] transition-colors">−</button>
-                      <span className="w-5 text-center font-mono text-sm">{val}</span>
-                      <button type="button" onClick={() => val < max && set(val + 1)} disabled={val >= max} className="w-8 h-8 rounded-full border border-[var(--border-strong)] flex items-center justify-center disabled:opacity-20 text-xs hover:bg-[var(--accent-primary-dim)] transition-colors">+</button>
-                    </div>
-                  </div>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  ))}
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </div>
+
+          <div className="relative flex-1">
+            <label className="absolute left-4 top-2 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)] z-10 pointer-events-none">
+              Cabin
+            </label>
+            <select
+              value={cabinClass}
+              onChange={(e) => setCabinClass(e.target.value as CabinClass)}
+              className="ghost-input w-full h-[56px] rounded-[22px] bg-[var(--bg-elevated)] px-4 pt-3.5 pb-1 text-[15px] font-medium transition-all duration-200 border border-[var(--border-default)] hover:border-[var(--border-strong)] appearance-none cursor-pointer"
+            >
+              {CABIN_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value} className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
+          </div>
         </div>
       </div>
 
       <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <p className="text-xs text-[var(--text-secondary)] max-w-xl leading-relaxed">
-          Search results highlight effective fares, nearby-date opportunities, and bank-offer-aware pricing without exposing provider credentials in the browser.
+          Compare effective fares with nearby-date opportunities and bank-offer-aware pricing.
         </p>
         <button
           type="button"
@@ -487,55 +474,67 @@ export default function HomePage() {
 
   return (
     <div className="min-h-[100dvh] relative">
+      {/* Particle canvas background */}
+      <ParticleBackground />
+
+      {/* Hero Section */}
       <section className="relative overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-70"
-          style={{
-            backgroundImage:
-              "linear-gradient(180deg, rgba(6,6,7,0.20) 0%, rgba(6,6,7,0.68) 46%, var(--bg-base) 88%), url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1800&q=80')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-          aria-hidden="true"
-        />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.16),transparent_35%)]" aria-hidden="true" />
+        {/* Background gradient orbs */}
+        <div aria-hidden="true" className="absolute inset-0 pointer-events-none z-[2]">
+          <div className="absolute top-[-20%] left-[-5%] w-[60%] h-[70%] rounded-full bg-[color-mix(in_srgb,var(--accent-cyan)_8%,transparent)] blur-[160px]" />
+          <div className="absolute top-[10%] right-[-8%] w-[50%] h-[60%] rounded-full bg-[color-mix(in_srgb,var(--accent-purple)_7%,transparent)] blur-[140px]" />
+          <div className="absolute bottom-[-10%] left-[25%] w-[40%] h-[30%] rounded-full bg-[color-mix(in_srgb,var(--accent-amber)_4%,transparent)] blur-[100px]" />
+        </div>
 
-        <div className="container-app relative z-10 pt-24 md:pt-28 pb-16 md:pb-20">
+        {/* Hero grid overlay */}
+        <div aria-hidden="true" className="hero-grid absolute inset-0 opacity-[0.12] z-[3]" />
+
+        <div className="container-app relative z-10 pt-28 md:pt-36 pb-16 md:pb-20">
           <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
+            {/* Left: Hero Copy */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
             >
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/15 bg-black/20 text-white/85 text-[11px] font-semibold uppercase tracking-widest mb-5 backdrop-blur-md">
+              {/* Badge */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1, duration: 0.5 }}
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/12 bg-black/20 text-white/85 text-[11px] font-semibold uppercase tracking-widest mb-6 backdrop-blur-md"
+              >
                 <Sparkles className="w-3.5 h-3.5" />
-                Production-first flight discovery
-              </div>
+                Intelligent flight discovery
+              </motion.div>
 
-              <h1 className="max-w-3xl text-5xl sm:text-6xl lg:text-[4.8rem] font-semibold font-[var(--font-display)] leading-[0.92] tracking-[-0.04em] text-white">
-                Find the route.
+              <h1 className="max-w-3xl text-[3.2rem] sm:text-[4.2rem] md:text-[4.8rem] lg:text-[5.2rem] font-semibold font-[var(--font-display)] leading-[0.9] tracking-[-0.04em] text-white">
+                Your flight.
                 <br />
-                <span className="text-gradient-soft">Break the price with context.</span>
+                <span className="text-gradient-soft">Your intelligence.</span>
               </h1>
 
-              <p className="max-w-2xl text-white/76 text-base sm:text-lg leading-relaxed mt-5">
-                TheWingsScan turns a raw fare lookup into a cleaner booking decision with flexible-date cues, bank-offer-aware pricing, route intelligence, and a calmer handoff to the booking partner.
+              <p className="max-w-2xl text-white/72 text-base sm:text-lg leading-relaxed mt-6">
+                Compare live fares with calendar-wide price signals, bank-offer savings, 
+                and route intelligence — all from one search. No guessing, no overpaying.
               </p>
 
-              <div className="mt-7 flex flex-wrap gap-2.5">
+              {/* Trust badges */}
+              <div className="mt-8 flex flex-wrap gap-2.5">
                 {[
-                  { icon: Shield, label: "Server-side fare search" },
+                  { icon: Shield, label: "Server-side fare engine" },
                   { icon: Wallet, label: "Wallet-aware pricing" },
-                  { icon: CalendarDays, label: "Flexible date signals" },
+                  { icon: CalendarDays, label: "Calendar intelligence" },
                 ].map((item) => (
-                  <div key={item.label} className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/15 px-3 py-2 text-xs text-white/80 backdrop-blur-md">
+                  <div key={item.label} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/15 px-3.5 py-2 text-xs text-white/78 backdrop-blur-md">
                     <item.icon className="w-3.5 h-3.5" />
                     {item.label}
                   </div>
                 ))}
               </div>
 
-              <div className="mt-8 grid gap-3 sm:grid-cols-3">
+              {/* Stats row */}
+              <div className="mt-9 grid gap-3 sm:grid-cols-3">
                 {[
                   {
                     label: "Searches tracked",
@@ -550,36 +549,44 @@ export default function HomePage() {
                     value: "Search → Compare → Checkout",
                   },
                 ].map((item) => (
-                  <div key={item.label} className="surface-card rounded-[24px] px-4 py-4 backdrop-blur-md bg-black/10 border-white/10">
+                  <motion.div
+                    key={item.label}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3, duration: 0.5 }}
+                    className="surface-card rounded-[24px] px-4 py-4 backdrop-blur-md bg-black/10 border-white/10"
+                  >
                     <div className="text-[11px] uppercase tracking-[0.22em] text-white/50">{item.label}</div>
                     <div className="mt-2 text-xl font-semibold text-white">{item.value}</div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </motion.div>
 
+            {/* Right: Search Panel */}
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 32 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.65, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
               className="w-full"
             >
               <SearchPanel />
             </motion.div>
           </div>
 
+          {/* Quick routes */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25, duration: 0.5 }}
-            className="mt-8 md:mt-10 flex flex-wrap items-center gap-2.5"
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="mt-9 md:mt-11 flex flex-wrap items-center gap-2.5"
           >
-            <span className="text-[11px] uppercase tracking-[0.2em] text-white/50 mr-1">Popular routes</span>
+            <span className="text-[11px] uppercase tracking-[0.2em] text-white/45 mr-1">Popular routes</span>
             {QUICK_ROUTES.map((route) => (
               <Link
                 key={route.label}
                 href={buildSearchHref(route.from, route.to, SEVEN_DAYS_FROM_NOW)}
-                className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/15 px-3.5 py-2 text-xs text-white/78 backdrop-blur-md hover:border-white/25 hover:text-white transition-colors"
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/12 px-3.5 py-2 text-xs text-white/75 backdrop-blur-md hover:border-white/22 hover:text-white transition-all duration-200"
               >
                 {route.label}
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -589,42 +596,52 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Value Props */}
       <section className="container-app relative z-10 py-14 md:py-16">
         <div className="grid gap-4 md:grid-cols-3">
           {[
             {
               icon: Search,
-              title: "Cleaner search input",
-              desc: "Enter a route, set your cabin, and keep the handoff light without losing useful pricing context.",
+              title: "Fare search with context",
+              desc: "Enter any route and cabin — get calendar-aware pricing with nearby-date signals and wallet-matched savings.",
             },
             {
               icon: TrendingDown,
-              title: "Signals before checkout",
-              desc: "Use date flexibility, trend hints, and route-level intelligence before you decide where to book.",
+              title: "Decide before you book",
+              desc: "Date flexibility signals, fare trend analysis, and route intelligence surface the best booking window.",
             },
             {
               icon: TicketPercent,
-              title: "Effective-price awareness",
-              desc: "Compare what the fare really costs after eligible offer logic and partner-specific savings.",
+              title: "Effective-price clarity",
+              desc: "See what your fare actually costs after bank offers and partner savings — before you click through.",
             },
-          ].map((item) => (
-            <div key={item.title} className="surface-card rounded-[26px] p-5 md:p-6">
-              <item.icon className="w-5 h-5 text-[var(--accent-cta)] mb-4" />
+          ].map((item, i) => (
+            <motion.div
+              key={item.title}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 * i, duration: 0.45 }}
+              className="surface-card rounded-[28px] p-6 md:p-7 group hover:-translate-y-1 transition-all duration-300"
+            >
+              <div className="w-10 h-10 rounded-full bg-[var(--accent-primary-dim)] flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+                <item.icon className="w-5 h-5 text-[var(--accent-cta)]" />
+              </div>
               <h2 className="text-lg font-semibold mb-2">{item.title}</h2>
               <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{item.desc}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
+      {/* How it works */}
       <section className="container-app relative z-10 py-14 md:py-16 border-t border-[var(--border-muted)]">
-        <div className="mb-8 md:mb-10">
+        <div className="mb-10 md:mb-12">
           <div className="section-kicker mb-4">
             <Zap className="w-3.5 h-3.5" />
             How it works
           </div>
           <h2 className="text-2xl md:text-4xl font-semibold font-[var(--font-display)] max-w-2xl leading-tight">
-            Designed to reduce uncertainty before you reach the booking page.
+            Less uncertainty before you reach the booking page.
           </h2>
         </div>
 
@@ -634,103 +651,125 @@ export default function HomePage() {
               step: "01",
               icon: Search,
               title: "Search with intent",
-              desc: "Start with route, date, passenger mix, and cabin so the result page preserves the right context from the first click.",
+              desc: "Enter your route, date, and passenger mix. The engine fetches live fares while preserving your search context.",
             },
             {
               step: "02",
               icon: Brain,
-              title: "Read the route",
-              desc: "Check nearby dates, price dips, alternative itineraries, and route intelligence instead of guessing what is actually cheap.",
+              title: "Read the intelligence",
+              desc: "Nearby date prices, fare predictions, bank-offer matches, and route signals — all in one view.",
             },
             {
               step: "03",
               icon: Plane,
-              title: "Book with confidence",
-              desc: "Carry the selected fare into checkout with clearer savings, offer guidance, and a safer booking handoff.",
+              title: "Checkout with confidence",
+              desc: "Choose your fare, review the savings breakdown, and continue to a secure booking handoff.",
             },
-          ].map((item) => (
-            <div key={item.step} className="surface-card rounded-[28px] p-6">
+          ].map((item, i) => (
+            <motion.div
+              key={item.step}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 * i, duration: 0.4 }}
+              className="surface-card rounded-[28px] p-6 md:p-7 group hover:-translate-y-1 transition-all duration-300"
+            >
               <div className="flex items-center justify-between mb-5">
                 <span className="text-[11px] uppercase tracking-[0.24em] text-[var(--text-muted)]">{item.step}</span>
-                <item.icon className="w-4 h-4 text-[var(--accent-cta)]" />
+                <item.icon className="w-4 h-4 text-[var(--accent-cta)] group-hover:scale-110 transition-transform duration-300" />
               </div>
               <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
               <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{item.desc}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
+      {/* Capabilities */}
       <section className="container-app relative z-10 py-14 md:py-16 border-t border-[var(--border-muted)]">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { icon: Globe2, title: "Global route data", desc: "Airports, airline identities, and cached fare calendars for faster discovery." },
-            { icon: Shield, title: "Token-safe architecture", desc: "Provider credentials remain server-side behind actions and route handlers." },
-            { icon: CalendarDays, title: "Flexible-date clarity", desc: "Let cheaper nearby dates surface before you overpay for a rigid choice." },
-            { icon: Layers, title: "Production-ready surfaces", desc: "Shared layout, refined motion, and clearer states across search and checkout." },
-          ].map((item) => (
-            <div key={item.title} className="surface-card rounded-[24px] p-5 transition-transform duration-300 hover:-translate-y-1">
-              <item.icon className="w-5 h-5 text-[var(--accent-cta)] mb-4" />
+            { icon: Globe2, title: "Global route coverage", desc: "Airport identities and cached fare calendars for faster discovery across routes." },
+            { icon: Shield, title: "Token-safe architecture", desc: "All provider credentials and tokens stay server-side — never exposed to the browser." },
+            { icon: CalendarDays, title: "Flexible-date clarity", desc: "Cheaper nearby dates surface automatically so you never overpay for a rigid choice." },
+            { icon: Layers, title: "Production-grade surfaces", desc: "Shared design system, refined motion, and clear states across every screen." },
+          ].map((item, i) => (
+            <motion.div
+              key={item.title}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08 * i, duration: 0.4 }}
+              className="surface-card rounded-[24px] p-5 transition-all duration-300 hover:-translate-y-1 group"
+            >
+              <item.icon className="w-5 h-5 text-[var(--accent-cta)] mb-4 group-hover:scale-110 transition-transform duration-300" />
               <h3 className="text-sm font-semibold mb-2">{item.title}</h3>
               <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{item.desc}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
+      {/* Feature surfaces */}
       <section className="container-app relative z-10 py-14 md:py-16 border-t border-[var(--border-muted)]">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-8">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-10">
           <div>
             <div className="section-kicker mb-4">
               <Layers className="w-3.5 h-3.5" />
               Explore the platform
             </div>
             <h2 className="text-2xl md:text-4xl font-semibold font-[var(--font-display)] max-w-2xl leading-tight">
-              Move beyond a single fare list and explore the decision space.
+              Go beyond a single fare list.
             </h2>
           </div>
           <p className="max-w-lg text-sm text-[var(--text-secondary)] leading-relaxed">
-            Each surface exists to answer a different question: when to fly, when to book, how to compare, and how to keep savings context visible through checkout.
+            Each surface answers a different question: when to fly, when to book, how to compare, 
+            and how to keep savings visible through checkout.
           </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { icon: CalendarDays, href: "/deals", title: "Price calendar", desc: "Cheapest known fares by route and day." },
-            { icon: Brain, href: "/intelligence", title: "Fare intelligence", desc: "Read price predictions, median ranges, and booking advice." },
-            { icon: Layers, href: "/compare", title: "Route compare", desc: "View airline and provider level comparisons for the route." },
-            { icon: TicketPercent, href: "/aggregator", title: "Booking handoff", desc: "Search now and generate the buy link only when needed." },
-          ].map((feature) => (
+            { icon: CalendarDays, href: "/deals", title: "Price calendar", desc: "Cheapest known fares by route and day across the month." },
+            { icon: Brain, href: "/intelligence", title: "Fare intelligence", desc: "Price predictions, median ranges, and booking window advice." },
+            { icon: Layers, href: "/compare", title: "Route compare", desc: "Airline and provider-level comparisons for any route pair." },
+            { icon: TicketPercent, href: "/aggregator", title: "Booking handoff", desc: "Generate the buy link only when you are ready to commit." },
+          ].map((feature, i) => (
             <Link
               key={feature.title}
               href={feature.href}
               className="group surface-card rounded-[28px] p-5 transition-all hover:border-[var(--border-strong)] hover:-translate-y-1"
             >
-              <feature.icon className="w-5 h-5 text-[var(--accent-cta)] mb-5 transition-transform group-hover:scale-110" />
-              <h3 className="text-base font-semibold mb-2 flex items-center gap-1.5">
-                {feature.title}
-                <ArrowRight className="w-4 h-4 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-              </h3>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{feature.desc}</p>
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.08 * i, duration: 0.4 }}
+              >
+                <feature.icon className="w-5 h-5 text-[var(--accent-cta)] mb-5 transition-transform group-hover:scale-110" />
+                <h3 className="text-base font-semibold mb-2 flex items-center gap-1.5">
+                  {feature.title}
+                  <ArrowRight className="w-4 h-4 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                </h3>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{feature.desc}</p>
+              </motion.div>
             </Link>
           ))}
         </div>
       </section>
 
-      {featuredDrops.length > 0 && (
+      {/* Trending price drops */}
+      {featuredDrops.length > 0 ? (
         <section className="container-app relative z-10 py-14 md:py-16 border-t border-[var(--border-muted)]">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-10">
             <div>
               <div className="section-kicker mb-4">
                 <TrendingDown className="w-3.5 h-3.5" />
                 Trending price drops
               </div>
               <h2 className="text-2xl md:text-4xl font-semibold font-[var(--font-display)] leading-tight">
-                Routes with visible downward movement right now.
+                Routes with visible downward movement.
               </h2>
             </div>
             <p className="max-w-lg text-sm text-[var(--text-secondary)] leading-relaxed">
-              Use these drops as entry points into the search experience, then validate with date flexibility, route context, and offer-aware fare comparisons.
+              Use these as entry points — then validate with date flexibility, route context, and bank-offer-aware comparisons.
             </p>
           </div>
 
@@ -753,7 +792,7 @@ export default function HomePage() {
                     ₹{Math.round(drop.current_price).toLocaleString()}
                   </div>
                   <div className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                    Weekly average ₹{Math.round(drop.week_avg).toLocaleString()} → now ₹{Math.round(drop.current_price).toLocaleString()}
+                    Weekly avg ₹{Math.round(drop.week_avg).toLocaleString()} → now ₹{Math.round(drop.current_price).toLocaleString()}
                   </div>
                   <div className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]">
                     Open search
@@ -764,7 +803,7 @@ export default function HomePage() {
             })}
           </div>
         </section>
-      )}
+      ) : null}
 
       <Footer />
     </div>

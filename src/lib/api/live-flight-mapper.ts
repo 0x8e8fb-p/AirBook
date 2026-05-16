@@ -1,9 +1,10 @@
-import {
-  searchFlightsAction,
-  type EnrichedFlight,
-} from "@/app/actions/flightActions";
-import { TravelpayoutsConfigError, TravelpayoutsError } from "@/lib/api/travelpayoutsClient";
-import { AmadeusConfigError, AmadeusError } from "@/lib/api/amadeusClient";
+appimport {
+  flightDataOrchestrator,
+  type FlightProviderName,
+  type FlightSearchParams,
+  type RawFlightOffer,
+} from "@/lib/api/flight-data-provider";
+import { calculateBestEffectivePrice, type FlightPriceDetails } from "@/lib/flight/offerEngine";
 import type { CabinClass, FlightResult, FlightSegment, FlightSource } from "@/lib/types";
 import { AIRLINES } from "@/lib/constants";
 
@@ -28,28 +29,13 @@ function resolveAirlineName(code: string): string {
   return AIRLINES[code]?.name ?? code;
 }
 
-function computeDuration(flight: EnrichedFlight): number | null {
-  if (flight.durationMinutes && flight.durationMinutes > 0) return flight.durationMinutes;
-  const dep = new Date(flight.departureTime).getTime();
-  const arr = new Date(flight.arrivalTime).getTime();
-  if (Number.isNaN(dep) || Number.isNaN(arr)) return null;
-  let diff = Math.round((arr - dep) / 60_000);
-  if (diff < 0) diff += 24 * 60;
-  return diff > 0 ? diff : null;
-}
-
-function resolveSource(raw: string | undefined): FlightSource {
-  const known: FlightSource[] = [
-    "google_flights",
-    "ixigo",
-    "makemytrip",
-    "cleartrip",
-    "master_api",
-    "travelpayouts_calendar",
-    "travelpayouts_realtime",
-    "amadeus",
-  ];
-  return (known as string[]).includes(raw ?? "") ? (raw as FlightSource) : "master_api";
+function resolveSource(raw: FlightProviderName): FlightSource {
+  const sourceMap: Record<FlightProviderName, FlightSource> = {
+    amadeus: "amadeus",
+    travelpayouts: "travelpayouts_calendar",
+    simulated: "master_api",
+  };
+  return sourceMap[raw] ?? "master_api";
 }
 
 function normalizeFetchOptions(
@@ -58,118 +44,64 @@ function normalizeFetchOptions(
   if (Array.isArray(userCardsOrOptions)) {
     return { userCards: userCardsOrOptions };
   }
-
   return userCardsOrOptions ?? {};
 }
 
-function normalizeSearchError(error: unknown): FlightSearchClientError {
-  if (error instanceof TravelpayoutsConfigError || error instanceof AmadeusConfigError) {
-    return new FlightSearchClientError(
-      "Flight search is not configured in this environment. Please add the required API credentials.",
-      error,
-    );
-  }
-
-  if (error instanceof AmadeusError) {
-    if (error.status === 429) {
-      return new FlightSearchClientError(
-        "Amadeus search is temporarily rate-limited. Falling back to other providers.",
-        error,
-      );
-    }
-    return new FlightSearchClientError(
-      error.message || "Amadeus search failed. Falling back to other providers.",
-      error,
-    );
-  }
-
-  if (error instanceof TravelpayoutsError) {
-    if (error.status === 429) {
-      return new FlightSearchClientError(
-        "Search is temporarily rate-limited. Please wait a moment and try again.",
-        error,
-      );
-    }
-
-    if (error.status === 403) {
-      return new FlightSearchClientError(
-        "Flight search credentials were rejected by the provider. Please verify the Travelpayouts configuration.",
-        error,
-      );
-    }
-
-    return new FlightSearchClientError(
-      error.message || "We could not load live fares right now. Please try again.",
-      error,
-    );
-  }
-
-  if (error instanceof Error) {
-    return new FlightSearchClientError(error.message, error);
-  }
-
-  return new FlightSearchClientError("We could not load live fares right now. Please try again.", error);
-}
-
-function mapEnrichedFlightToResult(
-  flight: EnrichedFlight,
-  origin: string,
-  destination: string,
-  date: string,
+function mapOfferToFlightResult(
+  offer: RawFlightOffer,
+  pricing: FlightPriceDetails,
 ): FlightResult {
-  const airlineName = resolveAirlineName(flight.airline);
-  const airlineInfo = AIRLINES[flight.airline];
-  const durationMinutes = computeDuration(flight);
+  const airlineName = resolveAirlineName(offer.airline);
+  const airlineInfo = AIRLINES[offer.airline];
 
   const segment: FlightSegment = {
-    airline: flight.airline,
+    airline: offer.airline,
     airlineName,
     airlineLogo: airlineInfo?.logo,
-    flightNumber: flight.flightNumber,
-    origin,
-    originCity: origin,
-    destination,
-    destinationCity: destination,
-    departureTime: flight.departureTime,
-    arrivalTime: flight.arrivalTime,
-    durationMinutes: durationMinutes ?? 0,
+    flightNumber: offer.flightNumber,
+    origin: offer.origin,
+    originCity: offer.origin,
+    destination: offer.destination,
+    destinationCity: offer.destination,
+    departureTime: offer.departureTime,
+    arrivalTime: offer.arrivalTime,
+    durationMinutes: offer.durationMinutes,
   };
 
   return {
-    id: flight.id,
-    source: resolveSource(flight.source),
+    id: offer.id,
+    source: resolveSource(offer.source),
     segments: [segment],
 
-    price: flight.pricing.effectivePrice,
+    price: pricing.effectivePrice,
     currency: "INR",
-    pricePerAdult: flight.pricing.effectivePrice,
-    basePrice: flight.pricing.baseFare,
-    appliedOffer: flight.pricing.appliedOffer,
+    pricePerAdult: pricing.effectivePrice,
+    basePrice: pricing.baseFare,
+    appliedOffer: pricing.appliedOffer,
 
-    airline: flight.airline,
+    airline: offer.airline,
     airlineName,
     airlineLogo: airlineInfo?.logo,
-    flightNumber: flight.flightNumber,
-    origin,
-    destination,
-    departureTime: flight.departureTime,
-    arrivalTime: flight.arrivalTime,
-    durationMinutes: durationMinutes ?? 0,
-    stops: flight.stops ?? 0,
-    stopCities: [],
-    bookingToken: flight.bookingToken ?? null,
-    searchId: flight.searchId ?? null,
-    gateId: flight.gateId ?? null,
+    flightNumber: offer.flightNumber,
+    origin: offer.origin,
+    destination: offer.destination,
+    departureTime: offer.departureTime,
+    arrivalTime: offer.arrivalTime,
+    durationMinutes: offer.durationMinutes,
+    stops: offer.stops,
+    stopCities: offer.stopCities,
+    bookingToken: null,
+    searchId: null,
+    gateId: null,
 
-    baggage: {
-      cabin: { included: true, weight: 7 },
-      checked: { included: true, weight: 15 },
-    },
-    refundable: false,
-    cabinClass: "economy",
+    baggage: offer.baggage,
+    refundable: offer.refundable,
+    cabinClass: offer.cabinClass,
+
+    seatsRemaining: offer.seatsRemaining,
 
     fetchedAt: new Date().toISOString(),
-    searchHash: `${origin}-${destination}-${date}`,
+    searchHash: `${offer.origin}-${offer.destination}-${new Date().toISOString().slice(0, 10)}`,
   };
 }
 
@@ -180,20 +112,51 @@ export async function fetchFlights(
   userCardsOrOptions?: string[] | FetchFlightsOptions,
 ): Promise<FlightResult[]> {
   const options = normalizeFetchOptions(userCardsOrOptions);
+  const userCards = options.userCards ?? [];
 
   try {
-    const enriched = await searchFlightsAction(origin, destination, date, options.userCards, {
-      pax: options.passengers ?? 1,
+    const searchParams: FlightSearchParams = {
+      origin,
+      destination,
+      date,
+      passengers: options.passengers ?? 1,
       cabin: options.cabin ?? "economy",
-      fresh: options.fresh,
-      throwOnError: true,
-    });
+    };
 
-    return enriched.map((flight) => mapEnrichedFlightToResult(flight, origin, destination, date));
+    const { offers } = await flightDataOrchestrator.searchAll(searchParams);
+
+    if (offers.length === 0) {
+      return [];
+    }
+
+    // Enrich with wallet-aware pricing
+    const enriched = await Promise.all(
+      offers.map(async (offer): Promise<FlightResult> => {
+        const pricing = await calculateBestEffectivePrice(
+          offer.price,
+          userCards,
+          offer.airline,
+        );
+        return mapOfferToFlightResult(offer, pricing);
+      }),
+    );
+
+    // Sort by effective price (cheapest first)
+    enriched.sort((a, b) => a.price - b.price);
+
+    return enriched;
   } catch (err) {
-    console.error("Error mapping flights:", err);
-    throw normalizeSearchError(err);
+    console.error("Error fetching flights:", err);
+    
+    if (err instanceof FlightSearchClientError) {
+      throw err;
+    }
+    
+    throw new FlightSearchClientError(
+      "We could not load live fares right now. Please try again.",
+      err,
+    );
   }
 }
 
-export type { EnrichedFlight };
+export type { RawFlightOffer };

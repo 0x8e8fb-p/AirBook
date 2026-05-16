@@ -31,21 +31,11 @@ import { formatPlatformName, isWalletMatch } from "@/lib/utils";
 import { useCheckoutStore } from "@/stores/checkout-store";
 import { useUserStore } from "@/stores/user-store";
 
-const AVIASALES_AFFILIATE =
-  "https://tp.media/r?marker=728497&trs=529383&p=4114&u=https%3A%2F%2Faviasales.com&campaign_id=100";
-
-const PLATFORM_URLS: Record<string, string> = {
-  travelpayouts_calendar: AVIASALES_AFFILIATE,
-  travelpayouts_realtime: AVIASALES_AFFILIATE,
-};
+const BOOKING_PARTNER_URL = "https://www.cleartrip.com/flights";
 
 function resolveBookingUrl(flight: FlightResult): string {
-  if (flight.deepLink || flight.bookingUrl) return flight.deepLink || flight.bookingUrl || AVIASALES_AFFILIATE;
-  const platform = flight.appliedOffer?.platform?.toLowerCase();
-  if (platform && PLATFORM_URLS[platform]) return PLATFORM_URLS[platform];
-  const source = flight.source?.toLowerCase();
-  if (source && PLATFORM_URLS[source]) return PLATFORM_URLS[source];
-  return AVIASALES_AFFILIATE;
+  if (flight.deepLink || flight.bookingUrl) return flight.deepLink || flight.bookingUrl || BOOKING_PARTNER_URL;
+  return BOOKING_PARTNER_URL;
 }
 
 function CheckoutContent() {
