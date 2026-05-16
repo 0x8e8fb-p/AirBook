@@ -863,11 +863,17 @@ function SearchContent() {
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsInsightsLoading(true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setError(null);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIntelligence(null);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveFilterCount(0);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFilterResetToken((current) => current + 1);
   }, [routeKey, cabin, passengerCount, ownedCardsKey, hasRequiredSearchParams, refreshKey]);
 

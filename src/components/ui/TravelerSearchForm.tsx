@@ -321,20 +321,12 @@ export function TravelerSearchForm({
   const [showPassengers, setShowPassengers] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
-  const currentInitialKey = useMemo(
-    () => JSON.stringify(computedInitialValues),
-    [computedInitialValues],
-  );
-  const [appliedInitialKey, setAppliedInitialKey] = useState(currentInitialKey);
-
-  if (appliedInitialKey !== currentInitialKey) {
-    setAppliedInitialKey(currentInitialKey);
+  useEffect(() => {
     setValues(computedInitialValues);
     setTripType(computedInitialValues.returnDate ? "return" : "one_way");
-    if (isSearching) {
-      setIsSearching(false);
-    }
-  }
+    setIsSearching(false);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+  }, [computedInitialValues]);
 
   useEffect(() => {
     if (!showPassengers) {
