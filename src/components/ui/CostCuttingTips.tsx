@@ -17,20 +17,16 @@ interface TipContext {
 }
 
 const ALL_TIPS: Tip[] = [
-  { text: "Book 21-45 days before departure for the lowest domestic fares", condition: () => true },
-  { text: "Tuesday & Wednesday flights are typically 15-20% cheaper", condition: (ctx) => ctx.dayOfWeek !== 2 && ctx.dayOfWeek !== 3 },
-  { text: "You're searching on a great day — mid-week fares tend to be lowest!", condition: (ctx) => ctx.dayOfWeek === 2 || ctx.dayOfWeek === 3 },
-  { text: "Use incognito mode on OTA sites to avoid dynamic pricing markup" },
-  { text: "Check the airline website directly — sometimes ₹200-500 cheaper than OTAs" },
-  { text: "Stack bank card discounts with cashback portals (CashKaro, GoPaisa) for double savings" },
-  { text: "Set a price alert — we'll notify you when fares drop for this route" },
-  { text: "Early morning flights (5-7 AM) are often the cheapest departure slots" },
-  { text: "Red-eye flights save money — overnight departures can be 30% cheaper" },
-  { text: "Book one-way tickets separately if round-trip pricing seems high" },
-  { text: "Avoid booking during festivals and long weekends — fares spike 40-60%" },
-  { text: "Compare prices across payment methods — some cards give extra instant discounts" },
-  { text: "Nearby airports trick: try alternate airports for potentially cheaper fares" },
-  { text: "Flexible date? Use ±3 day search to find the cheapest travel window" },
+  { text: "Domestic routes often price best when booked 3–6 weeks ahead of departure." },
+  { text: "Mid-week departures are frequently cheaper than peak Friday and Sunday demand.", condition: (ctx) => ctx.dayOfWeek !== 2 && ctx.dayOfWeek !== 3 },
+  { text: "You are already searching mid-week — that usually helps surface the calmest fare windows.", condition: (ctx) => ctx.dayOfWeek === 2 || ctx.dayOfWeek === 3 },
+  { text: "If live booking is unavailable today, save an alert and return when the route reconnects." },
+  { text: "When two fares are close, compare baggage and refund rules before you choose the cheaper headline price." },
+  { text: "Early departures and late-night flights can open lower fare bands when your timing is flexible." },
+  { text: "One-way pricing can beat a round trip on busy routes, especially around holiday peaks." },
+  { text: "Wallet and card-based savings can materially change the final payable amount on the booking page." },
+  { text: "Nearby dates often matter more than nearby airports for the biggest savings on short-haul routes." },
+  { text: "Long weekends and festival windows reprice quickly — confirm early if your travel dates are fixed." },
 ];
 
 export function CostCuttingTips({
@@ -66,26 +62,32 @@ export function CostCuttingTips({
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: 0.2 }}
-      className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-lg)] p-4 mb-4"
+      className="surface-card rounded-[28px] p-5"
     >
       {/* Header with offer count */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-[var(--accent-cta)]" />
-          <h3 className="text-sm font-semibold">Save More on This Route</h3>
+          <div>
+            <h3 className="text-sm font-semibold">Fare strategy for this route</h3>
+            <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+              Practical guidance for {origin} → {destination}
+              {avgPrice > 0 ? ` · average visible fare ${avgPrice.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 })}` : ""}
+            </p>
+          </div>
         </div>
         {offerCount > 0 && (
-          <span className="text-[10px] font-bold uppercase tracking-wider bg-[var(--accent-green)]/10 text-[var(--accent-green)] px-2 py-0.5 rounded-full">
-            {offerCount} offers • Save up to ₹{maxSaving.toLocaleString('en-IN')}
+          <span className="rounded-full bg-[var(--accent-green)]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--accent-green)]">
+            {offerCount} saving path{offerCount > 1 ? "s" : ""} · up to ₹{maxSaving.toLocaleString('en-IN')}
           </span>
         )}
       </div>
 
       {/* Tips */}
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         {filteredTips.map((tip, i) => (
-          <div key={i} className="flex items-start gap-2.5">
-            <Lightbulb className="w-3.5 h-3.5 text-[var(--text-muted)] mt-0.5 flex-shrink-0" />
+          <div key={i} className="flex items-start gap-2.5 rounded-[18px] border border-[var(--border-muted)] bg-[var(--bg-subtle)] px-3.5 py-3">
+            <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--text-muted)]" />
             <span className="text-xs text-[var(--text-secondary)] leading-relaxed">{tip.text}</span>
           </div>
         ))}

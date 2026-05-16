@@ -3,6 +3,7 @@
 import { getServerSession } from "next-auth/next";
 import { travelpayoutsApi, TravelpayoutsConfigError, TravelpayoutsError } from "@/lib/api/travelpayoutsClient";
 import { amadeusApi, AmadeusConfigError, AmadeusError } from "@/lib/api/amadeusClient";
+import { fetchFlights, type FetchFlightsOptions, type FetchFlightsResponse } from "@/lib/api/live-flight-mapper";
 import type { Fare } from "@/lib/api/travelpayoutsTypes";
 import { calculateBestEffectivePrice, type FlightPriceDetails } from "@/lib/flight/offerEngine";
 import { prisma } from "@/lib/prisma";
@@ -196,6 +197,15 @@ export async function getAndTrackFlights(
   userCards?: string[],
 ): Promise<EnrichedFlight[]> {
   return searchFlightsAction(origin, destination, dateString, userCards);
+}
+
+export async function searchMappedFlightsAction(
+  origin: string,
+  destination: string,
+  dateString: string,
+  options: FetchFlightsOptions = {},
+): Promise<FetchFlightsResponse> {
+  return fetchFlights(origin, destination, dateString, options);
 }
 
 export async function logSearchAction(

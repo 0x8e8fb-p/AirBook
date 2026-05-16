@@ -72,16 +72,19 @@ export function FareDipAlert({ origin, destination, date }: Props) {
   const Icon = style.Icon;
 
   return (
-    <div className={`mb-4 p-3 rounded-[var(--radius-lg)] border ${style.border} ${style.bg} flex items-start gap-3`}>
-      <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${style.text}`} />
-      <div className="flex-1 min-w-0">
-        <div className={`font-semibold text-sm ${style.text}`}>{style.label}</div>
-        <div className="text-xs text-[var(--text-secondary)] mt-0.5">{trend.message}</div>
-        {trend.currentLow !== null && trend.avg30d !== null && (
-          <div className="text-[11px] text-[var(--text-muted)] mt-1 font-mono-price">
-            Now {formatPrice(trend.currentLow)} · 30-day avg {formatPrice(trend.avg30d)} · {trend.sampleCount} samples · {trend.confidence} confidence
-          </div>
-        )}
+    <div className={`surface-card rounded-[28px] border ${style.border} p-5`}>
+      <div className="flex items-start gap-3">
+        <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${style.text}`} />
+        <div className="flex-1 min-w-0">
+          <div className={`font-semibold text-sm ${style.text}`}>{style.label}</div>
+          <div className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">{trend.message}</div>
+          <div className="mt-2 text-[11px] text-[var(--text-muted)]">Route: {origin} → {destination}</div>
+          {trend.currentLow !== null && trend.avg30d !== null && (
+            <div className="text-[11px] text-[var(--text-muted)] mt-2 font-mono-price">
+              Now {formatPrice(trend.currentLow)} · 30-day avg {formatPrice(trend.avg30d)} · {trend.sampleCount} samples · {trend.confidence} confidence
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

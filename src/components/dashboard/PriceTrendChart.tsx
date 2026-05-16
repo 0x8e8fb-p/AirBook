@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
-import { TrendingDown, TrendingUp, Minus, Bell, CheckCircle2, Loader2 } from "lucide-react";
+import { Bell, CheckCircle2, Loader2, Minus, TrendingDown, TrendingUp } from "lucide-react";
 import { formatPrice } from "@/lib/constants";
 import { createAlert } from "@/app/actions/alertActions";
 import { useSession } from "next-auth/react";
@@ -35,6 +35,7 @@ export function PriceTrendChart({ origin, destination, date }: { origin: string,
   const [loading, setLoading] = useState(true);
   const [creatingAlert, setCreatingAlert] = useState(false);
   const [alertSuccess, setAlertSuccess] = useState(false);
+  const [feedback, setFeedback] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -75,19 +76,21 @@ export function PriceTrendChart({ origin, destination, date }: { origin: string,
 
   const handleCreateAlert = async () => {
     if (!session?.user) {
-      alert("Please sign in to create price alerts.");
+      setFeedback({ kind: "error", message: "Sign in to save an automatic drop alert from this chart." });
       return;
     }
     setCreatingAlert(true);
+    setFeedback(null);
     // Target price is 5% lower than current lowest
     const targetPrice = Math.floor(lastPrice * 0.95);
     const res = await createAlert(origin, destination, targetPrice);
     setCreatingAlert(false);
     if (res) {
       setAlertSuccess(true);
+      setFeedback({ kind: "success", message: `Drop alert saved for ${formatPrice(targetPrice)} on ${origin} → ${destination}.` });
       setTimeout(() => setAlertSuccess(false), 3000);
     } else {
-      alert("Failed to create alert.");
+      setFeedback({ kind: "error", message: "We could not save the chart alert right now. Please try again." });
     }
   };
 
@@ -96,17 +99,17 @@ export function PriceTrendChart({ origin, destination, date }: { origin: string,
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-      className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-lg)] p-5 mb-6 shadow-sm"
+      className="surface-card rounded-[28px] p-5"
     >
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-semibold flex items-center gap-2">
-            Price Trend
+            Price history
             {isDrop && <span className="flex items-center text-[10px] bg-[var(--accent-green)]/10 text-[var(--accent-green)] px-1.5 py-0.5 rounded font-medium"><TrendingDown className="w-3 h-3 mr-1" /> Dropping</span>}
             {isRise && <span className="flex items-center text-[10px] bg-[var(--accent-red)]/10 text-[var(--accent-red)] px-1.5 py-0.5 rounded font-medium"><TrendingUp className="w-3 h-3 mr-1" /> Rising</span>}
             {!isDrop && !isRise && <span className="flex items-center text-[10px] bg-[var(--border-strong)] text-[var(--text-secondary)] px-1.5 py-0.5 rounded font-medium"><Minus className="w-3 h-3 mr-1" /> Stable</span>}
           </h3>
-          <p className="text-[11px] text-[var(--text-muted)] mt-0.5">Historical lowest prices for this route and date.</p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-0.5">Historical visible lows for this route and departure date.</p>
         </div>
         <div className="text-right flex flex-col items-end">
           <div className="text-xs text-[var(--text-muted)]">Current Lowest</div>
@@ -128,6 +131,18 @@ export function PriceTrendChart({ origin, destination, date }: { origin: string,
           )}
         </div>
       </div>
+
+      {feedback ? (
+        <div
+          className={`mb-4 rounded-[18px] px-4 py-3 text-xs leading-relaxed ${
+            feedback.kind === "success"
+              ? "border border-[var(--accent-green)]/20 bg-[var(--accent-green)]/10 text-[var(--accent-green)]"
+              : "border border-[var(--accent-red)]/20 bg-[var(--accent-red)]/10 text-[var(--accent-red)]"
+          }`}
+        >
+          {feedback.message}
+        </div>
+      ) : null}
       
       <div className="h-[120px] w-full">
         <ResponsiveContainer width="100%" height="100%">

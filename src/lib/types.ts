@@ -18,6 +18,10 @@ export type FlightSource =
   | 'travelpayouts_calendar'
   | 'travelpayouts_realtime';
 
+export type FlightAvailabilityState = 'bookable_live' | 'reference_only' | 'unavailable';
+export type FlightDataFreshness = 'live' | 'cached' | 'unknown';
+export type FlightConfidence = 'high' | 'medium' | 'low';
+
 /** Cabin class options */
 export type CabinClass = 'economy' | 'premium_economy' | 'business' | 'first';
 
@@ -115,6 +119,11 @@ export interface FlightResult {
   bookingToken?: string | null;
   searchId?: string | null;
   gateId?: string | number | null;
+  availabilityState?: FlightAvailabilityState;
+  dataFreshness?: FlightDataFreshness;
+  confidence?: FlightConfidence;
+  baggageConfirmed?: boolean;
+  refundabilityConfirmed?: boolean;
   
   // Additional info
   baggage: BaggageInfo;

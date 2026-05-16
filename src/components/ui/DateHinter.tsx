@@ -31,7 +31,17 @@ export function DateHinter({ origin, destination, selectedDate, onPickDate }: Pr
     };
   }, [origin, destination, selectedDate]);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="surface-card rounded-[28px] p-5">
+        <div className="animate-pulse space-y-3">
+          <div className="h-3 w-36 rounded-full bg-[var(--bg-subtle)]" />
+          <div className="h-8 w-full rounded-[18px] bg-[var(--bg-subtle)]" />
+          <div className="h-8 w-[82%] rounded-[18px] bg-[var(--bg-subtle)]" />
+        </div>
+      </div>
+    );
+  }
 
   const cheaper = nearby.filter((d) => d.deltaFromSelected < 0);
   if (cheaper.length === 0) return null;
@@ -40,13 +50,16 @@ export function DateHinter({ origin, destination, selectedDate, onPickDate }: Pr
   const bestPct = selectedPrice ? Math.round((bestSave / selectedPrice) * 100) : 0;
 
   return (
-    <div className="mb-4 p-4 bg-[var(--accent-green)]/5 border border-[var(--accent-green)]/30 rounded-[var(--radius-lg)]">
-      <div className="flex items-center gap-2 mb-3">
+    <div className="surface-card rounded-[28px] p-5">
+      <div className="mb-3 flex items-center gap-2">
         <TrendingDown className="w-4 h-4 text-[var(--accent-green)]" />
-        <span className="font-semibold text-sm text-[var(--accent-green)]">
+        <span className="text-sm font-semibold text-[var(--text-primary)]">
           Fly ±3 days for up to {formatPrice(bestSave)} off{bestPct > 0 ? ` (${bestPct}%)` : ""}
         </span>
       </div>
+      <p className="mb-4 text-xs leading-relaxed text-[var(--text-secondary)]">
+        Nearby dates can materially change this route. Pick a cheaper departure to refresh the results without starting over.
+      </p>
       <div className="flex flex-wrap gap-2">
         {cheaper.map((d) => {
           const label = new Date(d.date + "T00:00:00").toLocaleDateString("en-IN", {
@@ -58,7 +71,7 @@ export function DateHinter({ origin, destination, selectedDate, onPickDate }: Pr
             <button
               key={d.date}
               onClick={() => onPickDate?.(d.date)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-base)] border border-[var(--border-default)] hover:border-[var(--accent-green)] rounded-[var(--radius-md)] text-xs font-medium transition-colors"
+              className="flex items-center gap-2 rounded-[16px] border border-[var(--border-default)] bg-[var(--bg-base)] px-3 py-2 text-xs font-medium transition-colors hover:border-[var(--accent-green)]"
             >
               <Calendar className="w-3 h-3 text-[var(--text-muted)]" />
               <span>{label}</span>

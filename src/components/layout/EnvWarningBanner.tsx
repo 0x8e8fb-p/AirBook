@@ -6,16 +6,21 @@ export function EnvWarningBanner() {
 
   if (!missingGoogle && !isDefaultDb) return null;
 
+  const impactedFeatures = [
+    missingGoogle ? "sign-in" : null,
+    isDefaultDb ? "saved data" : null,
+  ].filter(Boolean);
+
+  const impactedLabel = impactedFeatures.length > 0 ? impactedFeatures.join(" and ") : "some account features";
+
   return (
     <div className="bg-[var(--accent-red)] text-white px-4 py-3 text-sm z-[100] relative shadow-md">
       <div className="container-app flex items-start gap-3">
         <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
         <div>
-          <strong className="font-bold block mb-1">Configuration Required!</strong>
+          <strong className="font-bold block mb-1">Limited setup</strong>
           <p className="opacity-90">
-            {missingGoogle && "Your Google Client ID and Secret are missing in .env.local. "}
-            {isDefaultDb && "Your Supabase DATABASE_URL is using placeholder text. "}
-            Authentication and Database features will <b>crash</b> until you paste your actual API keys into the <code>.env.local</code> file and restart the server.
+            This environment is still missing a few setup steps, so {impactedLabel} may be unavailable until configuration is completed.
           </p>
         </div>
       </div>

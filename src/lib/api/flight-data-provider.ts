@@ -1,25 +1,25 @@
-// ─── Flight Data Provider Orchestrator ───────────────────────────────
-// Multi-provider flight search with automatic fallback chain:
-//   1. Amadeus Self-Service (live API, free test env)
-//   2. Travelpayouts Calendar (cached fare data)
-//   3. Simulated data (realistic fallback using real route schedules)
-//
-// Each provider implements the FlightProvider interface.
-// Results are deduplicated, enriched with wallet-aware pricing,
-// and returned as a unified FlightResult list.
-// ────────────────────────────────────────────────────────────────────
-
-import type { CabinClass } from "@/lib/types";
+import type {
+  CabinClass,
+  FlightAvailabilityState,
+  FlightConfidence,
+  FlightDataFreshness,
+  FlightSource,
+} from "@/lib/types";
 import { amadeusProvider } from "./amadeus-provider";
 import { simulatedProvider } from "./simulated-provider";
-import { travelpayoutsApi, TravelpayoutsConfigError, TravelpayoutsError } from "./travelpayoutsClient";
+import { travelpayoutsApi } from "./travelpayoutsClient";
 import type { Fare } from "./travelpayoutsTypes";
+
+const ENABLE_SIMULATED_PROVIDER =
+  process.env.NODE_ENV !== "production" &&
+  process.env.AIRBOOK_ENABLE_SIMULATED_FLIGHTS === "true";
 
 export type FlightProviderName = "amadeus" | "travelpayouts" | "simulated";
 
 export interface RawFlightOffer {
   id: string;
-  source: FlightProviderName;
+  provider: FlightProviderName;
+  source: FlightSource;
   airline: string;
   flightNumber: string;
   origin: string;
@@ -33,11 +33,21 @@ export interface RawFlightOffer {
   currency: string;
   cabinClass: CabinClass;
   baggage: {
-    cabin: { included: boolean; weight: number };
-    checked: { included: boolean; weight: number };
+    cabin: { included: boolean; weight?: number };
+    checked: { included: boolean; weight?: number };
   };
   refundable: boolean;
   seatsRemaining?: number;
+  bookingUrl?: string | null;
+  deepLink?: string | null;
+  bookingToken?: string | null;
+  searchId?: string | null;
+  gateId?: string | number | null;
+  availabilityState: FlightAvailabilityState;
+  dataFreshness: FlightDataFreshness;
+  confidence: FlightConfidence;
+  baggageConfirmed?: boolean;
+  refundabilityConfirmed?: boolean;
 }
 
 export interface FlightProvider {
@@ -53,6 +63,7 @@ export interface FlightSearchParams {
   returnDate?: string;
   passengers?: number;
   cabin?: CabinClass;
+  fresh?: boolean;
 }
 
 export interface SearchResult {
@@ -62,15 +73,86 @@ export interface SearchResult {
   error?: string;
 }
 
+export interface FlightProviderSearchResponse {
+  offers: RawFlightOffer[];
+  sources: FlightProviderName[];
+  availabilityState: FlightAvailabilityState;
+  calendarData?: { date: string; cheapest: number | null }[];
+  errors?: Partial<Record<FlightProviderName, string>>;
+}
+
+function hasRealBookingHandoff(
+  offer: Pick<RawFlightOffer, "bookingUrl" | "deepLink" | "searchId" | "bookingToken">,
+): boolean {
+  return Boolean(offer.bookingUrl || offer.deepLink || (offer.searchId && offer.bookingToken));
+}
+
+function availabilityRank(state: FlightAvailabilityState): number {
+  switch (state) {
+    case "bookable_live":
+      return 3;
+    case "reference_only":
+      return 2;
+    default:
+      return 1;
+  }
+}
+
+function freshnessRank(freshness: FlightDataFreshness): number {
+  switch (freshness) {
+    case "live":
+      return 3;
+    case "cached":
+      return 2;
+    default:
+      return 1;
+  }
+}
+
+function confidenceRank(confidence: FlightConfidence): number {
+  switch (confidence) {
+    case "high":
+      return 3;
+    case "medium":
+      return 2;
+    default:
+      return 1;
+  }
+}
+
+function shouldPreferOffer(candidate: RawFlightOffer, existing: RawFlightOffer): boolean {
+  const availabilityDiff = availabilityRank(candidate.availabilityState) - availabilityRank(existing.availabilityState);
+  if (availabilityDiff !== 0) {
+    return availabilityDiff > 0;
+  }
+
+  const handoffDiff = Number(hasRealBookingHandoff(candidate)) - Number(hasRealBookingHandoff(existing));
+  if (handoffDiff !== 0) {
+    return handoffDiff > 0;
+  }
+
+  const freshnessDiff = freshnessRank(candidate.dataFreshness) - freshnessRank(existing.dataFreshness);
+  if (freshnessDiff !== 0) {
+    return freshnessDiff > 0;
+  }
+
+  const confidenceDiff = confidenceRank(candidate.confidence) - confidenceRank(existing.confidence);
+  if (confidenceDiff !== 0) {
+    return confidenceDiff > 0;
+  }
+
+  return candidate.price < existing.price;
+}
+
 function deduplicateOffers(offers: RawFlightOffer[]): RawFlightOffer[] {
   const seen = new Map<string, RawFlightOffer>();
 
   for (const offer of offers) {
-    // Build a dedup key from airline + flight number + departure time bucket (hour)
     const hourBucket = offer.departureTime.slice(0, 13);
     const key = `${offer.airline}-${offer.flightNumber}-${hourBucket}`;
     const existing = seen.get(key);
-    if (!existing || offer.price < existing.price) {
+
+    if (!existing || shouldPreferOffer(offer, existing)) {
       seen.set(key, offer);
     }
   }
@@ -78,18 +160,21 @@ function deduplicateOffers(offers: RawFlightOffer[]): RawFlightOffer[] {
   return Array.from(seen.values());
 }
 
-// ── Travelpayouts Adapter ──────────────────────────────────────────
-
 function travelpayoutsFareToOffer(fare: Fare, params: FlightSearchParams): RawFlightOffer {
   const departureTime = fare.departureTime || `${params.date}T00:00:00`;
-  const arrivalTime = fare.arrivalTime || `${params.date}T00:00:00`;
+  const arrivalTime = fare.arrivalTime || departureTime;
   const durationMinutes = fare.durationMinutes ?? 0;
+  const source: FlightSource =
+    fare.sourceApi === "travelpayouts_realtime" ? "travelpayouts_realtime" : "travelpayouts_calendar";
+  const hasBookingHandoff = Boolean(fare.searchId && fare.bookingToken);
+  const isRealtime = source === "travelpayouts_realtime";
 
   return {
     id: `${fare.sourceApi}-${fare.airline}-${fare.flightNumber || "NN"}-${departureTime}`,
-    source: "travelpayouts" as FlightProviderName,
+    provider: "travelpayouts",
+    source,
     airline: fare.airline,
-    flightNumber: fare.flightNumber || `${fare.airline}000`,
+    flightNumber: fare.flightNumber ?? "",
     origin: params.origin,
     destination: params.destination,
     departureTime,
@@ -101,36 +186,59 @@ function travelpayoutsFareToOffer(fare: Fare, params: FlightSearchParams): RawFl
     currency: fare.currency,
     cabinClass: (params.cabin || "economy") as CabinClass,
     baggage: {
-      cabin: { included: true, weight: 7 },
-      checked: { included: true, weight: 15 },
+      cabin: { included: false },
+      checked: { included: false },
     },
     refundable: false,
+    bookingUrl: null,
+    deepLink: null,
+    bookingToken: fare.bookingToken ?? null,
+    searchId: fare.searchId ?? null,
+    gateId: fare.gateId ?? null,
+    availabilityState: isRealtime && hasBookingHandoff ? "bookable_live" : "reference_only",
+    dataFreshness: isRealtime ? "live" : "cached",
+    confidence: isRealtime ? (hasBookingHandoff ? "high" : "medium") : "low",
+    baggageConfirmed: false,
+    refundabilityConfirmed: false,
   };
 }
 
-// ── Main Orchestrator ──────────────────────────────────────────────
+function sortOffersForDisplay(offers: RawFlightOffer[]): RawFlightOffer[] {
+  return [...offers].sort((a, b) => {
+    const availabilityDiff = availabilityRank(b.availabilityState) - availabilityRank(a.availabilityState);
+    if (availabilityDiff !== 0) {
+      return availabilityDiff;
+    }
+
+    const freshnessDiff = freshnessRank(b.dataFreshness) - freshnessRank(a.dataFreshness);
+    if (freshnessDiff !== 0) {
+      return freshnessDiff;
+    }
+
+    const priceDiff = a.price - b.price;
+    if (priceDiff !== 0) {
+      return priceDiff;
+    }
+
+    return new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime();
+  });
+}
 
 class FlightDataProviderOrchestrator {
   private providers: FlightProvider[] = [];
 
   constructor() {
-    this.providers = [amadeusProvider, simulatedProvider];
+    this.providers = [amadeusProvider];
+
+    if (ENABLE_SIMULATED_PROVIDER) {
+      this.providers.push(simulatedProvider);
+    }
   }
 
-  /**
-   * Search across all available providers.
-   * Providers are queried in parallel; results are merged and deduplicated.
-   * Travelpayouts is used as a supplementary calendar source for historical fare context.
-   */
-  async searchAll(params: FlightSearchParams): Promise<{
-    offers: RawFlightOffer[];
-    sources: FlightProviderName[];
-    calendarData?: { date: string; cheapest: number | null }[];
-  }> {
+  async searchAll(params: FlightSearchParams): Promise<FlightProviderSearchResponse> {
     const availableProviders = this.providers.filter((p) => p.isAvailable());
 
-    // Query all available providers in parallel
-    const providerResults = await Promise.allSettled(
+    const providerResults = await Promise.all(
       availableProviders.map(async (provider): Promise<SearchResult> => {
         try {
           const offers = await provider.search(params);
@@ -146,38 +254,40 @@ class FlightDataProviderOrchestrator {
       }),
     );
 
-    // Collect successful results
     const allOffers: RawFlightOffer[] = [];
-    const sources: FlightProviderName[] = [];
+    const sourceSet = new Set<FlightProviderName>();
+    const errors: Partial<Record<FlightProviderName, string>> = {};
 
     for (const result of providerResults) {
-      if (result.status === "fulfilled" && result.value.offers.length > 0) {
-        allOffers.push(...result.value.offers);
-        sources.push(result.value.provider);
+      if (result.offers.length > 0) {
+        allOffers.push(...result.offers);
+        sourceSet.add(result.provider);
+      }
+
+      if (result.error) {
+        errors[result.provider] = result.error;
       }
     }
 
-    // If we got no results from any provider, try Travelpayouts calendar as last resort
-    if (allOffers.length === 0) {
-      try {
-        const { fares } = await travelpayoutsApi.searchFares({
-          from: params.origin,
-          to: params.destination,
-          date: params.date,
-          pax: params.passengers || 1,
-          cabin: params.cabin || "economy",
-          fresh: true,
-        });
+    try {
+      const { fares } = await travelpayoutsApi.searchFares({
+        from: params.origin,
+        to: params.destination,
+        date: params.date,
+        pax: params.passengers || 1,
+        cabin: params.cabin || "economy",
+        fresh: params.fresh,
+      });
 
-        const tpOffers = fares.map((fare) => travelpayoutsFareToOffer(fare, params));
+      const tpOffers = fares.map((fare) => travelpayoutsFareToOffer(fare, params));
+      if (tpOffers.length > 0) {
         allOffers.push(...tpOffers);
-        sources.push("travelpayouts");
-      } catch {
-        // Silent fail — simulated provider should have given us data
+        sourceSet.add("travelpayouts");
       }
+    } catch (err) {
+      errors.travelpayouts = err instanceof Error ? err.message : "Could not load route context";
     }
 
-    // Also fetch calendar data for nearby date hints
     let calendarData: { date: string; cheapest: number | null }[] = [];
     try {
       const month = params.date.slice(0, 7);
@@ -191,33 +301,37 @@ class FlightDataProviderOrchestrator {
         cheapest: d.cheapest,
       }));
     } catch {
-      // Calendar data is optional
+      // Nearby-date context is optional.
     }
 
-    const deduplicated = deduplicateOffers(allOffers);
-
-    // Sort by price ascending
-    deduplicated.sort((a, b) => a.price - b.price);
+    const offers = sortOffersForDisplay(deduplicateOffers(allOffers));
+    const availabilityState: FlightAvailabilityState = offers.some(
+      (offer) => offer.availabilityState === "bookable_live",
+    )
+      ? "bookable_live"
+      : offers.length > 0
+        ? "reference_only"
+        : "unavailable";
 
     return {
-      offers: deduplicated,
-      sources,
+      offers,
+      sources: Array.from(sourceSet),
+      availabilityState,
       calendarData: calendarData.length > 0 ? calendarData : undefined,
+      errors: Object.keys(errors).length > 0 ? errors : undefined,
     };
   }
 
-  /**
-   * Check if any live provider is available.
-   */
   hasLiveProvider(): boolean {
-    return this.providers.some((p) => p.name !== "simulated" && p.isAvailable());
+    return Boolean(process.env.TRAVELPAYOUTS_TOKEN) || this.providers.some((p) => p.name !== "simulated" && p.isAvailable());
   }
 
-  /**
-   * Get list of available provider names.
-   */
   getAvailableProviders(): FlightProviderName[] {
-    return this.providers.filter((p) => p.isAvailable()).map((p) => p.name);
+    const available = this.providers.filter((p) => p.isAvailable()).map((p) => p.name);
+    if (process.env.TRAVELPAYOUTS_TOKEN) {
+      available.push("travelpayouts");
+    }
+    return Array.from(new Set(available));
   }
 }
 

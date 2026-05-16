@@ -32,31 +32,31 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "TheWingsScan — Find Flights. Break the Price.",
-    template: "%s | TheWingsScan",
+    default: "AirBook — Search Flights With Confidence",
+    template: "%s | AirBook",
   },
   description:
-    "Discover the cheapest flights with real-time fare tracking, price alerts, and deal analysis. The smartest way to book flights.",
+    "Search flights with live fare confidence, route alerts, and a premium booking flow that only continues when a fare is truly ready.",
   keywords: [
-    "cheap flights",
-    "flight deals",
-    "fare tracker",
-    "flight comparison",
-    "thewingsscan",
-    "price alerts",
+    "airbook",
+    "flight search",
+    "live fares",
+    "fare alerts",
+    "flight tracker",
+    "checkout-ready flights",
   ],
-  authors: [{ name: "TheWingsScan" }],
+  authors: [{ name: "AirBook" }],
   openGraph: {
-    title: "TheWingsScan — Find Flights. Break the Price.",
-    description: "Real-time flight deals, fare tracking, and price alerts.",
+    title: "AirBook — Search Flights With Confidence",
+    description: "Premium flight search, live fare trust, and calmer booking decisions.",
     type: "website",
     locale: "en_IN",
-    siteName: "TheWingsScan",
+    siteName: "AirBook",
   },
   twitter: {
     card: "summary_large_image",
-    title: "TheWingsScan — Find Flights. Break the Price.",
-    description: "Real-time flight deals and fare tracking.",
+    title: "AirBook — Search Flights With Confidence",
+    description: "Premium flight search, live fare trust, and calmer booking decisions.",
   },
   robots: { index: true, follow: true },
 };
@@ -114,7 +114,7 @@ export default async function RootLayout({
             <div id="app-shell" className="min-h-full flex flex-col relative z-10">
               <EnvWarningBanner />
               <Navbar />
-              <main className="flex-1 relative pt-14">
+              <main className="relative flex-1 pt-16">
                 {children}
               </main>
             </div>

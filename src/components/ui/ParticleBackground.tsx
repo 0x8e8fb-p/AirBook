@@ -20,67 +20,93 @@ export function ParticleBackground() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    const ctx = context;
 
-    let animationId: number;
+    let animationId = 0;
     let particles: Particle[] = [];
-    const PARTICLE_COUNT = 80;
-    const CONNECT_DISTANCE = 140;
-    const MOUSE_RADIUS = 180;
 
     let mouseX = -1000;
     let mouseY = -1000;
     let width = 0;
     let height = 0;
+    let reducedMotion = false;
+    let coarsePointer = false;
+
+    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
+
+    function resolveSettings() {
+      const viewportArea = width * height;
+      const mobile = coarsePointer || width < 768;
+
+      return {
+        particleCount: reducedMotion ? Math.max(16, Math.round(viewportArea / 135000)) : mobile ? Math.max(22, Math.round(viewportArea / 72000)) : Math.max(42, Math.round(viewportArea / 42000)),
+        connectDistance: mobile ? 96 : 148,
+        mouseRadius: reducedMotion || mobile ? 0 : 170,
+        speedScale: reducedMotion ? 0 : mobile ? 0.2 : 0.34,
+      };
+    }
 
     function resize() {
       if (!canvas) return;
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       width = window.innerWidth;
       height = window.innerHeight;
-      canvas.width = width;
-      canvas.height = height;
+
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       initParticles();
     }
 
     function initParticles() {
-      particles = Array.from({ length: PARTICLE_COUNT }, () => ({
+      const settings = resolveSettings();
+
+      particles = Array.from({ length: settings.particleCount }, () => ({
         x: Math.random() * width,
         y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.35,
-        vy: (Math.random() - 0.5) * 0.35,
-        size: Math.random() * 1.8 + 0.6,
-        opacity: Math.random() * 0.5 + 0.15,
-        pulseSpeed: Math.random() * 0.015 + 0.006,
+        vx: (Math.random() - 0.5) * settings.speedScale,
+        vy: (Math.random() - 0.5) * settings.speedScale,
+        size: Math.random() * 1.6 + (coarsePointer ? 0.8 : 0.55),
+        opacity: Math.random() * 0.4 + 0.12,
+        pulseSpeed: Math.random() * 0.012 + 0.004,
         pulseOffset: Math.random() * Math.PI * 2,
       }));
     }
 
     function draw(time: number) {
       if (!ctx || !canvas) return;
+
+      const settings = resolveSettings();
       ctx.clearRect(0, 0, width, height);
 
-      // Update and draw particles
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
 
-        // Wrap around edges
+        if (!reducedMotion) {
+          p.x += p.vx;
+          p.y += p.vy;
+        }
+
         if (p.x < -10) p.x = width + 10;
         if (p.x > width + 10) p.x = -10;
         if (p.y < -10) p.y = height + 10;
         if (p.y > height + 10) p.y = -10;
 
-        // Mouse interaction
         const dx = p.x - mouseX;
         const dy = p.y - mouseY;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < MOUSE_RADIUS) {
-          const force = (MOUSE_RADIUS - dist) / MOUSE_RADIUS;
+        if (!reducedMotion && settings.mouseRadius > 0 && dist > 0.001 && dist < settings.mouseRadius) {
+          const force = (settings.mouseRadius - dist) / settings.mouseRadius;
           p.vx += (dx / dist) * force * 0.04;
           p.vy += (dy / dist) * force * 0.04;
-          // Clamp velocity
+
           const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
           if (speed > 0.8) {
             p.vx = (p.vx / speed) * 0.8;
@@ -88,25 +114,22 @@ export function ParticleBackground() {
           }
         }
 
-        // Pulsing opacity
-        const pulse = Math.sin(time * p.pulseSpeed + p.pulseOffset) * 0.2 + 0.8;
+        const pulse = reducedMotion ? 0.82 : Math.sin(time * p.pulseSpeed + p.pulseOffset) * 0.2 + 0.8;
         const alpha = p.opacity * pulse;
 
-        // Draw particle
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(228, 228, 231, ${alpha})`;
         ctx.fill();
 
-        // Draw connections
         for (let j = i + 1; j < particles.length; j++) {
           const p2 = particles[j];
           const connDx = p.x - p2.x;
           const connDy = p.y - p2.y;
           const connDist = Math.sqrt(connDx * connDx + connDy * connDy);
 
-          if (connDist < CONNECT_DISTANCE) {
-            const lineAlpha = (1 - connDist / CONNECT_DISTANCE) * 0.07 * pulse;
+          if (connDist < settings.connectDistance) {
+            const lineAlpha = (1 - connDist / settings.connectDistance) * (reducedMotion ? 0.04 : 0.07) * pulse;
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p2.x, p2.y);
@@ -117,7 +140,9 @@ export function ParticleBackground() {
         }
       }
 
-      animationId = requestAnimationFrame(draw);
+      if (!reducedMotion) {
+        animationId = requestAnimationFrame(draw);
+      }
     }
 
     function handleMouseMove(e: MouseEvent) {
@@ -130,18 +155,34 @@ export function ParticleBackground() {
       mouseY = -1000;
     }
 
+    function handleMediaChange() {
+      reducedMotion = reducedMotionQuery.matches;
+      coarsePointer = coarsePointerQuery.matches;
+      resize();
+      cancelAnimationFrame(animationId);
+      draw(performance.now());
+    }
+
+    reducedMotion = reducedMotionQuery.matches;
+    coarsePointer = coarsePointerQuery.matches;
     resize();
-    animationId = requestAnimationFrame(draw);
+    draw(performance.now());
 
     window.addEventListener("resize", resize);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseleave", handleMouseLeave);
+    if (!coarsePointer && !reducedMotion) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseleave", handleMouseLeave);
+    }
+    reducedMotionQuery.addEventListener("change", handleMediaChange);
+    coarsePointerQuery.addEventListener("change", handleMediaChange);
 
     return () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener("resize", resize);
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseleave", handleMouseLeave);
+      reducedMotionQuery.removeEventListener("change", handleMediaChange);
+      coarsePointerQuery.removeEventListener("change", handleMediaChange);
     };
   }, []);
 
@@ -150,7 +191,7 @@ export function ParticleBackground() {
       ref={canvasRef}
       aria-hidden="true"
       className="pointer-events-none fixed inset-0 z-[1]"
-      style={{ opacity: 0.85 }}
+      style={{ opacity: 0.68 }}
     />
   );
 }

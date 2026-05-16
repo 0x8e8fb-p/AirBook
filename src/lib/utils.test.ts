@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isWalletMatch, sortFlights } from "./utils";
+import { isBookableFlight, isReferenceOnlyFlight, isWalletMatch, sortFlights } from "./utils";
 import type { FlightResult } from "./types";
 import type { BankOffer } from "./flight/offerEngine";
 
@@ -38,6 +38,11 @@ function makeFlight(overrides: Partial<FlightResult>): FlightResult {
     baggage: { cabin: { included: true, weight: 7 }, checked: { included: true, weight: 15 } },
     refundable: false,
     cabinClass: "economy",
+    availabilityState: "reference_only",
+    dataFreshness: "cached",
+    confidence: "medium",
+    baggageConfirmed: true,
+    refundabilityConfirmed: true,
     fetchedAt: "2026-04-18T00:00:00Z",
     searchHash: "DEL-BOM-2026-05-01",
     ...overrides,
@@ -77,5 +82,38 @@ describe("sortFlights wallet_match", () => {
     const b = makeFlight({ id: "b", price: 4500 });
     const sorted = sortFlights([a, b], "wallet_match", []);
     expect(sorted.map((f) => f.id)).toEqual(["b", "a"]);
+  });
+});
+
+describe("booking availability helpers", () => {
+  it("treats direct booking URLs as bookable live fares", () => {
+    const flight = makeFlight({
+      availabilityState: "bookable_live",
+      bookingUrl: "https://book.airbook.test/session/123",
+    });
+
+    expect(isBookableFlight(flight)).toBe(true);
+    expect(isReferenceOnlyFlight(flight)).toBe(false);
+  });
+
+  it("treats token handoffs as bookable live fares", () => {
+    const flight = makeFlight({
+      availabilityState: "bookable_live",
+      bookingToken: "session-token",
+      searchId: "search-123",
+    });
+
+    expect(isBookableFlight(flight)).toBe(true);
+  });
+
+  it("keeps reference-only fares out of checkout even if metadata is present", () => {
+    const flight = makeFlight({
+      availabilityState: "reference_only",
+      bookingToken: "session-token",
+      searchId: "search-123",
+    });
+
+    expect(isBookableFlight(flight)).toBe(false);
+    expect(isReferenceOnlyFlight(flight)).toBe(true);
   });
 });

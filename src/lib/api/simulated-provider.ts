@@ -345,8 +345,7 @@ class SimulatedProvider implements FlightProvider {
   readonly name = "simulated" as const;
 
   isAvailable(): boolean {
-    // Always available as fallback
-    return true;
+    return process.env.NODE_ENV !== "production" && process.env.AIRBOOK_ENABLE_SIMULATED_FLIGHTS === "true";
   }
 
   async search(params: FlightSearchParams): Promise<RawFlightOffer[]> {
@@ -400,7 +399,8 @@ class SimulatedProvider implements FlightProvider {
 
       return {
         id: `sim-${schedule.airline}-${schedule.flightNumber}-${params.date}-${index}`,
-        source: "simulated",
+        provider: "simulated",
+        source: "master_api",
         airline: schedule.airline,
         flightNumber: schedule.flightNumber,
         origin,
@@ -422,6 +422,16 @@ class SimulatedProvider implements FlightProvider {
         },
         refundable: schedule.stops === 0,
         seatsRemaining: Math.floor(Math.random() * 15) + 1,
+        bookingUrl: null,
+        deepLink: null,
+        bookingToken: null,
+        searchId: null,
+        gateId: null,
+        availabilityState: "reference_only",
+        dataFreshness: "unknown",
+        confidence: "low",
+        baggageConfirmed: false,
+        refundabilityConfirmed: false,
       };
     });
 

@@ -3,6 +3,7 @@
 // ============================================
 
 import { type ClassValue, clsx } from 'clsx';
+import type { BankOffer } from './flight/offerEngine';
 import type { FlightResult, SortOption } from './types';
 
 /** Merge Tailwind classes safely */
@@ -17,6 +18,27 @@ export function isWalletMatch(flight: FlightResult, ownedCards?: string[]): bool
   if (!code) return false;
   const normalized = code.toUpperCase();
   return ownedCards.some((c) => c.toUpperCase() === normalized);
+}
+
+export function hasBookingHandoff(flight: FlightResult | null | undefined): boolean {
+  if (!flight) return false;
+  return Boolean(flight.deepLink || flight.bookingUrl || (flight.searchId && flight.bookingToken));
+}
+
+export function isBookableFlight(flight: FlightResult | null | undefined): boolean {
+  if (!flight) return false;
+  if (flight.availabilityState) {
+    return flight.availabilityState === 'bookable_live' && hasBookingHandoff(flight);
+  }
+  return hasBookingHandoff(flight);
+}
+
+export function isReferenceOnlyFlight(flight: FlightResult | null | undefined): boolean {
+  if (!flight) return false;
+  if (flight.availabilityState) {
+    return flight.availabilityState === 'reference_only';
+  }
+  return !hasBookingHandoff(flight);
 }
 
 function discountAmount(flight: FlightResult): number {
@@ -185,6 +207,58 @@ export function formatBankName(bankCode?: string | null): string {
   return map[bankCode.toUpperCase()] || bankCode;
 }
 
+export function getOfferTravelerLabel(offer?: BankOffer | null): string {
+  if (!offer) return 'Fare savings';
+
+  const bankName = formatBankName(offer.bankCode);
+
+  switch (offer.category) {
+    case 'bank_cc':
+      return `${bankName} card saving`;
+    case 'bank_dc':
+      return `${bankName} debit saving`;
+    case 'bank_emi':
+      return `${bankName} EMI saving`;
+    case 'upi_wallet':
+      return `${bankName} payment saving`;
+    case 'airline_promo':
+      return 'Airline fare promo';
+    case 'ota_coupon':
+      return 'Booking promo';
+    case 'cashback_portal':
+      return 'Cashback after booking';
+    case 'international':
+      return 'International fare offer';
+    default:
+      return 'Fare savings';
+  }
+}
+
+export function getOfferTravelerSupportText(offer?: BankOffer | null): string {
+  if (!offer) return 'Review the final fare summary before payment.';
+
+  switch (offer.category) {
+    case 'bank_cc':
+    case 'bank_dc':
+      return 'Use the eligible card at payment and confirm the saving in the final fare summary.';
+    case 'bank_emi':
+      return 'Choose the eligible EMI option and check the first-installment saving before you pay.';
+    case 'upi_wallet':
+      return 'Select the eligible payment method and approve the payment from your device.';
+    case 'cashback_portal':
+      return 'Cashback is usually credited after the booking confirms, subject to the offer terms.';
+    case 'airline_promo':
+    case 'ota_coupon':
+      return offer.promoCode
+        ? 'Apply the promo code shown below before completing payment.'
+        : 'The discount should appear automatically in the fare summary before payment.';
+    case 'international':
+      return 'Check the full fare rules carefully before you confirm long-haul or international trips.';
+    default:
+      return 'Review the terms on the final booking page before you complete payment.';
+  }
+}
+
 /** Resolve the best specific platform for a bank offer */
 export function resolveBestPlatform(bankCode?: string | null, category?: string | null): string {
   // Bank-specific partner platforms (researched partnerships)
@@ -260,4 +334,3 @@ export function formatPlatformName(platform?: string | null, bankCode?: string |
 
   return 'Multiple Platforms';
 }
-

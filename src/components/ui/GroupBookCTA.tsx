@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, Mail } from "lucide-react";
+import { Mail, Users } from "lucide-react";
 
 interface Props {
   pax: number;
@@ -16,27 +16,25 @@ export function GroupBookCTA({ pax, origin, destination, date }: Props) {
     `Group booking request: ${origin} → ${destination} on ${date} (${pax} pax)`,
   );
   const body = encodeURIComponent(
-    `Hi TheWingsScan team,\n\nPlease send me a group-fare quote:\n\nRoute: ${origin} → ${destination}\nDate: ${date}\nPassengers: ${pax}\n\nThanks.`,
+    `Hi AirBook team,\n\nPlease send me a group-fare quote:\n\nRoute: ${origin} → ${destination}\nDate: ${date}\nPassengers: ${pax}\n\nThanks.`,
   );
 
   return (
-    <div className="mb-4 p-4 rounded-[var(--radius-lg)] border border-[var(--accent-cta)]/30 bg-[var(--accent-cta)]/5">
+    <div className="surface-card rounded-[28px] p-5">
       <div className="flex items-start gap-3">
-        <Users className="w-5 h-5 text-[var(--accent-cta)] shrink-0 mt-0.5" />
+        <Users className="mt-0.5 h-5 w-5 shrink-0 text-[var(--accent-cta)]" />
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-sm text-[var(--accent-cta)]">
+          <div className="text-sm font-semibold text-[var(--text-primary)]">
             Group booking — {pax} passengers
           </div>
-          <div className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">
-            For 9+ travellers, airlines offer negotiated group fares with
-            flexible names and split payments. Public quotes won&apos;t reflect
-            the best group price.
+          <div className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)]">
+            For 9+ travellers, group fares can unlock better coordination, flexible names, and payment structures that rarely appear in public fare listings.
           </div>
           <a
             href={`mailto:groups@thewingsscan.com?subject=${subject}&body=${body}`}
-            className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium px-3 py-1.5 rounded-[var(--radius-md)] bg-[var(--accent-cta)] text-[var(--text-inverse)] hover:opacity-90 transition-opacity"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--accent-cta)] px-3 py-1.5 text-[13px] font-medium text-[var(--text-inverse)] transition-opacity hover:opacity-90"
           >
-            <Mail className="w-3.5 h-3.5" />
+            <Mail className="h-3.5 w-3.5" />
             Request group fare
           </a>
         </div>
