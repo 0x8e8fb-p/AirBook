@@ -322,13 +322,6 @@ export function TravelerSearchForm({
   const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
-    setValues(computedInitialValues);
-    setTripType(computedInitialValues.returnDate ? "return" : "one_way");
-    setIsSearching(false);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-  }, [computedInitialValues]);
-
-  useEffect(() => {
     if (!showPassengers) {
       return;
     }
@@ -387,7 +380,9 @@ export function TravelerSearchForm({
       return;
     }
 
-    setIsSearching(true);
+    if (variant === "hero") {
+      setIsSearching(true);
+    }
 
     const nextOrigin = values.origin.trim().toUpperCase();
     const nextDestination = values.destination.trim().toUpperCase();
@@ -448,6 +443,7 @@ export function TravelerSearchForm({
     values.infants,
     values.origin,
     values.returnDate,
+    variant,
   ]);
 
   return (
@@ -666,7 +662,7 @@ export function TravelerSearchForm({
           <button
             type="button"
             onClick={handleSearch}
-            disabled={!canSearch || isSearching}
+            disabled={!canSearch || (variant === "hero" && isSearching)}
             className="inline-flex min-w-[220px] items-center justify-center gap-2 rounded-full bg-[var(--accent-cta)] px-5 py-3.5 text-sm font-semibold text-[var(--text-inverse)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
           >
             {isSearching ? (
