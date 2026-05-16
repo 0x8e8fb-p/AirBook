@@ -8,7 +8,6 @@ import {
   BellRing,
   CalendarRange,
   CreditCard,
-  Loader2,
   ShieldCheck,
   TicketPercent,
   TrendingUp,

@@ -19,7 +19,13 @@ import {
 import { getFareComparePageData } from "@/app/actions/compareActions";
 import { formatPrice } from "@/lib/constants";
 
-const STARTER_SEARCH_DATE = new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0];
+function getStarterSearchDate() {
+  const starter = new Date(Date.now() + 3 * 86400000);
+  const local = new Date(starter.getTime() - starter.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
+const STARTER_SEARCH_DATE = getStarterSearchDate();
 
 type CompareData = Awaited<ReturnType<typeof getFareComparePageData>>;
 type RankedAirline = NonNullable<CompareData["airline"]>["ranked_airlines"][number];
