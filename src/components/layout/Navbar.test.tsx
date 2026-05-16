@@ -1,5 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 
+/* eslint-disable @next/next/no-img-element */
+
 import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
@@ -47,7 +49,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("framer-motion", async () => {
   const React = await import("react");
   const passthrough =
-    (Tag: keyof JSX.IntrinsicElements) =>
+    (tag: string) =>
     function MotionComponent({
       children,
       layoutId: _layoutId,
@@ -68,7 +70,7 @@ vi.mock("framer-motion", async () => {
       void _transition;
       void _whileHover;
       void _whileTap;
-      return React.createElement(Tag, props, children);
+      return React.createElement(tag, props, children);
     };
 
   return {
