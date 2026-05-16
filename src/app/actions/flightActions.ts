@@ -2,6 +2,7 @@
 
 import { getServerSession } from "next-auth/next";
 import { travelpayoutsApi, TravelpayoutsConfigError, TravelpayoutsError } from "@/lib/api/travelpayoutsClient";
+import { amadeusApi, AmadeusConfigError, AmadeusError } from "@/lib/api/amadeusClient";
 import type { Fare } from "@/lib/api/travelpayoutsTypes";
 import { calculateBestEffectivePrice, type FlightPriceDetails } from "@/lib/flight/offerEngine";
 import { prisma } from "@/lib/prisma";
@@ -132,6 +133,28 @@ export async function searchFlightsAction(
   userCards?: string[],
   opts: SearchFlightsActionOptions = {},
 ): Promise<EnrichedFlight[]> {
+  let allFares: Fare[] = [];
+  let amadeusFares: Fare[] = [];
+  let tpFares: Fare[] = [];
+
+  // 1. Try Amadeus first (Live data)
+  try {
+    const { fares } = await amadeusApi.searchFares({
+      from: origin,
+      to: destination,
+      date: dateString,
+      pax: opts.pax ?? 1,
+      cabin: opts.cabin ?? "economy",
+    });
+    amadeusFares = fares;
+  } catch (err) {
+    console.error("Amadeus search failed, falling back to Travelpayouts:", err instanceof Error ? err.message : err);
+    if (opts.throwOnError && !(err instanceof AmadeusConfigError || err instanceof AmadeusError)) {
+      throw err;
+    }
+  }
+
+  // 2. Always fetch Travelpayouts as fallback/supplement
   try {
     const { fares } = await travelpayoutsApi.searchFares({
       from: origin,
@@ -141,32 +164,29 @@ export async function searchFlightsAction(
       cabin: opts.cabin ?? "economy",
       fresh: opts.fresh,
     });
+    tpFares = fares;
+  } catch (err) {
+    console.error("Travelpayouts search failed:", err instanceof Error ? err.message : err);
+    // If both failed, and we are told to throw, then throw
+    if (amadeusFares.length === 0 && opts.throwOnError) {
+      throw err;
+    }
+  }
 
-    const deduped = dedupeFares(fares);
-    const enriched = await enrichFares(deduped, userCards);
+  // 3. Merge and dedupe
+  allFares = [...amadeusFares, ...tpFares];
+  const deduped = dedupeFares(allFares);
+  const enriched = await enrichFares(deduped, userCards);
 
+  // 4. Logging and tracking
+  if (enriched.length > 0) {
     logSearchAction(origin, destination, dateString).catch((e) =>
       console.error("logSearchAction failed:", e),
     );
-
     void trackLowestPrice(origin, destination, dateString, enriched);
-
-    return enriched;
-  } catch (err) {
-    if (err instanceof TravelpayoutsConfigError) {
-      if (opts.throwOnError) throw err;
-      console.error("Travelpayouts not configured:", err.message);
-      return [];
-    }
-    if (err instanceof TravelpayoutsError) {
-      if (opts.throwOnError) throw err;
-      console.error(`Travelpayouts ${err.status} on searchFares:`, err.message);
-      return [];
-    }
-    if (opts.throwOnError) throw err;
-    console.error("Flight search failed:", err);
-    return [];
   }
+
+  return enriched;
 }
 
 export async function getAndTrackFlights(

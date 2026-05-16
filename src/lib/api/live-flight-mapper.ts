@@ -3,6 +3,7 @@ import {
   type EnrichedFlight,
 } from "@/app/actions/flightActions";
 import { TravelpayoutsConfigError, TravelpayoutsError } from "@/lib/api/travelpayoutsClient";
+import { AmadeusConfigError, AmadeusError } from "@/lib/api/amadeusClient";
 import type { CabinClass, FlightResult, FlightSegment, FlightSource } from "@/lib/types";
 import { AIRLINES } from "@/lib/constants";
 
@@ -46,6 +47,7 @@ function resolveSource(raw: string | undefined): FlightSource {
     "master_api",
     "travelpayouts_calendar",
     "travelpayouts_realtime",
+    "amadeus",
   ];
   return (known as string[]).includes(raw ?? "") ? (raw as FlightSource) : "master_api";
 }
@@ -61,9 +63,22 @@ function normalizeFetchOptions(
 }
 
 function normalizeSearchError(error: unknown): FlightSearchClientError {
-  if (error instanceof TravelpayoutsConfigError) {
+  if (error instanceof TravelpayoutsConfigError || error instanceof AmadeusConfigError) {
     return new FlightSearchClientError(
-      "Flight search is not configured in this environment. Please add the required Travelpayouts credentials.",
+      "Flight search is not configured in this environment. Please add the required API credentials.",
+      error,
+    );
+  }
+
+  if (error instanceof AmadeusError) {
+    if (error.status === 429) {
+      return new FlightSearchClientError(
+        "Amadeus search is temporarily rate-limited. Falling back to other providers.",
+        error,
+      );
+    }
+    return new FlightSearchClientError(
+      error.message || "Amadeus search failed. Falling back to other providers.",
       error,
     );
   }
