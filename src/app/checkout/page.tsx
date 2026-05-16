@@ -1,21 +1,35 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useCheckoutStore } from "@/stores/checkout-store";
-import { ArrowLeft, Plane, ShieldCheck, Briefcase, ExternalLink, TicketPercent, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
-import { formatPrice, formatDuration, formatTime, getAirlineLogoForFlight, getAirlineCodeFromFlight } from "@/lib/constants";
-import { createBookingLinkAction, logBookingClick, fetchCheckoutOffers } from "@/app/actions/flightActions";
-import { getAirportDisplay } from "@/lib/airports";
+import { useSession } from "next-auth/react";
+import {
+  ArrowLeft,
+  Briefcase,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  Loader2,
+  Plane,
+  ShieldCheck,
+  TicketPercent,
+  Wallet,
+} from "lucide-react";
+
+import { createBookingLinkAction, fetchCheckoutOffers, logBookingClick } from "@/app/actions/flightActions";
+import { getUserWallet } from "@/app/actions/userActions";
 import { Footer } from "@/components/layout/Footer";
+import { AirlineLogo } from "@/components/ui/AirlineLogo";
 import { OfferClaimGuide } from "@/components/ui/OfferClaimGuide";
 import { PriceFreezeButton } from "@/components/ui/PriceFreezeButton";
-import { formatPlatformName } from "@/lib/utils";
-import { useUserStore } from "@/stores/user-store";
-import { getUserWallet } from "@/app/actions/userActions";
-import { useSession } from "next-auth/react";
+import { getAirportDisplay } from "@/lib/airports";
+import { formatDuration, formatPrice, formatTime, getAirlineCodeFromFlight, getAirlineLogoForFlight } from "@/lib/constants";
 import type { BankOffer } from "@/lib/flight/offerEngine";
 import type { FlightResult } from "@/lib/types";
+import { formatPlatformName, isWalletMatch } from "@/lib/utils";
+import { useCheckoutStore } from "@/stores/checkout-store";
+import { useUserStore } from "@/stores/user-store";
 
 const AVIASALES_AFFILIATE =
   "https://tp.media/r?marker=728497&trs=529383&p=4114&u=https%3A%2F%2Faviasales.com&campaign_id=100";
@@ -29,38 +43,42 @@ function resolveBookingUrl(flight: FlightResult): string {
   if (flight.deepLink || flight.bookingUrl) return flight.deepLink || flight.bookingUrl || AVIASALES_AFFILIATE;
   const platform = flight.appliedOffer?.platform?.toLowerCase();
   if (platform && PLATFORM_URLS[platform]) return PLATFORM_URLS[platform];
-  const src = flight.source?.toLowerCase();
-  if (src && PLATFORM_URLS[src]) return PLATFORM_URLS[src];
+  const source = flight.source?.toLowerCase();
+  if (source && PLATFORM_URLS[source]) return PLATFORM_URLS[source];
   return AVIASALES_AFFILIATE;
 }
 
 function CheckoutContent() {
   const router = useRouter();
   const { selectedFlight } = useCheckoutStore();
-  const [isRedirecting, setIsRedirecting] = useState(false);
-  const [isHydrated, setIsHydrated] = useState(useCheckoutStore.persist.hasHydrated());
-  const [applicableOffers, setApplicableOffers] = useState<{ offer: BankOffer; discount: number }[]>([]);
-  const [isLoadingOffers, setIsLoadingOffers] = useState(true);
-  const [showAllOffers, setShowAllOffers] = useState(false);
   const { ownedCards, setCards } = useUserStore();
   const { data: session } = useSession();
 
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(useCheckoutStore.persist.hasHydrated());
+  const [applicableOffers, setApplicableOffers] = useState<Array<{ offer: BankOffer; discount: number }>>([]);
+  const [isLoadingOffers, setIsLoadingOffers] = useState(true);
+  const [showAllOffers, setShowAllOffers] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+
   useEffect(() => {
-    const unsub = useCheckoutStore.persist.onFinishHydration(() => setIsHydrated(true));
+    const unsubscribe = useCheckoutStore.persist.onFinishHydration(() => setIsHydrated(true));
     if (useCheckoutStore.persist.hasHydrated()) setIsHydrated(true);
-    return unsub;
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
-    if (isHydrated && !selectedFlight) router.replace("/");
-  }, [selectedFlight, router, isHydrated]);
+    if (isHydrated && !selectedFlight) {
+      const timer = window.setTimeout(() => router.replace("/"), 1200);
+      return () => window.clearTimeout(timer);
+    }
+  }, [isHydrated, router, selectedFlight]);
 
-  // Load user wallet from DB if logged in
   useEffect(() => {
     if (session?.user) {
-      getUserWallet().then(res => {
-        if (res.success && res.cards) {
-          setCards(res.cards);
+      getUserWallet().then((result) => {
+        if (result.success && result.cards) {
+          setCards(result.cards);
         }
       });
     }
@@ -69,215 +87,313 @@ function CheckoutContent() {
   useEffect(() => {
     async function loadOffers() {
       if (!selectedFlight) return;
+
+      setIsLoadingOffers(true);
       try {
         const baseFare = selectedFlight.basePrice || selectedFlight.price;
         const code = getAirlineCodeFromFlight(selectedFlight);
         const offers = await fetchCheckoutOffers(baseFare, code || undefined, ownedCards);
         setApplicableOffers(offers);
-      } catch (err) {
-        console.error("Failed to load offers:", err);
+      } catch (error) {
+        console.error("Failed to load offers:", error);
+        setApplicableOffers([]);
       } finally {
         setIsLoadingOffers(false);
       }
     }
+
     if (isHydrated && selectedFlight) {
       loadOffers();
     }
-  }, [isHydrated, selectedFlight, ownedCards]);
-
-  if (!isHydrated || !selectedFlight) return null;
-
-  const logoUrl = getAirlineLogoForFlight(selectedFlight);
-
-  const convenienceFee = 350;
-  const baseFare = selectedFlight.basePrice || selectedFlight.price;
-  const totalBeforeDiscount = baseFare + convenienceFee;
-  const discountAmount = totalBeforeDiscount - selectedFlight.price;
-
-  const handleProceed = async () => {
-    setIsRedirecting(true);
-    
-    // Log the click and money saved
-    await logBookingClick(
-      `${selectedFlight.origin}-${selectedFlight.destination}`,
-      selectedFlight.airline,
-      selectedFlight.price,
-      discountAmount > 0 ? discountAmount : 0
-    );
-
-    let otaUrl = resolveBookingUrl(selectedFlight);
-    if (selectedFlight.searchId && selectedFlight.bookingToken) {
-      const generated = await createBookingLinkAction(selectedFlight.searchId, selectedFlight.bookingToken);
-      if (generated?.url) otaUrl = generated.url;
-    }
-
-    window.open(otaUrl, "_blank", "noopener,noreferrer");
-    setIsRedirecting(false);
-  };
+  }, [isHydrated, ownedCards, selectedFlight]);
 
   const displayedOffers = showAllOffers ? applicableOffers : applicableOffers.slice(0, 2);
 
+  const summary = useMemo(() => {
+    if (!selectedFlight) return null;
+
+    const airlineName = selectedFlight.airlineName || selectedFlight.airline;
+    const logoUrl = getAirlineLogoForFlight(selectedFlight);
+    const baseFare = selectedFlight.basePrice || selectedFlight.price;
+    const convenienceFee = 350;
+    const totalBeforeDiscount = baseFare + convenienceFee;
+    const discountAmount = Math.max(0, totalBeforeDiscount - selectedFlight.price);
+
+    return {
+      airlineName,
+      logoUrl,
+      baseFare,
+      convenienceFee,
+      totalBeforeDiscount,
+      discountAmount,
+      walletMatch: isWalletMatch(selectedFlight, ownedCards),
+    };
+  }, [ownedCards, selectedFlight]);
+
+  const handleProceed = async () => {
+    if (!selectedFlight || !summary) return;
+
+    setIsRedirecting(true);
+    setBookingError(null);
+
+    try {
+      await logBookingClick(
+        `${selectedFlight.origin}-${selectedFlight.destination}`,
+        selectedFlight.airline,
+        selectedFlight.price,
+        summary.discountAmount,
+      ).catch((error) => {
+        console.error("Failed to log booking click:", error);
+      });
+
+      let bookingUrl = resolveBookingUrl(selectedFlight);
+      if (selectedFlight.searchId && selectedFlight.bookingToken) {
+        const generated = await createBookingLinkAction(selectedFlight.searchId, selectedFlight.bookingToken);
+        if (generated?.url) bookingUrl = generated.url;
+      }
+
+      const opened = window.open(bookingUrl, "_blank", "noopener,noreferrer");
+      if (!opened) {
+        window.location.assign(bookingUrl);
+      }
+    } catch (error) {
+      console.error("Booking redirect failed:", error);
+      setBookingError("We could not open the booking partner right now. Please try again in a moment.");
+    } finally {
+      setIsRedirecting(false);
+    }
+  };
+
+  if (!isHydrated) {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center">
+        <div className="surface-card rounded-[28px] px-6 py-5 inline-flex items-center gap-3 text-sm text-[var(--text-secondary)]">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Loading your selected fare…
+        </div>
+      </div>
+    );
+  }
+
+  if (!selectedFlight || !summary) {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center px-4">
+        <div className="surface-card rounded-[32px] max-w-lg p-8 text-center">
+          <h1 className="text-2xl font-semibold mb-3">No fare is ready for checkout</h1>
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+            We are sending you back to the homepage so you can start a fresh search and choose a fare again.
+          </p>
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="mt-6 inline-flex items-center justify-center rounded-full bg-[var(--accent-cta)] px-4 py-3 text-sm font-semibold text-[var(--text-inverse)]"
+          >
+            Go to homepage
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const travelDateLabel = new Date(selectedFlight.departureTime).toLocaleDateString("en-IN", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+
   return (
-    <div className="min-h-[100dvh] bg-[var(--bg-subtle)] pb-20">
-      {/* Header */}
-      <header className="bg-[var(--bg-base)] border-b border-[var(--border-default)] sticky top-0 z-30">
-        <div className="container-app py-4 flex items-center gap-4">
-          <button 
-            onClick={() => router.back()} 
-            className="w-8 h-8 rounded-[var(--radius-sm)] border border-[var(--border-default)] flex items-center justify-center hover:bg-[var(--accent-primary-dim)] transition-colors"
+    <div className="min-h-[100dvh] pb-20">
+      <header className="sticky top-14 z-30 border-b border-[var(--border-default)] bg-[var(--bg-base)]/88 backdrop-blur-2xl">
+        <div className="container-app py-4 flex items-start gap-4">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--bg-elevated)] hover:bg-[var(--accent-primary-dim)] transition-colors"
+            aria-label="Back to results"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <h1 className="text-lg font-semibold">Review your booking</h1>
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)] mb-2">Checkout</div>
+            <h1 className="text-xl md:text-2xl font-semibold">Review your booking with full fare context</h1>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-[var(--text-secondary)]">
+              <span>{getAirportDisplay(selectedFlight.origin)}</span>
+              <span className="text-[var(--text-muted)]">→</span>
+              <span>{getAirportDisplay(selectedFlight.destination)}</span>
+              <span className="text-[var(--text-muted)]">•</span>
+              <span>{travelDateLabel}</span>
+            </div>
+          </div>
         </div>
       </header>
 
-      <main className="container-app py-8 max-w-5xl mx-auto">
-        <div className="grid lg:grid-cols-3 gap-8">
-          
-          {/* Left Column: Flight Details */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* Flight Summary */}
-            <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] overflow-hidden shadow-sm">
-              <div className="p-5 border-b border-[var(--border-default)] bg-[var(--bg-subtle)] flex items-center justify-between">
+      <main className="container-app py-8 max-w-6xl mx-auto">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_380px]">
+          <div className="space-y-6">
+            <section className="surface-card rounded-[32px] overflow-hidden">
+              <div className="p-5 md:p-6 border-b border-[var(--border-default)] bg-[var(--bg-subtle)] flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded bg-white flex items-center justify-center overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src={logoUrl} 
-                      alt={selectedFlight.airline}
-                      className="w-full h-full object-contain mix-blend-multiply"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = `https://api.dicebear.com/9.x/initials/svg?seed=${selectedFlight.airline}&backgroundColor=000000`;
-                      }}
-                    />
-                  </div>
+                  <AirlineLogo
+                    src={summary.logoUrl}
+                    alt={summary.airlineName}
+                    seed={summary.airlineName}
+                    size={44}
+                    className="bg-[var(--bg-base)]"
+                  />
                   <div>
-                    <div className="font-semibold text-sm">{selectedFlight.airline}</div>
-                    <div className="text-xs text-[var(--text-muted)] font-mono">{selectedFlight.flightNumber}</div>
+                    <div className="font-semibold text-sm">{summary.airlineName}</div>
+                    <div className="text-xs text-[var(--text-muted)] font-mono mt-1">{selectedFlight.flightNumber || "Flight details pending"}</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-0.5">
-                    {new Date(selectedFlight.departureTime).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
-                  </div>
-                  <div className="text-xs text-[var(--text-muted)] font-mono">
-                    {formatDuration(selectedFlight.durationMinutes)}
-                  </div>
+
+                <div className="flex flex-wrap gap-2 md:justify-end">
+                  {summary.walletMatch ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--accent-green)]/20 bg-[var(--accent-green)]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--accent-green)]">
+                      <Wallet className="w-3 h-3" />
+                      Wallet matched
+                    </span>
+                  ) : null}
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--bg-base)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                    {selectedFlight.stops === 0 ? "Direct" : `${selectedFlight.stops} stop${selectedFlight.stops > 1 ? "s" : ""}`}
+                  </span>
                 </div>
               </div>
-              
-              <div className="p-6">
-                <div className="flex justify-between items-center relative">
-                  
-                  {/* Origin */}
-                  <div className="w-1/3">
-                    <div className="text-2xl font-bold font-mono-price">{formatTime(selectedFlight.departureTime)}</div>
+
+              <div className="p-5 md:p-6">
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-6">
+                  <div>
+                    <div className="text-3xl font-semibold font-mono-price">{formatTime(selectedFlight.departureTime)}</div>
                     <div className="font-semibold mt-1">{selectedFlight.origin}</div>
-                    <div className="text-xs text-[var(--text-muted)] mt-0.5">{getAirportDisplay(selectedFlight.origin)}</div>
+                    <div className="text-xs text-[var(--text-muted)] mt-1.5 leading-relaxed">{getAirportDisplay(selectedFlight.origin)}</div>
                   </div>
-                  
-                  {/* Divider */}
-                  <div className="flex-1 flex flex-col items-center px-4 relative">
+
+                  <div className="flex flex-col items-center px-2 relative">
                     <Plane className="w-5 h-5 text-[var(--text-muted)] mb-2" />
-                    <div className="w-full h-px border-t-2 border-dashed border-[var(--border-strong)] absolute top-1/2 -translate-y-1/2 -z-10" />
-                    <span className="text-[10px] font-medium bg-[var(--bg-base)] px-2 text-[var(--text-muted)]">
-                      {selectedFlight.stops === 0 ? 'Direct' : `${selectedFlight.stops} Stop`}
+                    <div className="w-full min-w-[88px] md:min-w-[160px] h-px border-t-2 border-dashed border-[var(--border-strong)] absolute top-1/2 -translate-y-1/2 -z-10" />
+                    <span className="text-[10px] font-medium bg-[var(--bg-base)] px-2 text-[var(--text-muted)] uppercase tracking-[0.14em]">
+                      {formatDuration(selectedFlight.durationMinutes)}
                     </span>
                   </div>
 
-                  {/* Destination */}
-                  <div className="w-1/3 text-right">
-                    <div className="text-2xl font-bold font-mono-price">{formatTime(selectedFlight.arrivalTime)}</div>
+                  <div className="text-right">
+                    <div className="text-3xl font-semibold font-mono-price">{formatTime(selectedFlight.arrivalTime)}</div>
                     <div className="font-semibold mt-1">{selectedFlight.destination}</div>
-                    <div className="text-xs text-[var(--text-muted)] mt-0.5">{getAirportDisplay(selectedFlight.destination)}</div>
+                    <div className="text-xs text-[var(--text-muted)] mt-1.5 leading-relaxed">{getAirportDisplay(selectedFlight.destination)}</div>
                   </div>
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* Applicable Offers Guide */}
-            {!isLoadingOffers && applicableOffers.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="font-semibold text-lg flex items-center gap-2">
-                  <TicketPercent className="w-5 h-5 text-[var(--accent-green)]" />
-                  How to save more on this booking
-                </h3>
-                <div className="space-y-3">
-                  {displayedOffers.map((item, idx) => (
-                    <OfferClaimGuide key={item.offer.id || idx} offer={item.offer} discount={item.discount} isBestOffer={idx === 0} />
-                  ))}
+            <section className="grid gap-4 md:grid-cols-3">
+              {[
+                {
+                  icon: Briefcase,
+                  title: "Baggage",
+                  body: `Cabin ${selectedFlight.baggage.cabin.weight || 7}kg · Check-in ${selectedFlight.baggage.checked.weight || 15}kg`,
+                },
+                {
+                  icon: ShieldCheck,
+                  title: "Cancellation",
+                  body: `${selectedFlight.refundable ? "Refundable" : "Partially refundable"} fare, subject to airline rules.`,
+                },
+                {
+                  icon: CheckCircle2,
+                  title: "Booking flow",
+                  body: "You finish payment on the partner page after a secure handoff from this screen.",
+                },
+              ].map((item) => (
+                <div key={item.title} className="surface-card rounded-[24px] p-5">
+                  <item.icon className="w-5 h-5 text-[var(--accent-cta)] mb-3" />
+                  <h2 className="text-sm font-semibold mb-2">{item.title}</h2>
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{item.body}</p>
                 </div>
-                {applicableOffers.length > 2 && (
-                  <button 
-                    onClick={() => setShowAllOffers(!showAllOffers)}
-                    className="flex items-center gap-1 text-[13px] font-medium text-[var(--accent-cta)] hover:underline mx-auto mt-2"
-                  >
-                    {showAllOffers ? (
-                      <>Show Less <ChevronUp className="w-3.5 h-3.5" /></>
-                    ) : (
-                      <>Show {applicableOffers.length - 2} More Offers <ChevronDown className="w-3.5 h-3.5" /></>
-                    )}
-                  </button>
-                )}
-              </div>
-            )}
+              ))}
+            </section>
 
-            {/* Policies */}
-            <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] p-6 shadow-sm mt-4">
-              <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider text-[var(--text-muted)]">Important Information</h3>
-              
-              <div className="grid sm:grid-cols-2 gap-6">
-                <div className="flex gap-3">
-                  <Briefcase className="w-5 h-5 text-[var(--text-secondary)] shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-sm mb-1">Baggage</h4>
-                    <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                      Cabin: {selectedFlight.baggage.cabin.weight || 7}kg (1 piece)<br/>
-                      Check-in: {selectedFlight.baggage.checked.weight || 15}kg (1 piece)
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex gap-3">
-                  <ShieldCheck className="w-5 h-5 text-[var(--text-secondary)] shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-sm mb-1">Cancellation</h4>
-                    <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                      {selectedFlight.refundable ? 'Fully Refundable' : 'Partially Refundable'}<br/>
-                      Airline cancellation fee applies.
-                    </p>
-                  </div>
+            <section className="surface-card rounded-[32px] p-5 md:p-6">
+              <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between mb-4">
+                <div>
+                  <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <TicketPercent className="w-5 h-5 text-[var(--accent-green)]" />
+                    How to save more on this booking
+                  </h2>
+                  <p className="text-sm text-[var(--text-secondary)] mt-2 max-w-2xl leading-relaxed">
+                    Review the best applicable savings paths before you open the booking partner.
+                  </p>
                 </div>
               </div>
-            </div>
 
+              {isLoadingOffers ? (
+                <div className="rounded-[24px] border border-[var(--border-default)] bg-[var(--bg-subtle)] px-4 py-5 text-sm text-[var(--text-secondary)] inline-flex items-center gap-3">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading offer guidance for this fare…
+                </div>
+              ) : applicableOffers.length > 0 ? (
+                <>
+                  <div className="space-y-3">
+                    {displayedOffers.map((item, index) => (
+                      <OfferClaimGuide key={item.offer.id || index} offer={item.offer} discount={item.discount} isBestOffer={index === 0} />
+                    ))}
+                  </div>
+
+                  {applicableOffers.length > 2 ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllOffers((current) => !current)}
+                      className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-[var(--accent-cta)] hover:underline"
+                    >
+                      {showAllOffers ? (
+                        <>
+                          Show less
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        </>
+                      ) : (
+                        <>
+                          Show {applicableOffers.length - 2} more offers
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </>
+                      )}
+                    </button>
+                  ) : null}
+                </>
+              ) : (
+                <div className="rounded-[24px] border border-[var(--border-default)] bg-[var(--bg-subtle)] px-4 py-5 text-sm text-[var(--text-secondary)] leading-relaxed">
+                  No extra booking-path offers were found for this fare beyond the current effective price shown in results.
+                </div>
+              )}
+            </section>
           </div>
 
-          {/* Right Column: Price Breakdown */}
-          <div className="lg:col-span-1">
-            <div className="bg-[var(--bg-base)] border border-[var(--border-default)] rounded-[var(--radius-xl)] p-6 sticky top-24 shadow-sm">
-              <h2 className="font-semibold text-lg mb-6">Fare Summary</h2>
-              
+          <aside className="lg:sticky lg:top-24 h-fit">
+            <div className="surface-panel rounded-[32px] p-6">
+              <div className="flex items-start justify-between gap-3 mb-6">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)] mb-2">Fare summary</div>
+                  <h2 className="text-xl font-semibold">Final payable amount</h2>
+                </div>
+                <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-subtle)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                  Partner checkout
+                </span>
+              </div>
+
               <div className="space-y-4 text-sm mb-6">
                 <div className="flex justify-between items-center">
-                  <span className="text-[var(--text-secondary)]">Base Fare (1 Adult)</span>
-                  <span className="font-mono-price font-medium">{formatPrice(baseFare)}</span>
+                  <span className="text-[var(--text-secondary)]">Base fare</span>
+                  <span className="font-mono-price font-medium">{formatPrice(summary.baseFare)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[var(--text-secondary)]">Taxes & Fees</span>
-                  <span className="font-mono-price font-medium">{formatPrice(convenienceFee)}</span>
+                  <span className="text-[var(--text-secondary)]">Taxes & fees</span>
+                  <span className="font-mono-price font-medium">{formatPrice(summary.convenienceFee)}</span>
                 </div>
-                
-                {selectedFlight.appliedOffer && discountAmount > 0 && (
+
+                {selectedFlight.appliedOffer && summary.discountAmount > 0 ? (
                   <div className="flex justify-between items-start pt-2 border-t border-[var(--border-muted)]">
                     <div>
                       <span className="text-[var(--accent-green)] font-semibold flex items-center gap-1.5">
                         <TicketPercent className="w-4 h-4" />
-                        Bank Discount
+                        Savings applied
                       </span>
-                      <div className="text-[10px] text-[var(--text-muted)] mt-0.5 leading-tight">
+                      <div className="text-[11px] text-[var(--text-muted)] mt-1 leading-relaxed">
                         {selectedFlight.appliedOffer.name}
                         <span className="text-[var(--accent-cta)] ml-1">
                           · {formatPlatformName(selectedFlight.appliedOffer.platform, selectedFlight.appliedOffer.bankCode, selectedFlight.appliedOffer.category)}
@@ -285,44 +401,60 @@ function CheckoutContent() {
                       </div>
                     </div>
                     <span className="font-mono-price font-bold text-[var(--accent-green)]">
-                      -{formatPrice(discountAmount)}
+                      -{formatPrice(summary.discountAmount)}
                     </span>
                   </div>
-                )}
+                ) : null}
               </div>
 
-              <div className="pt-4 border-t border-[var(--border-default)] mb-6">
-                <div className="flex justify-between items-end">
+              <div className="rounded-[24px] border border-[var(--border-default)] bg-[var(--bg-base)] p-4 mb-5">
+                <div className="flex items-end justify-between gap-3">
                   <div>
-                    <div className="font-bold text-xl">Total Amount</div>
-                    <div className="text-xs text-[var(--text-muted)] mt-1">Final payable amount</div>
+                    <div className="text-sm font-semibold">You pay now</div>
+                    <div className="text-[11px] text-[var(--text-muted)] mt-1">Final effective fare at handoff</div>
                   </div>
-                  <div className="text-3xl font-bold font-mono-price text-[var(--accent-cta)]">
+                  <div className="text-3xl font-semibold font-mono-price text-[var(--accent-cta)]">
                     {formatPrice(selectedFlight.price)}
                   </div>
                 </div>
               </div>
 
-              <div className="bg-[var(--accent-primary-dim)] rounded-[var(--radius-md)] p-4 mb-6 flex items-start gap-3 border border-[var(--accent-cta)]/20">
-                <CheckCircle2 className="w-5 h-5 text-[var(--accent-cta)] shrink-0 mt-0.5" />
-                <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
-                  By clicking proceed, you will be redirected to the official booking page to complete your payment securely.
-                </p>
+              <div className="rounded-[24px] border border-[var(--accent-cta)]/18 bg-[var(--accent-primary-dim)] p-4 mb-5 flex items-start gap-3">
+                <ShieldCheck className="w-5 h-5 text-[var(--accent-cta)] shrink-0 mt-0.5" />
+                <div>
+                  <div className="text-sm font-semibold">Secure booking handoff</div>
+                  <p className="text-xs leading-relaxed text-[var(--text-secondary)] mt-1.5">
+                    By continuing, you move to the official booking page to complete payment and review final fare rules.
+                  </p>
+                </div>
               </div>
 
+              {bookingError ? (
+                <div className="rounded-[20px] border border-[var(--accent-red)]/20 bg-[var(--accent-red)]/10 px-4 py-3 text-sm text-[var(--accent-red)] mb-5">
+                  {bookingError}
+                </div>
+              ) : null}
+
               <button
+                type="button"
                 onClick={handleProceed}
                 disabled={isRedirecting}
-                className="w-full py-4 bg-[var(--accent-cta)] text-[var(--text-inverse)] font-bold rounded-[var(--radius-lg)] hover:opacity-90 disabled:opacity-70 transition-opacity flex items-center justify-center gap-2 text-[15px]"
+                className="w-full rounded-full py-4 bg-[var(--accent-cta)] text-[var(--text-inverse)] font-semibold hover:opacity-90 disabled:opacity-70 transition-opacity flex items-center justify-center gap-2 text-[15px]"
               >
                 {isRedirecting ? (
-                  <>Redirecting securely...</>
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Opening booking partner…
+                  </>
                 ) : (
-                  <>Proceed to Booking <ExternalLink className="w-4 h-4 ml-1" /></>
+                  <>
+                    Proceed to booking
+                    <ExternalLink className="w-4 h-4" />
+                  </>
                 )}
               </button>
 
-              <div className="mt-3">
+              <div className="mt-4">
                 <PriceFreezeButton
                   origin={selectedFlight.origin}
                   destination={selectedFlight.destination}
@@ -330,15 +462,28 @@ function CheckoutContent() {
                   airline={selectedFlight.airline}
                   flightNumber={selectedFlight.flightNumber}
                   lockedPrice={selectedFlight.price}
-                  basePrice={baseFare}
+                  basePrice={summary.baseFare}
                 />
               </div>
-            </div>
-          </div>
 
+              <div className="mt-6 pt-5 border-t border-[var(--border-default)] space-y-3">
+                <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">What happens next</div>
+                {[
+                  "We open the booking partner in a new tab or current tab fallback.",
+                  "You review final baggage, timing, and fare rules on the partner page.",
+                  "If you are comparing options, use price freeze before leaving this screen.",
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-2 text-[12px] text-[var(--text-secondary)] leading-relaxed">
+                    <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[var(--accent-green)]" />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </aside>
         </div>
       </main>
-      
+
       <Footer />
     </div>
   );
