@@ -669,15 +669,9 @@ function SearchContent() {
   }, [cabin, from, setCabinClass, setDestination, setOrigin, to]);
 
   useEffect(() => {
-    setAlertFeedback(null);
-  }, [from, to, date]);
-
-  useEffect(() => {
     let isMounted = true;
 
-    if (!from || !to || !date) {
-      setError("Missing route details. Start from the homepage to run a search.");
-      setIsLoading(false);
+    if (!hasRequiredSearchParams) {
       return;
     }
 
@@ -725,7 +719,7 @@ function SearchContent() {
     return () => {
       isMounted = false;
     };
-  }, [cabin, date, from, ownedCards, passengerCount, refreshKey, to]);
+  }, [cabin, date, from, hasRequiredSearchParams, ownedCards, passengerCount, refreshKey, to]);
 
   const avgPrice = useMemo(() => {
     if (allFlights.length === 0) return 0;

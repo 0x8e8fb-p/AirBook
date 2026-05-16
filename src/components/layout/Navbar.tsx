@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -26,10 +26,6 @@ export function Navbar() {
   const user = session?.user;
   const displayName = user?.name?.split(" ")[0] || "Profile";
 
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
-
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-[60] border-b border-[var(--border-default)]/80 bg-[var(--bg-base)]/80 backdrop-blur-2xl">
@@ -52,6 +48,7 @@ export function Navbar() {
                   key={link.href}
                   href={link.href}
                   prefetch
+                  onClick={() => setMobileOpen(false)}
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "relative px-3.5 py-1.5 text-[12px] font-medium rounded-full transition-colors",

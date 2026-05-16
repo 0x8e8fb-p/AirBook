@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 
 import { cn } from "@/lib/utils";
@@ -27,11 +27,9 @@ export function AirlineLogo({
   imageClassName,
 }: AirlineLogoProps) {
   const fallbackSrc = useMemo(() => buildFallbackLogo(seed || alt || "Airline"), [alt, seed]);
-  const [currentSrc, setCurrentSrc] = useState(src || fallbackSrc);
-
-  useEffect(() => {
-    setCurrentSrc(src || fallbackSrc);
-  }, [src, fallbackSrc]);
+  const desiredSrc = src || fallbackSrc;
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const currentSrc = failedSrc === desiredSrc ? fallbackSrc : desiredSrc;
 
   return (
     <div
@@ -48,7 +46,11 @@ export function AirlineLogo({
         height={size}
         unoptimized
         className={cn("h-full w-full object-contain", imageClassName)}
-        onError={() => setCurrentSrc(fallbackSrc)}
+        onError={() => {
+          if (desiredSrc !== fallbackSrc) {
+            setFailedSrc(desiredSrc);
+          }
+        }}
       />
     </div>
   );
