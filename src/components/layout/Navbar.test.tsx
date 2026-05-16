@@ -25,6 +25,19 @@ vi.mock("next/link", () => ({
   },
 }));
 
+vi.mock("next/image", () => ({
+  default: function MockImage({
+    src,
+    alt,
+    ...props
+  }: {
+    src: string;
+    alt: string;
+  } & React.ImgHTMLAttributes<HTMLImageElement>) {
+    return <img src={src} alt={alt} {...props} />;
+  },
+}));
+
 vi.mock("next/navigation", () => ({
   usePathname: () => "/",
 }));

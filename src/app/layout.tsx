@@ -8,6 +8,7 @@ import { SmoothScrollProvider } from "@/lib/lenis";
 import { Navbar } from "@/components/layout/Navbar";
 import { ThemeFab } from "@/components/theme/ThemeFab";
 import { EnvWarningBanner } from "@/components/layout/EnvWarningBanner";
+import { ScrollProgressBar } from "@/components/layout/ScrollProgressBar";
 import type { ThemeMode, ThemeName } from "@/lib/theme/types";
 
 const geist = Geist({
@@ -101,10 +102,16 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body suppressHydrationWarning className="min-h-full flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)]">
+      <body suppressHydrationWarning className="min-h-full flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] relative isolate">
         <Providers>
           <SmoothScrollProvider>
-            <div id="app-shell" className="min-h-full flex flex-col">
+            <ScrollProgressBar />
+            <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+              <div className="hero-grid absolute inset-0 opacity-35" />
+              <div className="absolute left-[12%] top-[-12rem] h-[26rem] w-[26rem] rounded-full bg-[color-mix(in_srgb,var(--accent-cyan)_14%,transparent)] blur-[130px]" />
+              <div className="absolute right-[-4rem] top-[4rem] h-[24rem] w-[24rem] rounded-full bg-[color-mix(in_srgb,var(--accent-purple)_13%,transparent)] blur-[130px]" />
+            </div>
+            <div id="app-shell" className="min-h-full flex flex-col relative z-10">
               <EnvWarningBanner />
               <Navbar />
               <main className="flex-1 relative pt-14">

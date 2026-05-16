@@ -22,6 +22,13 @@ export interface EnrichedFlight {
   gateId?: string | number | null;
 }
 
+export type SearchFlightsActionOptions = {
+  pax?: number;
+  cabin?: "economy" | "premium_economy" | "business" | "first";
+  fresh?: boolean;
+  throwOnError?: boolean;
+};
+
 async function getSessionUserId(): Promise<string | null> {
   try {
     const session = await getServerSession(authOptions);
@@ -123,7 +130,7 @@ export async function searchFlightsAction(
   destination: string,
   dateString: string,
   userCards?: string[],
-  opts: { pax?: number; cabin?: "economy" | "premium_economy" | "business" | "first"; fresh?: boolean } = {},
+  opts: SearchFlightsActionOptions = {},
 ): Promise<EnrichedFlight[]> {
   try {
     const { fares } = await travelpayoutsApi.searchFares({
@@ -147,13 +154,16 @@ export async function searchFlightsAction(
     return enriched;
   } catch (err) {
     if (err instanceof TravelpayoutsConfigError) {
+      if (opts.throwOnError) throw err;
       console.error("Travelpayouts not configured:", err.message);
       return [];
     }
     if (err instanceof TravelpayoutsError) {
+      if (opts.throwOnError) throw err;
       console.error(`Travelpayouts ${err.status} on searchFares:`, err.message);
       return [];
     }
+    if (opts.throwOnError) throw err;
     console.error("Flight search failed:", err);
     return [];
   }

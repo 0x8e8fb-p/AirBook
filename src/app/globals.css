@@ -1,10 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 @import "../styles/tokens.css";
 
 @layer base {
   :root {
-    --font-body: 'Dubai', 'Outfit', system-ui, -apple-system, sans-serif;
+    --font-body: var(--font-dm-sans), system-ui, -apple-system, sans-serif;
   }
 }
 
@@ -23,6 +22,7 @@
 }
 
 html {
+  background: var(--bg-canvas);
   -webkit-tap-highlight-color: transparent;
   scroll-behavior: auto;
   scrollbar-gutter: stable;
@@ -37,12 +37,27 @@ html[data-theme-swap] *::after {
 }
 
 body {
+  position: relative;
   background-color: var(--bg-base);
   color: var(--text-primary);
   font-family: var(--font-body);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at top center, color-mix(in srgb, var(--accent-cyan) 10%, transparent) 0%, transparent 42%),
+    radial-gradient(circle at 20% 12%, color-mix(in srgb, var(--accent-purple) 9%, transparent) 0%, transparent 28%),
+    radial-gradient(circle at 80% 18%, color-mix(in srgb, var(--accent-amber) 6%, transparent) 0%, transparent 24%);
+  opacity: 0.95;
+  z-index: 0;
 }
 
 html[data-theme="matte"] body {
@@ -60,6 +75,11 @@ h1, h2, h3, h4, h5, h6 {
   font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
 }
 
 ::selection {
@@ -112,7 +132,7 @@ h1, h2, h3, h4, h5, h6 {
 @layer utilities {
   .container-app {
     width: 100%;
-    max-width: 1200px;
+    max-width: var(--container-max);
     margin-left: auto;
     margin-right: auto;
     padding-left: 1rem;
@@ -120,6 +140,59 @@ h1, h2, h3, h4, h5, h6 {
   }
   @media (min-width: 768px) {
     .container-app { padding-left: 1.5rem; padding-right: 1.5rem; }
+  }
+
+  .surface-panel {
+    border: 1px solid color-mix(in srgb, var(--border-default) 86%, transparent);
+    background: color-mix(in srgb, var(--bg-elevated) 92%, transparent);
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(18px);
+  }
+
+  .surface-card {
+    border: 1px solid var(--border-default);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-elevated) 96%, white 4%) 0%,
+      color-mix(in srgb, var(--bg-subtle) 96%, transparent) 100%
+    );
+    box-shadow: var(--shadow-md);
+  }
+
+  .section-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid var(--border-default);
+    background: color-mix(in srgb, var(--bg-elevated) 78%, transparent);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .hero-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, var(--border-muted) 80%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--border-muted) 80%, transparent) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent 95%);
+  }
+
+  .text-gradient-soft {
+    background: linear-gradient(120deg, var(--text-primary) 0%, color-mix(in srgb, var(--text-primary) 78%, var(--accent-cyan) 22%) 45%, color-mix(in srgb, var(--text-primary) 78%, var(--accent-purple) 22%) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .glow-divider {
+    height: 1px;
+    width: 100%;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent-primary) 24%, transparent), transparent);
   }
 }
 

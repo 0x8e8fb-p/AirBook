@@ -1,6 +1,7 @@
 :root {
   /* ── SURFACES — near-black with barely perceptible warmth ── */
   --bg-base:        #09090B;
+  --bg-canvas:      #060607;
   --bg-subtle:      #111113;
   --bg-elevated:    #18181B;
   --bg-overlay:     #1E1E22;
@@ -18,6 +19,9 @@
   --accent-green:       #4ADE80;    /* success only */
   --accent-red:         #F87171;    /* error/urgency only */
   --accent-muted:       #A1A1AA;    /* secondary interactive */
+  --accent-cyan:        #38BDF8;
+  --accent-purple:      #A78BFA;
+  --accent-amber:       #FBBF24;
 
   /* ── TEXT — three tiers, no color ── */
   --text-primary:   #FAFAFA;
@@ -29,11 +33,12 @@
   --shadow-sm:   0 1px 2px rgba(0,0,0,0.5);
   --shadow-md:   0 4px 12px rgba(0,0,0,0.4);
   --shadow-lg:   0 12px 40px rgba(0,0,0,0.5);
+  --shadow-xl:   0 24px 80px rgba(0,0,0,0.52);
 
   /* ── TYPOGRAPHY ── */
-  --font-display: 'Geist', system-ui, sans-serif;
-  --font-mono:    'Geist Mono', ui-monospace, monospace;
-  --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-display: var(--font-geist), system-ui, sans-serif;
+  --font-mono:    var(--font-geist-mono), ui-monospace, monospace;
+  --font-body:    var(--font-dm-sans), system-ui, sans-serif;
 
   /* ── SPACING (8pt grid) ── */
   --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
@@ -53,10 +58,12 @@
   --duration-fast: 120ms;
   --duration-base: 200ms;
   --duration-slow: 400ms;
+  --container-max: 1280px;
 }
 
 html[data-theme="matte"],
 [data-theme="matte"] {
+  --bg-canvas:      #050508;
   --bg-base:        #0A0A0A;
   --bg-subtle:      #121212;
   --bg-elevated:    #1A1A1A;
@@ -73,6 +80,9 @@ html[data-theme="matte"],
   --accent-green:       #4ADE80;
   --accent-red:         #F87171;
   --accent-muted:       #A1A1AA;
+  --accent-cyan:        #38BDF8;
+  --accent-purple:      #A78BFA;
+  --accent-amber:       #FBBF24;
 
   --text-primary:   #FAFAFA;
   --text-secondary: #A1A1AA;
@@ -82,6 +92,7 @@ html[data-theme="matte"],
 
 html[data-theme="warm"],
 [data-theme="warm"] {
+  --bg-canvas:      #FAF6EF;
   --bg-base:        #F5F1EA;
   --bg-subtle:      #EEE7DE;
   --bg-elevated:    #FFFFFF;
@@ -102,6 +113,9 @@ html[data-theme="warm"],
   --accent-cta:     #0B0B0D;
   --accent-green:   #166534;
   --accent-red:     #B91C1C;
+  --accent-cyan:    #0369A1;
+  --accent-purple:  #6D28D9;
+  --accent-amber:   #B45309;
 }
 
 @media (prefers-reduced-motion: reduce) {

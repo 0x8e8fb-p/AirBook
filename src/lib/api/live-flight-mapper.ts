@@ -2,8 +2,26 @@ import {
   searchFlightsAction,
   type EnrichedFlight,
 } from "@/app/actions/flightActions";
-import type { FlightResult, FlightSegment, FlightSource } from "@/lib/types";
+import { TravelpayoutsConfigError, TravelpayoutsError } from "@/lib/api/travelpayoutsClient";
+import type { CabinClass, FlightResult, FlightSegment, FlightSource } from "@/lib/types";
 import { AIRLINES } from "@/lib/constants";
+
+export type FetchFlightsOptions = {
+  userCards?: string[];
+  cabin?: CabinClass;
+  passengers?: number;
+  fresh?: boolean;
+};
+
+export class FlightSearchClientError extends Error {
+  cause?: unknown;
+
+  constructor(message: string, cause?: unknown) {
+    super(message);
+    this.name = "FlightSearchClientError";
+    this.cause = cause;
+  }
+}
 
 function resolveAirlineName(code: string): string {
   return AIRLINES[code]?.name ?? code;
@@ -30,6 +48,52 @@ function resolveSource(raw: string | undefined): FlightSource {
     "travelpayouts_realtime",
   ];
   return (known as string[]).includes(raw ?? "") ? (raw as FlightSource) : "master_api";
+}
+
+function normalizeFetchOptions(
+  userCardsOrOptions?: string[] | FetchFlightsOptions,
+): FetchFlightsOptions {
+  if (Array.isArray(userCardsOrOptions)) {
+    return { userCards: userCardsOrOptions };
+  }
+
+  return userCardsOrOptions ?? {};
+}
+
+function normalizeSearchError(error: unknown): FlightSearchClientError {
+  if (error instanceof TravelpayoutsConfigError) {
+    return new FlightSearchClientError(
+      "Flight search is not configured in this environment. Please add the required Travelpayouts credentials.",
+      error,
+    );
+  }
+
+  if (error instanceof TravelpayoutsError) {
+    if (error.status === 429) {
+      return new FlightSearchClientError(
+        "Search is temporarily rate-limited. Please wait a moment and try again.",
+        error,
+      );
+    }
+
+    if (error.status === 403) {
+      return new FlightSearchClientError(
+        "Flight search credentials were rejected by the provider. Please verify the Travelpayouts configuration.",
+        error,
+      );
+    }
+
+    return new FlightSearchClientError(
+      error.message || "We could not load live fares right now. Please try again.",
+      error,
+    );
+  }
+
+  if (error instanceof Error) {
+    return new FlightSearchClientError(error.message, error);
+  }
+
+  return new FlightSearchClientError("We could not load live fares right now. Please try again.", error);
 }
 
 function mapEnrichedFlightToResult(
@@ -98,14 +162,22 @@ export async function fetchFlights(
   origin: string,
   destination: string,
   date: string,
-  userCards?: string[],
+  userCardsOrOptions?: string[] | FetchFlightsOptions,
 ): Promise<FlightResult[]> {
+  const options = normalizeFetchOptions(userCardsOrOptions);
+
   try {
-    const enriched = await searchFlightsAction(origin, destination, date, userCards);
+    const enriched = await searchFlightsAction(origin, destination, date, options.userCards, {
+      pax: options.passengers ?? 1,
+      cabin: options.cabin ?? "economy",
+      fresh: options.fresh,
+      throwOnError: true,
+    });
+
     return enriched.map((flight) => mapEnrichedFlightToResult(flight, origin, destination, date));
   } catch (err) {
     console.error("Error mapping flights:", err);
-    return [];
+    throw normalizeSearchError(err);
   }
 }
 
