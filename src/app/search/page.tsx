@@ -817,13 +817,6 @@ function SearchContent() {
       return;
     }
 
-    setIsLoading(true);
-    setIsInsightsLoading(true);
-    setError(null);
-    setIntelligence(null);
-    setActiveFilterCount(0);
-    setFilterResetToken((current) => current + 1);
-
     getIntelligenceCombined(from, to, date)
       .then((result) => {
         if (!isMounted) return;
@@ -864,6 +857,19 @@ function SearchContent() {
       isMounted = false;
     };
   }, [cabin, date, from, hasRequiredSearchParams, normalizedOwnedCards, ownedCardsKey, passengerCount, refreshKey, to]);
+
+  useEffect(() => {
+    if (!hasRequiredSearchParams) {
+      return;
+    }
+
+    setIsLoading(true);
+    setIsInsightsLoading(true);
+    setError(null);
+    setIntelligence(null);
+    setActiveFilterCount(0);
+    setFilterResetToken((current) => current + 1);
+  }, [routeKey, cabin, passengerCount, ownedCardsKey, hasRequiredSearchParams, refreshKey]);
 
   const avgPrice = useMemo(() => {
     if (allFlights.length === 0) return 0;

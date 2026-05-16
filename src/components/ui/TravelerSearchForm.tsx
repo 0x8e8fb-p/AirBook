@@ -321,6 +321,21 @@ export function TravelerSearchForm({
   const [showPassengers, setShowPassengers] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
+  const currentInitialKey = useMemo(
+    () => JSON.stringify(computedInitialValues),
+    [computedInitialValues],
+  );
+  const [appliedInitialKey, setAppliedInitialKey] = useState(currentInitialKey);
+
+  if (appliedInitialKey !== currentInitialKey) {
+    setAppliedInitialKey(currentInitialKey);
+    setValues(computedInitialValues);
+    setTripType(computedInitialValues.returnDate ? "return" : "one_way");
+    if (isSearching) {
+      setIsSearching(false);
+    }
+  }
+
   useEffect(() => {
     if (!showPassengers) {
       return;

@@ -130,7 +130,6 @@ export function OfferClaimGuide({ offer, discount, isBestOffer = false, isOpenBy
   const [copied, setCopied] = useState(false);
   const steps = getOfferSteps(offer);
 
-  const iconElement = useMemo(() => <OfferIcon category={offer.category} />, [offer.category]);
   const offerLabel = useMemo(() => getOfferTravelerLabel(offer), [offer]);
   const supportText = useMemo(() => getOfferTravelerSupportText(offer), [offer]);
   const proTip = useMemo(() => pickStableTip(offer), [offer]);
@@ -151,7 +150,7 @@ export function OfferClaimGuide({ offer, discount, isBestOffer = false, isOpenBy
       >
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--accent-green)]/10 text-[var(--accent-green)]">
-            {iconElement}
+            <OfferIcon category={offer.category} />
           </div>
           <div className="text-left flex-1">
             <div className="flex items-center gap-2 mb-1">
