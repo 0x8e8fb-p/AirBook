@@ -215,7 +215,7 @@ function AlertsContent() {
                   {
                     icon: Sparkles,
                     title: "Fewer manual checks",
-                    body: "Let AirBook remember the route so you only come back when it matters.",
+                    body: "Save the route so you only come back when it matters.",
                   },
                   {
                     icon: Bell,

@@ -32,31 +32,30 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "AirBook — Search Flights With Confidence",
-    template: "%s | AirBook",
+    default: "TheWingScan — Search Flights",
+    template: "%s | TheWingScan",
   },
-  description:
-    "Search flights with live fare confidence, route alerts, and a premium booking flow that only continues when a fare is truly ready.",
+  description: "Search flights, create fare alerts, and check flight status.",
   keywords: [
-    "airbook",
+    "thewingsscan",
     "flight search",
     "live fares",
     "fare alerts",
     "flight tracker",
     "checkout-ready flights",
   ],
-  authors: [{ name: "AirBook" }],
+  authors: [{ name: "TheWingScan" }],
   openGraph: {
-    title: "AirBook — Search Flights With Confidence",
-    description: "Premium flight search, live fare trust, and calmer booking decisions.",
+    title: "TheWingScan — Search Flights",
+    description: "Search flights, create fare alerts, and check flight status.",
     type: "website",
     locale: "en_IN",
-    siteName: "AirBook",
+    siteName: "TheWingScan",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AirBook — Search Flights With Confidence",
-    description: "Premium flight search, live fare trust, and calmer booking decisions.",
+    title: "TheWingScan — Search Flights",
+    description: "Search flights, create fare alerts, and check flight status.",
   },
   robots: { index: true, follow: true },
 };

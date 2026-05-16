@@ -172,7 +172,7 @@ function IntelligenceContent() {
                 Route guidance
               </div>
               <h1 className="text-balance text-3xl font-semibold leading-tight md:text-4xl">
-                Read the route with calmer market guidance before you search live.
+                See route trends before you search.
               </h1>
               <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[var(--text-secondary)] md:text-base">
                 Use recent fare signals to understand typical pricing, timing guidance, and the wider range around your selected date — then confirm fresh availability on the live search page.

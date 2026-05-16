@@ -61,14 +61,12 @@ function AirportCombobox({
   value: string;
   onChange: (value: string) => void;
 }) {
-  const [focused, setFocused] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [results, setResults] = useState<Airport[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
 
   const ref = useRef<HTMLDivElement>(null);
   const listboxId = useId();
-  const showLabel = focused || value.length > 0;
 
   const updateResults = useCallback(
     (raw: string) => {
@@ -94,7 +92,6 @@ function AirportCombobox({
     (airport: Airport) => {
       onChange(airport.iata);
       setDropdownOpen(false);
-      setFocused(false);
       setActiveIndex(0);
     },
     [onChange],
@@ -104,7 +101,6 @@ function AirportCombobox({
     function handleClickOutside(event: MouseEvent) {
       if (ref.current && !ref.current.contains(event.target as Node)) {
         setDropdownOpen(false);
-        setFocused(false);
       }
     }
 
@@ -116,12 +112,7 @@ function AirportCombobox({
     <div ref={ref} className="relative w-full">
       <label
         htmlFor={id}
-        className={cn(
-          "pointer-events-none absolute left-4 z-10 transition-all duration-200",
-          showLabel
-            ? "top-2 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]"
-            : "top-1/2 -translate-y-1/2 text-[13px] text-[var(--text-secondary)]",
-        )}
+        className="pointer-events-none absolute left-4 top-2 z-10 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)] transition-all duration-200"
       >
         {label}
       </label>
@@ -136,10 +127,9 @@ function AirportCombobox({
         aria-expanded={dropdownOpen}
         aria-activedescendant={dropdownOpen && results[activeIndex] ? `${listboxId}-${results[activeIndex].iata}` : undefined}
         value={value}
-        placeholder={showLabel ? "" : placeholder}
+        placeholder={placeholder}
         onChange={(event) => updateResults(event.target.value)}
         onFocus={() => {
-          setFocused(true);
           if (results.length > 0) {
             setDropdownOpen(true);
           }
@@ -175,7 +165,7 @@ function AirportCombobox({
             setDropdownOpen(false);
           }
         }}
-        className="ghost-input h-[58px] w-full rounded-[22px] border border-[var(--border-default)] bg-[color-mix(in_srgb,var(--bg-elevated)_88%,transparent)] px-4 pb-2 pt-5 text-[14px] font-semibold uppercase tracking-[0.16em] text-[var(--text-primary)] shadow-[var(--shadow-sm)] transition-all hover:border-[var(--border-strong)]"
+        className="ghost-input h-[58px] w-full rounded-[22px] border border-[var(--border-default)] bg-[color-mix(in_srgb,var(--bg-elevated)_88%,transparent)] px-4 pb-3 pt-6 text-[14px] font-semibold uppercase tracking-[0.08em] text-[var(--text-primary)] shadow-[var(--shadow-sm)] transition-all hover:border-[var(--border-strong)] placeholder:normal-case placeholder:tracking-normal placeholder:text-[13px] placeholder:font-medium"
       />
 
       <AnimatePresence>

@@ -27,13 +27,12 @@ export function Navbar() {
     <>
       <header className="fixed left-0 right-0 top-0 z-[60] border-b border-[var(--border-default)]/80 bg-[var(--bg-base)]/82 backdrop-blur-2xl">
         <nav className="container-app flex h-16 items-center justify-between gap-3" aria-label="Main navigation">
-          <Link href="/" className="flex items-center gap-2.5 group min-w-0" aria-label="AirBook Home">
+          <Link href="/" className="flex items-center gap-2.5 group min-w-0" aria-label="TheWingScan Home">
             <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-strong)] bg-[color-mix(in_srgb,var(--bg-elevated)_88%,transparent)] shadow-[var(--shadow-sm)]">
               <Plane className="w-4 h-4 text-[var(--text-primary)] group-hover:-rotate-12 transition-transform duration-300" />
             </div>
             <div className="min-w-0">
-              <span className="block text-[14px] font-semibold font-[var(--font-display)] leading-none">AirBook</span>
-              <span className="hidden sm:block mt-1 text-[10px] uppercase tracking-[0.22em] text-[var(--text-muted)]">Flight booking, refined</span>
+              <span className="block whitespace-nowrap text-[13px] font-semibold font-[var(--font-display)] leading-none sm:text-[14px]">TheWingScan</span>
             </div>
           </Link>
 
@@ -71,7 +70,7 @@ export function Navbar() {
               href="/"
               className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
             >
-              Start Search
+              Search
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
             {user ? (
@@ -204,7 +203,7 @@ export function Navbar() {
               </div>
             )}
 
-            <div className="px-2 text-xs text-[var(--text-muted)]">Clear live fare states, responsive controls, and a calmer path from search to booking.</div>
+            <div className="px-2 text-xs text-[var(--text-muted)]">Search flights, save alerts, and check status.</div>
           </div>
         </motion.div>
         )}

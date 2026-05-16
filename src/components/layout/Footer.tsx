@@ -23,15 +23,12 @@ export function Footer() {
         <div className="surface-panel rounded-[32px] p-6 md:p-8">
           <div className="grid gap-10 lg:grid-cols-[1.3fr_0.7fr] lg:items-start">
             <div>
-              <div className="section-kicker mb-4">
-                <Sparkles className="h-3.5 w-3.5" />
-                Premium traveller flow
-              </div>
+              <div className="section-kicker mb-4">TheWingScan</div>
               <h2 className="max-w-2xl text-2xl md:text-4xl font-semibold font-[var(--font-display)] leading-tight">
-                Better search surfaces, clearer savings, and a calmer path from discovery to booking.
+                Search flights, track fares, and check status.
               </h2>
               <p className="max-w-2xl text-sm md:text-base text-[var(--text-secondary)] mt-4 leading-relaxed">
-                AirBook keeps the traveller path focused on search clarity, premium responsive design, and booking only when a fare is genuinely ready to continue.
+                Use TheWingScan to search routes, create alerts, and manage your trip tools in one place.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -46,15 +43,15 @@ export function Footer() {
                   href="/alerts"
                   className="inline-flex items-center gap-2 rounded-full border border-[var(--border-default)] px-4 py-3 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
                 >
-                  Track a route
+                  Create alert
                 </Link>
               </div>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
                 {[
-                  { icon: ShieldCheck, title: "Clear fare states", text: "Ready-to-book fares stay distinct from route context and temporary unavailability." },
-                  { icon: BellRing, title: "Track prices", text: "Save alerts and return when the route lines up with your target fare." },
-                  { icon: Radar, title: "Stay informed", text: "Check live flight status in a layout designed for phones, tablets, and desktops." },
+                  { icon: ShieldCheck, title: "Search fares", text: "Search routes and dates in one place before you continue to booking." },
+                  { icon: BellRing, title: "Track prices", text: "Save alerts and return when the route matches your target fare." },
+                  { icon: Radar, title: "Check status", text: "Look up departure and arrival updates quickly on any device." },
                 ].map((item) => (
                   <div key={item.title} className="surface-card rounded-[22px] p-4">
                     <item.icon className="w-4 h-4 text-[var(--accent-cta)] mb-3" />
@@ -88,8 +85,8 @@ export function Footer() {
 
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-sm font-semibold font-[var(--font-display)]">AirBook</p>
-              <p className="text-[11px] text-[var(--text-muted)] mt-1">© {new Date().getFullYear()} AirBook. Designed for cleaner flight discovery.</p>
+              <p className="text-sm font-semibold font-[var(--font-display)]">TheWingScan</p>
+              <p className="text-[11px] text-[var(--text-muted)] mt-1">© {new Date().getFullYear()} TheWingScan.</p>
             </div>
             <p className="max-w-xl text-[11px] leading-relaxed text-[var(--text-muted)] md:text-right">
               Availability, baggage, and refund rules are confirmed on the final booking page before payment is completed.

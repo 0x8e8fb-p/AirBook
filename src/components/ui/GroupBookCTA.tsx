@@ -16,7 +16,7 @@ export function GroupBookCTA({ pax, origin, destination, date }: Props) {
     `Group booking request: ${origin} → ${destination} on ${date} (${pax} pax)`,
   );
   const body = encodeURIComponent(
-    `Hi AirBook team,\n\nPlease send me a group-fare quote:\n\nRoute: ${origin} → ${destination}\nDate: ${date}\nPassengers: ${pax}\n\nThanks.`,
+    `Hi TheWingScan team,\n\nPlease send me a group-fare quote:\n\nRoute: ${origin} → ${destination}\nDate: ${date}\nPassengers: ${pax}\n\nThanks.`,
   );
 
   return (

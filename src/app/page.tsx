@@ -10,8 +10,6 @@ import {
   CreditCard,
   Radar,
   ShieldCheck,
-  Sparkles,
-  TicketPercent,
   Wallet,
 } from "lucide-react";
 
@@ -58,58 +56,40 @@ function buildRecentSearchHref(search: SearchParams) {
 const HERO_PILLARS = [
   {
     icon: ShieldCheck,
-    title: "Bookable live fares stay clear",
-    body: "Ready-to-book options remain distinct from route context, so you never mistake guidance for a checkout-ready fare.",
+    title: "Search flights",
+    body: "Search one-way or return trips by route, date, travellers, and cabin.",
   },
   {
     icon: Wallet,
-    title: "Final totals feel trustworthy",
-    body: "Card-aware pricing, clearer savings language, and calm hierarchy keep the payable amount easy to understand.",
+    title: "Set fare alerts",
+    body: "Save a route and come back when the price matches what you want to pay.",
   },
   {
     icon: CalendarDays,
-    title: "Flexibility is easy to read",
-    body: "Nearby-date context and route guidance appear without crowding the search-first experience.",
-  },
-];
-
-const JOURNEY_STEPS = [
-  {
-    step: "01",
-    title: "Start with a route",
-    body: "Enter airports, dates, travellers, and cabin in a search form designed to stay clear on every screen size.",
-  },
-  {
-    step: "02",
-    title: "Review the route with confidence",
-    body: "Use fare states, nearby-date cues, and savings guidance to understand the trip before you commit.",
-  },
-  {
-    step: "03",
-    title: "Continue only when the fare is ready",
-    body: "Checkout stays reserved for fares that can genuinely hand off to the final booking page.",
+    title: "Check nearby dates",
+    body: "Use date and route guidance to spot better timing before you book.",
   },
 ];
 
 const SURFACE_BENEFITS = [
   {
     icon: BellRing,
-    title: "Track routes without noise",
-    body: "Save alerts for the moments when live availability or your target fare returns.",
+    title: "Fare alerts",
+    body: "Save a route and get notified when the price changes.",
     href: "/alerts",
     cta: "View alerts",
   },
   {
     icon: Radar,
-    title: "Check flight status quickly",
-    body: "Use a traveller-friendly status screen for fast operational lookups and regional live-aircraft context.",
+    title: "Flight status",
+    body: "Check departure and arrival details in one place.",
     href: "/status",
     cta: "Open tracker",
   },
   {
     icon: CreditCard,
-    title: "Keep payment choices visible",
-    body: "Wallet-aware pricing and cleaner offer guidance make it easier to compare the real amount you will pay.",
+    title: "Wallet & profile",
+    body: "Keep saved details and payment options ready for your next booking.",
     href: "/profile",
     cta: "Open wallet",
   },
@@ -143,19 +123,19 @@ export default function HomePage() {
   const statCards = useMemo(
     () => [
       {
-        label: "Searches tracked today",
+        label: "Searches today",
         value: statsLoading ? "…" : stats.searchesToday.toLocaleString(),
       },
       {
-        label: "Visible savings this month",
+        label: "Savings this month",
         value: statsLoading ? "…" : formatLakhs(stats.moneySavedMonth),
       },
       {
-        label: "Traveller promise",
-        value: "Search first, clarity always",
+        label: "Recent searches",
+        value: recentSearches.length.toString(),
       },
     ],
-    [stats.moneySavedMonth, stats.searchesToday, statsLoading],
+    [recentSearches.length, stats.moneySavedMonth, stats.searchesToday, statsLoading],
   );
 
   return (
@@ -178,26 +158,21 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
             >
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/20 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/85 backdrop-blur-md">
-                <Sparkles className="h-3.5 w-3.5" />
-                Premium flight booking, grounded in clarity
-              </div>
-
               <h1 className="max-w-4xl text-balance font-[var(--font-display)] text-[3rem] font-semibold leading-[0.92] tracking-[-0.05em] text-white sm:text-[4rem] md:text-[4.8rem] lg:text-[5.2rem]">
-                Search with confidence.
+                Search flights, set alerts,
                 <br />
-                <span className="text-gradient-soft">Book only when the fare is truly ready.</span>
+                <span className="text-gradient-soft">and check status.</span>
               </h1>
 
               <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/74 sm:text-lg">
-                AirBook’s traveller path is built for real booking confidence: premium visuals, clearer route context, calmer motion, and fares that stay honest about whether they can continue to checkout.
+                Use TheWingScan to search routes, save price alerts, and track flights in one place.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-2.5">
                 {[
-                  "Live bookable fares clearly marked",
-                  "Reference-only context when availability is limited",
-                  "Responsive from phone to ultra-wide desktop",
+                  "Search flights",
+                  "Create price alerts",
+                  "Track flight status",
                 ].map((label) => (
                   <div
                     key={label}
@@ -269,13 +244,7 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.65, delay: 0.14, ease: [0.16, 1, 0.3, 1] }}
             >
-              <TravelerSearchForm
-                variant="hero"
-                title="Search with clarity"
-                description="Plan a trip with a search form that keeps route editing effortless and fare states easy to understand on every device."
-                submitLabel="Search flights"
-                helperText="Ready-to-book options stay distinct from route context, so you always know when checkout can genuinely continue."
-              />
+              <TravelerSearchForm variant="hero" submitLabel="Search flights" />
             </motion.div>
           </div>
         </div>
@@ -302,52 +271,15 @@ export default function HomePage() {
       </section>
 
       <section className="container-app relative z-10 border-t border-[var(--border-muted)] py-14 md:py-16">
-        <div className="mb-10 max-w-3xl">
-          <div className="section-kicker mb-4">
-            <TicketPercent className="h-3.5 w-3.5" />
-            Main traveller path
-          </div>
-          <h2 className="text-balance text-2xl font-semibold leading-tight md:text-4xl">
-            Every screen now keeps the route, the fare, and the next step easy to read.
-          </h2>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[var(--text-secondary)] md:text-base">
-            The premium redesign focuses on the moments that matter most: entering a route, scanning results, reviewing trust, and continuing only when the booking handoff is ready.
-          </p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          {JOURNEY_STEPS.map((step, index) => (
-            <motion.article
-              key={step.step}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.42, delay: index * 0.08 }}
-              className="surface-card rounded-[28px] p-6 md:p-7"
-            >
-              <div className="mb-5 flex items-center justify-between">
-                <span className="text-[11px] uppercase tracking-[0.22em] text-[var(--text-muted)]">{step.step}</span>
-                <ArrowRight className="h-4 w-4 text-[var(--text-muted)]" />
-              </div>
-              <h3 className="text-lg font-semibold text-[var(--text-primary)]">{step.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">{step.body}</p>
-            </motion.article>
-          ))}
-        </div>
-      </section>
-
-      <section className="container-app relative z-10 border-t border-[var(--border-muted)] py-14 md:py-16">
         <div className="mb-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="section-kicker mb-4">
-              <Sparkles className="h-3.5 w-3.5" />
-              Shared traveller surfaces
-            </div>
+            <div className="section-kicker mb-4">More tools</div>
             <h2 className="text-balance text-2xl font-semibold leading-tight md:text-4xl">
-              Alerts, status, and wallet-aware pricing feel like one polished journey.
+              More ways to use TheWingScan.
             </h2>
           </div>
           <p className="max-w-xl text-sm leading-relaxed text-[var(--text-secondary)] md:text-base">
-            The shared chrome, motion, backgrounds, and surfaces are tuned to feel premium without getting in the way of the primary booking task.
+            Create alerts, check flight status, and keep your profile ready for the next trip.
           </p>
         </div>
 
@@ -374,40 +306,6 @@ export default function HomePage() {
               </Link>
             </motion.article>
           ))}
-        </div>
-      </section>
-
-      <section className="container-app relative z-10 py-4 md:py-8">
-        <div className="surface-panel rounded-[34px] p-6 md:p-8">
-          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-            <div>
-              <div className="section-kicker mb-4">
-                <Sparkles className="h-3.5 w-3.5" />
-                Built for calm booking decisions
-              </div>
-              <h2 className="text-balance text-2xl font-semibold leading-tight md:text-4xl">
-                Premium visuals are only useful when they make the next choice easier.
-              </h2>
-              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[var(--text-secondary)] md:text-base">
-                Search-first hierarchy, tactile surfaces, reduced-motion care, mobile ergonomics, and cleaner copy now work together to keep the traveller experience polished and grounded.
-              </p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-              {[
-                "Improved layout rhythm on every device",
-                "Calmer gradients, shadows, and articulated backgrounds",
-                "Clearer checkout trust and summary structure",
-              ].map((item) => (
-                <div key={item} className="surface-card rounded-[22px] px-4 py-4 text-sm text-[var(--text-secondary)]">
-                  <div className="flex items-start gap-3">
-                    <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent-green)]" />
-                    <span>{item}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </section>
 

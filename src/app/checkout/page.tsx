@@ -242,7 +242,7 @@ function CheckoutContent() {
 
               <div className="min-w-0">
                 <div className="mb-2 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">Checkout</div>
-                <h1 className="text-balance text-2xl font-semibold md:text-3xl">Review this fare before you leave AirBook</h1>
+                <h1 className="text-balance text-2xl font-semibold md:text-3xl">Review your fare before booking</h1>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-[var(--text-secondary)]">
                   <span>{getAirportDisplay(selectedFlight.origin)}</span>
                   <span className="text-[var(--text-muted)]">→</span>

@@ -187,12 +187,9 @@ function CompareContent() {
                 <ArrowRightLeft className="h-3.5 w-3.5" />
                 Route compare
               </div>
-              <h1 className="text-balance text-3xl font-semibold leading-tight md:text-4xl">
-                Compare route pricing calmly before you switch into live booking.
-              </h1>
+              <h1 className="text-balance text-3xl font-semibold leading-tight md:text-4xl">Compare recent fares for this route.</h1>
               <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[var(--text-secondary)] md:text-base">
-                AirBook uses this surface for route-level guidance: recent fare context, airline price spread,
-                and payment savings worth checking once you move into a live search.
+                Use this page to review recent fare ranges, airline spread, and payment savings before you run a fresh search.
               </p>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
