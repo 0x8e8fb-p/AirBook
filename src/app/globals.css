@@ -215,6 +215,88 @@ html[data-theme="warm"] select {
     box-shadow: var(--shadow-sm);
   }
 
+  .calendar-day {
+    min-height: 6rem;
+    border-radius: 1.25rem;
+    border: 1px solid color-mix(in srgb, var(--border-default) 84%, transparent);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-elevated) 94%, white 3%) 0%,
+      color-mix(in srgb, var(--bg-subtle) 92%, transparent) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, white 10%, transparent),
+      var(--shadow-sm);
+    padding: 0.55rem 0.45rem;
+    transition:
+      transform 180ms ease,
+      border-color 180ms ease,
+      background-color 180ms ease,
+      box-shadow 180ms ease,
+      opacity 180ms ease;
+  }
+
+  .calendar-day:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--accent-cta) 28%, var(--border-strong));
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, white 10%, transparent),
+      0 18px 36px color-mix(in srgb, var(--accent-cta) 10%, transparent);
+  }
+
+  .calendar-day:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent-cta) 66%, white 6%);
+    outline-offset: 3px;
+  }
+
+  .calendar-day:disabled {
+    box-shadow: none;
+  }
+
+  .calendar-day.today {
+    border-color: color-mix(in srgb, var(--accent-cta) 32%, var(--border-strong));
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--accent-primary-dim) 74%, var(--bg-elevated) 26%) 0%,
+      color-mix(in srgb, var(--bg-elevated) 92%, transparent) 100%
+    );
+  }
+
+  .calendar-day.cheap {
+    border-color: color-mix(in srgb, var(--fare-cheap) 38%, var(--border-default));
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--fare-cheap) 16%, var(--bg-elevated) 84%) 0%,
+      color-mix(in srgb, var(--fare-cheap) 7%, var(--bg-subtle) 93%) 100%
+    );
+  }
+
+  .calendar-day.average {
+    border-color: color-mix(in srgb, var(--fare-average) 28%, var(--border-default));
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--fare-average) 12%, var(--bg-elevated) 88%) 0%,
+      color-mix(in srgb, var(--fare-average) 5%, var(--bg-subtle) 95%) 100%
+    );
+  }
+
+  .calendar-day.expensive {
+    border-color: color-mix(in srgb, var(--fare-expensive) 34%, var(--border-default));
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--fare-expensive) 14%, var(--bg-elevated) 86%) 0%,
+      color-mix(in srgb, var(--fare-expensive) 6%, var(--bg-subtle) 94%) 100%
+    );
+  }
+
+  .calendar-day.skeleton {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-subtle) 96%, transparent) 0%,
+      color-mix(in srgb, var(--bg-subtle) 86%, transparent) 100%
+    );
+    animation: calendar-pulse 1.6s ease-in-out infinite;
+  }
+
   .section-kicker {
     display: inline-flex;
     align-items: center;
@@ -297,6 +379,17 @@ html[data-theme-transition="wipe"] .theme-transition-overlay {
   to {
     clip-path: circle(var(--tt-r) at var(--tt-x) var(--tt-y));
     -webkit-clip-path: circle(var(--tt-r) at var(--tt-x) var(--tt-y));
+    opacity: 1;
+  }
+}
+
+@keyframes calendar-pulse {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+
+  50% {
     opacity: 1;
   }
 }

@@ -1,33 +1,120 @@
 "use client";
 
-import { useEffect, useState, useMemo, Suspense } from "react";
+import Link from "next/link";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { getAirportDisplay } from "@/lib/airports";
 import { formatPrice } from "@/lib/constants";
 import type { CalendarDay } from "@/lib/types";
 import {
   ArrowLeft,
   ArrowRight,
+  Calendar,
   ChevronLeft,
   ChevronRight,
-  Calendar,
-  Loader2,
-  Star,
   Info,
+  Loader2,
+  Search,
+  ShieldCheck,
+  Star,
 } from "lucide-react";
 
+const ROUTE_PATTERN = /^[a-z]{3}-to-[a-z]{3}$/i;
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
+
+function getStarterSearchDate() {
+  const starter = new Date(Date.now() + 3 * 86400000);
+  const local = new Date(starter.getTime() - starter.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
+function buildSearchHref(from: string, to: string, date: string) {
+  const params = new URLSearchParams({
+    from,
+    to,
+    date,
+    adults: "1",
+    children: "0",
+    infants: "0",
+    cabin: "economy",
+  });
+
+  return `/search?${params.toString()}`;
+}
+
+function formatDayLabel(date: string) {
+  const parsed = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return date;
+  return parsed.toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function formatDayAriaLabel(day: CalendarDay) {
+  if (day.cheapestPrice) {
+    return `${formatDayLabel(day.date)}. Recent fare from ${formatPrice(day.cheapestPrice)}.`;
+  }
+
+  return `${formatDayLabel(day.date)}. No recent fare context available.`;
+}
+
+function InvalidCalendarState() {
+  return (
+    <div className="min-h-[100dvh] pb-20">
+      <div className="container-app max-w-3xl py-6 md:py-8">
+        <section className="surface-panel rounded-[34px] p-6 md:p-8">
+          <div className="section-kicker mb-4">
+            <Calendar className="h-3.5 w-3.5" />
+            Fare calendar
+          </div>
+          <h1 className="text-balance text-3xl font-semibold leading-tight md:text-4xl">
+            Choose a route first to open the fare calendar.
+          </h1>
+          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[var(--text-secondary)] md:text-base">
+            This surface works best when it opens from a route watchlist or a live search path, so the calendar can stay focused on one city pair.
+          </p>
+
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/deals"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent-cta)] px-4 py-3 text-sm font-semibold text-[var(--text-inverse)] transition-opacity hover:opacity-90"
+            >
+              Browse route watchlist
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--border-default)] bg-[var(--bg-base)] px-4 py-3 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:border-[var(--border-strong)]"
+            >
+              Start live search
+            </Link>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
 
 function FareCalendarContent({ route }: { route: string }) {
   const router = useRouter();
-  const [origin, destination] = route.split("-to-").map((s) =>
-    s.toUpperCase().substring(0, 3)
-  );
+  const [origin, destination] = route.split("-to-").map((segment) => segment.toUpperCase().slice(0, 3));
 
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -35,372 +122,538 @@ function FareCalendarContent({ route }: { route: string }) {
   const [days, setDays] = useState<CalendarDay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [direction, setDirection] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [requestKey, setRequestKey] = useState(0);
 
   const originDisplay = getAirportDisplay(origin);
   const destDisplay = getAirportDisplay(destination);
 
   useEffect(() => {
-    const fetchCalendar = async () => {
+    let cancelled = false;
+
+    async function fetchCalendar() {
       setIsLoading(true);
+      setError(null);
+
       try {
-        const res = await fetch(
-          `/api/calendar?origin=${origin}&destination=${destination}&month=${month}&year=${year}`
+        const response = await fetch(
+          `/api/calendar?origin=${origin}&destination=${destination}&month=${month}&year=${year}`,
         );
-        const data = await res.json();
-        setDays(data.days || []);
-      } catch (err) {
-        console.error("Calendar fetch error:", err);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(typeof data?.error === "string" ? data.error : "Fare calendar unavailable");
+        }
+
+        if (cancelled) return;
+        setDays(Array.isArray(data.days) ? data.days : []);
+      } catch {
+        if (cancelled) return;
+        setDays([]);
+        setError("Recent fare context is unavailable for this route right now. Try another month or switch to live search.");
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
+    }
+
+    void fetchCalendar();
+
+    return () => {
+      cancelled = true;
     };
-    fetchCalendar();
-  }, [origin, destination, month, year]);
+  }, [destination, month, origin, requestKey, year]);
 
   const prevMonth = () => {
     setDirection(-1);
-    if (month === 1) {
-      setMonth(12);
-      setYear(year - 1);
-    } else {
-      setMonth(month - 1);
-    }
+    setMonth((currentMonth) => {
+      if (currentMonth === 1) {
+        setYear((currentYear) => currentYear - 1);
+        return 12;
+      }
+      return currentMonth - 1;
+    });
   };
 
   const nextMonth = () => {
     setDirection(1);
-    if (month === 12) {
-      setMonth(1);
-      setYear(year + 1);
-    } else {
-      setMonth(month + 1);
-    }
+    setMonth((currentMonth) => {
+      if (currentMonth === 12) {
+        setYear((currentYear) => currentYear + 1);
+        return 1;
+      }
+      return currentMonth + 1;
+    });
   };
 
-  // Pad days for calendar grid alignment
   const firstDayOfWeek = new Date(year, month - 1, 1).getDay();
   const paddedDays = useMemo(() => {
-    const padded: (CalendarDay | null)[] = [];
-    for (let i = 0; i < firstDayOfWeek; i++) {
+    const padded: Array<CalendarDay | null> = [];
+    for (let index = 0; index < firstDayOfWeek; index += 1) {
       padded.push(null);
     }
     return [...padded, ...days];
   }, [days, firstDayOfWeek]);
 
-  // Find cheapest day
   const cheapestDay = useMemo(() => {
-    const withPrices = days.filter((d) => d.cheapestPrice !== null);
-    if (withPrices.length === 0) return null;
-    return withPrices.reduce((min, d) =>
-      d.cheapestPrice! < min.cheapestPrice! ? d : min
-    );
+    const pricedDays = days.filter((day) => day.cheapestPrice !== null);
+    if (pricedDays.length === 0) return null;
+
+    return pricedDays.reduce((min, day) => (day.cheapestPrice! < min.cheapestPrice! ? day : min));
   }, [days]);
 
-  // Price stats for savings info
   const priceStats = useMemo(() => {
-    const prices = days.filter((d) => d.cheapestPrice !== null).map((d) => d.cheapestPrice!);
+    const prices = days
+      .filter((day) => day.cheapestPrice !== null)
+      .map((day) => day.cheapestPrice!);
+
     if (prices.length === 0) return null;
+
     return {
       min: Math.min(...prices),
       max: Math.max(...prices),
-      avg: Math.round(prices.reduce((a, b) => a + b, 0) / prices.length),
+      avg: Math.round(prices.reduce((sum, value) => sum + value, 0) / prices.length),
     };
   }, [days]);
 
+  const hasVisibleFares = days.some((day) => day.cheapestPrice !== null);
+  const fareCount = days.filter((day) => day.cheapestPrice !== null).length;
+  const starterDate = cheapestDay?.date ?? getStarterSearchDate();
+  const liveSearchHref = buildSearchHref(origin, destination, starterDate);
+
   const variants = {
-    enter: (direction: number) => {
-      return {
-        x: direction > 0 ? 50 : -50,
-        opacity: 0,
-      };
-    },
+    enter: (dir: number) => ({
+      x: dir > 0 ? 50 : -50,
+      opacity: 0,
+    }),
     center: {
       x: 0,
       opacity: 1,
     },
-    exit: (direction: number) => {
-      return {
-        x: direction < 0 ? 50 : -50,
-        opacity: 0,
-      };
-    },
+    exit: (dir: number) => ({
+      x: dir < 0 ? 50 : -50,
+      opacity: 0,
+    }),
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[var(--bg-primary)]">
-      {/* Header */}
-      <motion.header
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] sticky top-0 z-40"
-      >
-        <div className="container-app py-3 flex items-center gap-3">
-          <motion.button
-            onClick={() => router.push("/")}
-            whileHover={{ x: -3 }}
-            whileTap={{ scale: 0.9 }}
-            className="p-2 rounded-lg hover:bg-[var(--bg-surface)] transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </motion.button>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <Calendar className="w-4 h-4 text-[var(--color-primary)]" />
-              <span>Fare Calendar</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-[var(--text-tertiary)]">
-              <span>{originDisplay}</span>
-              <motion.div animate={{ x: [0, 4, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
-                <ArrowRight className="w-3 h-3 text-[var(--color-primary)]" />
-              </motion.div>
-              <span>{destDisplay}</span>
-            </div>
-          </div>
-        </div>
-      </motion.header>
+    <div className="min-h-[100dvh] pb-20">
+      <div className="container-app max-w-5xl py-6 md:py-8">
+        <section className="surface-panel rounded-[34px] p-5 md:p-6">
+          <div className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
+            <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>
+              <Link
+                href="/deals"
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--border-default)] bg-[var(--bg-base)] px-3.5 py-2 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:border-[var(--border-strong)]"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to route watchlist
+              </Link>
 
-      <div className="container-app py-6 max-w-3xl mx-auto">
-        {/* Legend + Info */}
-        <AnimatePresence>
-          {priceStats && !isLoading && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="glass-card p-4 mb-6"
-            >
-              <div className="flex flex-wrap items-center gap-4 text-xs">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm bg-[var(--fare-cheap)]" />
-                  <span className="text-[var(--text-secondary)]">Cheap</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm bg-[var(--fare-average)]" />
-                  <span className="text-[var(--text-secondary)]">Average</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm bg-[var(--fare-expensive)]" />
-                  <span className="text-[var(--text-secondary)]">Expensive</span>
-                </div>
-                <div className="ml-auto text-[var(--text-secondary)]">
-                  Cheapest day: <strong className="text-[var(--color-savings-light)]">{cheapestDay ? formatPrice(cheapestDay.cheapestPrice!) : "—"}</strong>
-                  {" · "}
-                  Savings up to <strong className="text-[var(--color-savings-light)]">{formatPrice(priceStats.max - priceStats.min)}</strong>
-                </div>
+              <div className="section-kicker mt-4 mb-4">
+                <Calendar className="h-3.5 w-3.5" />
+                Fare calendar
+              </div>
+              <h1 className="text-balance text-3xl font-semibold leading-tight md:text-4xl">
+                Choose your dates with clearer route context.
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[var(--text-secondary)] md:text-base">
+                This calendar shows recent market context for {origin} → {destination}. Tap a day to continue into live search and confirm fresh availability before checkout.
+              </p>
+
+              <div className="mt-6 flex flex-wrap items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
+                <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-base)] px-3 py-2">
+                  {originDisplay}
+                </span>
+                <ArrowRight className="h-4 w-4 text-[var(--text-muted)]" />
+                <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-base)] px-3 py-2">
+                  {destDisplay}
+                </span>
+              </div>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                {[
+                  {
+                    icon: ShieldCheck,
+                    title: "Reference context",
+                    body: "Use the calendar to choose dates. Checkout readiness is confirmed only after you switch to live search.",
+                  },
+                  {
+                    icon: Search,
+                    title: "Tap a day to search live",
+                    body: "A day opens the route in live search so you can confirm current pricing and availability for that date.",
+                  },
+                  {
+                    icon: Info,
+                    title: "Holiday markers included",
+                    body: "Local holidays stay visible so you can quickly spot dates that may carry higher travel demand.",
+                  },
+                ].map((item) => (
+                  <div key={item.title} className="surface-card rounded-[24px] p-4">
+                    <item.icon className="mb-3 h-4 w-4 text-[var(--accent-cta)]" />
+                    <h2 className="text-sm font-semibold">{item.title}</h2>
+                    <p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)]">{item.body}</p>
+                  </div>
+                ))}
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
 
-        {/* Month Navigation */}
-        <div className="flex items-center justify-between mb-4">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={prevMonth}
-            className="p-2 rounded-lg hover:bg-[var(--bg-surface)] transition-colors border border-transparent hover:border-[var(--border-primary)]"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </motion.button>
-          <motion.h2
-            key={`${year}-${month}`}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-xl font-bold"
-            style={{ fontFamily: "var(--font-space), system-ui" }}
-          >
-            {MONTHS[month - 1]} {year}
-          </motion.h2>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={nextMonth}
-            className="p-2 rounded-lg hover:bg-[var(--bg-surface)] transition-colors border border-transparent hover:border-[var(--border-primary)]"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </motion.button>
-        </div>
-
-        {/* Weekday Headers */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
-          {WEEKDAYS.map((day) => (
-            <div
-              key={day}
-              className="text-center text-xs font-medium text-[var(--color-primary-light)] py-2 uppercase tracking-wider"
-            >
-              {day}
-            </div>
-          ))}
-        </div>
-
-        {/* Calendar Grid */}
-        <div className="relative overflow-hidden rounded-xl">
-          <AnimatePresence initial={false} custom={direction} mode="wait">
             <motion.div
-              key={`${year}-${month}-${isLoading}`}
-              custom={direction}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{
-                duration: 0.4,
-                ease: [0.16, 1, 0.3, 1] // Ease out expo
-              }}
-              className="grid grid-cols-7 gap-1"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08 }}
+              className="surface-card rounded-[32px] p-5 md:p-6"
             >
-              {isLoading ? (
-                Array.from({ length: 35 }).map((_, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.01 }}
-                    className="calendar-day skeleton h-16 border-transparent"
-                  />
-                ))
-              ) : (
-                paddedDays.map((day, i) => {
-                  if (!day) {
-                    return <div key={`pad-${i}`} className="min-h-[60px]" />;
-                  }
+              <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                What this calendar means
+              </div>
 
-                  const dateNum = new Date(day.date).getDate();
-                  const isToday =
-                    day.date === new Date().toISOString().split("T")[0];
-                  const isCheapest =
-                    cheapestDay && day.date === cheapestDay.date;
+              <div className="rounded-[26px] border border-[var(--accent-cta)]/18 bg-[var(--accent-primary-dim)] p-5">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[var(--accent-cta)]" />
+                  <div>
+                    <div className="text-sm font-semibold">Recent price context only</div>
+                    <p className="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]">
+                      This view helps you compare dates, not skip straight to booking. When you spot a promising day, run a live search to confirm the fare can actually continue to checkout.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-                  return (
-                    <motion.button
-                      key={day.date}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * 0.01, duration: 0.3 }}
-                      whileHover={day.cheapestPrice ? { scale: 1.05, zIndex: 10 } : {}}
-                      whileTap={day.cheapestPrice ? { scale: 0.95 } : {}}
-                      onClick={() => {
-                        if (day.cheapestPrice) {
-                          router.push(
-                            `/search?from=${origin}&to=${destination}&date=${day.date}&adults=1&cabin=economy`
-                          );
-                        }
-                      }}
-                      disabled={!day.cheapestPrice}
-                      className={`calendar-day relative flex flex-col items-center justify-center ${
-                        day.priceLevel || ""
-                      } ${isToday ? "today font-bold" : ""} ${
-                        !day.cheapestPrice
-                          ? "opacity-40 cursor-not-allowed bg-[var(--bg-surface)]"
-                          : "bg-[var(--bg-surface)]"
-                      } ${isCheapest ? "shadow-[0_0_15px_rgba(16,185,129,0.3)] border-[var(--color-savings)]" : ""}`}
-                    >
-                      {isCheapest && (
-                        <motion.div
-                           animate={{ scale: [1, 1.2, 1] }}
-                           transition={{ duration: 2, repeat: Infinity }}
-                           className="absolute top-1 right-1"
-                        >
-                          <Star className="w-3 h-3 text-[var(--color-savings)] fill-[var(--color-savings)]" />
-                        </motion.div>
-                      )}
-                      
-                      <div
-                        className={`text-sm font-medium mb-1 ${
-                          isToday ? "text-[var(--color-primary)]" : "text-[var(--text-primary)]"
-                        }`}
-                      >
-                        {dateNum}
-                      </div>
+              <div className="mt-5 grid gap-3 grid-cols-2 lg:grid-cols-1">
+                <div className="rounded-[22px] border border-[var(--border-default)] bg-[var(--bg-subtle)] p-4">
+                  <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--text-muted)]">Best visible day</div>
+                  <div className="mt-2 text-lg font-semibold font-mono-price">
+                    {cheapestDay?.cheapestPrice ? formatPrice(cheapestDay.cheapestPrice) : "—"}
+                  </div>
+                </div>
+                <div className="rounded-[22px] border border-[var(--border-default)] bg-[var(--bg-subtle)] p-4">
+                  <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--text-muted)]">Spread this month</div>
+                  <div className="mt-2 text-lg font-semibold font-mono-price">
+                    {priceStats ? formatPrice(priceStats.max - priceStats.min) : "—"}
+                  </div>
+                </div>
+                <div className="rounded-[22px] border border-[var(--border-default)] bg-[var(--bg-subtle)] p-4 col-span-2 lg:col-span-1">
+                  <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--text-muted)]">Days with fare context</div>
+                  <div className="mt-2 text-lg font-semibold">{fareCount}</div>
+                </div>
+              </div>
 
-                      {day.cheapestPrice ? (
-                        <div
-                          className={`text-[10px] font-bold tabular-nums ${
-                            day.priceLevel === "cheap"
-                              ? "text-[var(--fare-cheap)]"
-                              : day.priceLevel === "expensive"
-                              ? "text-[var(--fare-expensive)]"
-                              : "text-[var(--text-secondary)]"
-                          }`}
-                        >
-                          {formatPrice(day.cheapestPrice)}
-                        </div>
-                      ) : (
-                        <div className="text-[10px] text-[var(--text-tertiary)]">
-                          —
-                        </div>
-                      )}
-
-                      {/* Holiday indicator dot */}
-                      {day.isHoliday && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] shadow-[0_0_5px_rgba(255,107,0,0.8)]"
-                          title={day.holidayName}
-                        />
-                      )}
-                    </motion.button>
-                  );
-                })
-              )}
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row lg:flex-col">
+                <Link
+                  href={liveSearchHref}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent-cta)] px-4 py-3 text-sm font-semibold text-[var(--text-inverse)] transition-opacity hover:opacity-90"
+                >
+                  <Search className="h-4 w-4" />
+                  Start live search
+                </Link>
+                <Link
+                  href="/deals"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--border-default)] bg-[var(--bg-base)] px-4 py-3 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:border-[var(--border-strong)]"
+                >
+                  Back to route watchlist
+                </Link>
+              </div>
             </motion.div>
+          </div>
+        </section>
+
+        <div className="mt-6 space-y-6" aria-live="polite">
+          {error ? (
+            <div className="rounded-[30px] border border-[var(--accent-red)]/20 bg-[var(--accent-red)]/10 p-5 md:p-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-[var(--accent-red)]">Fare calendar unavailable</div>
+                  <p className="mt-1 text-sm leading-relaxed text-[var(--accent-red)]/90">{error}</p>
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => setRequestKey((current) => current + 1)}
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent-red)] px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  >
+                    Retry calendar
+                  </button>
+                  <Link
+                    href={liveSearchHref}
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--accent-red)]/20 px-4 py-3 text-sm font-semibold text-[var(--accent-red)] transition-colors hover:bg-[var(--accent-red)]/10"
+                  >
+                    Go to live search
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {!error && !isLoading && !hasVisibleFares ? (
+            <div className="rounded-[30px] border border-[var(--accent-amber)]/20 bg-[var(--accent-amber)]/10 p-5 md:p-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-[var(--accent-amber)]">No recent fare context for this month</div>
+                  <p className="mt-1 text-sm leading-relaxed text-[var(--accent-amber)]/90">
+                    Try another month, or move into live search if you want to check current availability without waiting.
+                  </p>
+                </div>
+                <Link
+                  href={liveSearchHref}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent-amber)] px-4 py-3 text-sm font-semibold text-[var(--text-inverse)] transition-opacity hover:opacity-90"
+                >
+                  Start live search
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          ) : null}
+
+          {!error ? (
+            <section className="surface-card rounded-[32px] p-4 md:p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-wrap gap-2">
+                  <span className="status-pill border border-[var(--border-default)] bg-[var(--bg-subtle)] text-[var(--text-muted)]">
+                    Reference market context
+                  </span>
+                  <span className="status-pill border border-[var(--border-default)] bg-[var(--bg-subtle)] text-[var(--text-muted)]">
+                    Tap a day to search live
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-3 sm:justify-end">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={prevMonth}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--bg-base)] transition-colors hover:border-[var(--border-strong)]"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </motion.button>
+
+                  <motion.h2
+                    key={`${year}-${month}`}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="min-w-[180px] text-center text-xl font-semibold"
+                  >
+                    {MONTHS[month - 1]} {year}
+                  </motion.h2>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={nextMonth}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--bg-base)] transition-colors hover:border-[var(--border-strong)]"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </motion.button>
+                </div>
+              </div>
+
+              <div className="mt-5 grid grid-cols-7 gap-1">
+                {WEEKDAYS.map((day) => (
+                  <div
+                    key={day}
+                    className="py-2 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]"
+                  >
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-2 relative overflow-hidden rounded-[28px]">
+                <AnimatePresence initial={false} custom={direction} mode="wait">
+                  <motion.div
+                    key={`${year}-${month}-${isLoading}`}
+                    custom={direction}
+                    variants={variants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                    className="grid grid-cols-7 gap-1"
+                  >
+                    {isLoading
+                      ? Array.from({ length: 35 }).map((_, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: index * 0.01 }}
+                            className="calendar-day skeleton border-transparent"
+                          />
+                        ))
+                      : paddedDays.map((day, index) => {
+                          if (!day) {
+                            return <div key={`pad-${index}`} className="min-h-[96px]" />;
+                          }
+
+                          const dateNum = new Date(`${day.date}T00:00:00`).getDate();
+                          const todayValue = new Date().toISOString().split("T")[0];
+                          const isToday = day.date === todayValue;
+                          const isCheapest = Boolean(cheapestDay && day.date === cheapestDay.date);
+
+                          return (
+                            <motion.button
+                              key={day.date}
+                              initial={{ opacity: 0, scale: 0.97 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: index * 0.01, duration: 0.24 }}
+                              whileHover={day.cheapestPrice ? { y: -2 } : undefined}
+                              whileTap={day.cheapestPrice ? { scale: 0.98 } : undefined}
+                              onClick={() => {
+                                if (day.cheapestPrice) {
+                                  router.push(buildSearchHref(origin, destination, day.date));
+                                }
+                              }}
+                              disabled={!day.cheapestPrice}
+                              aria-label={formatDayAriaLabel(day)}
+                              className={`calendar-day relative flex flex-col items-center justify-center text-center ${
+                                day.priceLevel ?? ""
+                              } ${isToday ? "today font-bold" : ""} ${
+                                !day.cheapestPrice ? "cursor-not-allowed opacity-45" : ""
+                              } ${isCheapest ? "border-[var(--accent-green)] shadow-[0_0_24px_rgba(16,185,129,0.18)]" : ""}`}
+                            >
+                              {isCheapest ? (
+                                <motion.div
+                                  animate={{ scale: [1, 1.14, 1] }}
+                                  transition={{ duration: 2, repeat: Infinity }}
+                                  className="absolute top-2 right-2"
+                                >
+                                  <Star className="h-3.5 w-3.5 fill-[var(--accent-green)] text-[var(--accent-green)]" />
+                                </motion.div>
+                              ) : null}
+
+                              <div className={`mb-1 text-sm font-medium ${isToday ? "text-[var(--accent-cta)]" : "text-[var(--text-primary)]"}`}>
+                                {dateNum}
+                              </div>
+
+                              {day.cheapestPrice ? (
+                                <div
+                                  className={`text-[10px] font-semibold tabular-nums ${
+                                    day.priceLevel === "cheap"
+                                      ? "text-[var(--fare-cheap)]"
+                                      : day.priceLevel === "expensive"
+                                        ? "text-[var(--fare-expensive)]"
+                                        : "text-[var(--text-secondary)]"
+                                  }`}
+                                >
+                                  {formatPrice(day.cheapestPrice)}
+                                </div>
+                              ) : (
+                                <div className="text-[10px] text-[var(--text-muted)]">—</div>
+                              )}
+
+                              {day.isHoliday ? (
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="absolute bottom-2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[var(--accent-cta)] shadow-[0_0_6px_rgba(255,107,0,0.7)]"
+                                  title={day.holidayName}
+                                />
+                              ) : null}
+                            </motion.button>
+                          );
+                        })}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </section>
+          ) : null}
+
+          <AnimatePresence>
+            {!error && priceStats && !isLoading ? (
+              <motion.section
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="surface-card rounded-[30px] p-5 md:p-6"
+              >
+                <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--text-secondary)]">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-sm bg-[var(--fare-cheap)]" />
+                    Lower-fare days
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-sm bg-[var(--fare-average)]" />
+                    Mid-range days
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-sm bg-[var(--fare-expensive)]" />
+                    Higher-fare days
+                  </div>
+                  <div className="ml-auto text-sm">
+                    Best visible day {cheapestDay?.cheapestPrice ? <strong className="font-mono-price text-[var(--text-primary)]">{formatPrice(cheapestDay.cheapestPrice)}</strong> : "—"}
+                    {" · "}
+                    Typical month {priceStats.avg ? <strong className="font-mono-price text-[var(--text-primary)]">{formatPrice(priceStats.avg)}</strong> : "—"}
+                  </div>
+                </div>
+              </motion.section>
+            ) : null}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {!isLoading && days.some((day) => day.isHoliday) ? (
+              <motion.section
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="surface-card overflow-hidden rounded-[30px]"
+              >
+                <div className="border-b border-[var(--border-default)] p-5">
+                  <div className="flex items-center gap-2">
+                    <Info className="h-4 w-4 text-[var(--accent-cta)]" />
+                    <h2 className="text-lg font-semibold">Holiday timing this month</h2>
+                  </div>
+                  <p className="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]">
+                    Keep nearby holidays in view when you compare dates, especially when demand might shift around the route.
+                  </p>
+                </div>
+
+                <div className="space-y-3 p-5">
+                  {days
+                    .filter((day) => day.isHoliday)
+                    .map((day, index) => {
+                      const isClickable = Boolean(day.cheapestPrice);
+
+                      return (
+                        <motion.div
+                          key={day.date}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.06 }}
+                          className={`flex items-center gap-3 rounded-[22px] border border-[var(--border-default)] bg-[var(--bg-subtle)] p-4 text-sm text-[var(--text-secondary)] ${
+                            isClickable ? "cursor-pointer transition-colors hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]" : ""
+                          }`}
+                          onClick={() => {
+                            if (isClickable) {
+                              router.push(buildSearchHref(origin, destination, day.date));
+                            }
+                          }}
+                        >
+                          <div className="w-10 shrink-0 text-center font-semibold text-[var(--text-primary)]">
+                            {new Date(`${day.date}T00:00:00`).getDate()}
+                          </div>
+                          <div className="h-2 w-2 rounded-full bg-[var(--accent-cta)] shadow-[0_0_6px_rgba(255,107,0,0.7)]" />
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-[var(--text-primary)]">{day.holidayName}</div>
+                            <div className="mt-1 text-[11px] text-[var(--text-muted)]">{formatDayLabel(day.date)}</div>
+                          </div>
+                          <div className="text-right">
+                            {day.cheapestPrice ? (
+                              <div className="text-sm font-semibold font-mono-price text-[var(--text-primary)]">
+                                {formatPrice(day.cheapestPrice)}
+                              </div>
+                            ) : (
+                              <div className="text-[11px] text-[var(--text-muted)]">No fare context</div>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                </div>
+              </motion.section>
+            ) : null}
           </AnimatePresence>
         </div>
-
-        {/* Holiday List for this month */}
-        <AnimatePresence>
-          {!isLoading && days.some((d) => d.isHoliday) && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-6 glass-card border border-[rgba(255,107,0,0.2)] overflow-hidden"
-            >
-              <div className="p-4 bg-[rgba(255,107,0,0.05)]">
-                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <Info className="w-4 h-4 text-[var(--color-primary)]" />
-                  Holidays this month
-                </h3>
-                <div className="space-y-3">
-                  {days
-                    .filter((d) => d.isHoliday)
-                    .map((d, i) => (
-                      <motion.div
-                        key={d.date}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                        className="flex items-center gap-3 text-sm text-[var(--text-secondary)] group hover:text-[var(--text-primary)] transition-colors cursor-pointer"
-                        onClick={() => {
-                           if (d.cheapestPrice) {
-                              router.push(`/search?from=${origin}&to=${destination}&date=${d.date}&adults=1&cabin=economy`);
-                           }
-                        }}
-                      >
-                        <div className="w-8 flex-shrink-0 text-center font-bold text-[var(--color-primary-light)]">
-                          {new Date(d.date).getDate()}
-                        </div>
-                        <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] shadow-[0_0_5px_rgba(255,107,0,0.8)]" />
-                        <span className="flex-1 font-medium group-hover:text-[var(--color-primary)] transition-colors">
-                          {d.holidayName}
-                        </span>
-                        {d.cheapestPrice && (
-                          <span className={`text-xs font-bold ${
-                              d.priceLevel === "cheap" ? "text-[var(--fare-cheap)]" : 
-                              d.priceLevel === "expensive" ? "text-[var(--fare-expensive)]" : 
-                              "text-[var(--text-primary)]"
-                          }`}>
-                            {formatPrice(d.cheapestPrice)}
-                          </span>
-                        )}
-                      </motion.div>
-                    ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   );
@@ -408,19 +661,28 @@ function FareCalendarContent({ route }: { route: string }) {
 
 export default function CalendarPage() {
   const params = useParams();
-  const route = (params?.route as string) || "del-to-bom";
+  const rawRoute = Array.isArray(params?.route) ? params.route[0] : (params?.route as string | undefined);
+
+  if (!rawRoute || !ROUTE_PATTERN.test(rawRoute)) {
+    return <InvalidCalendarState />;
+  }
 
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
-          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
-            <Loader2 className="w-8 h-8 text-[var(--color-primary)]" />
-          </motion.div>
+        <div className="min-h-[100dvh] pb-20">
+          <div className="container-app max-w-3xl py-6 md:py-8">
+            <div className="surface-card flex min-h-[260px] items-center justify-center rounded-[34px]">
+              <div className="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Loading fare calendar…
+              </div>
+            </div>
+          </div>
         </div>
       }
     >
-      <FareCalendarContent route={route} />
+      <FareCalendarContent route={rawRoute} />
     </Suspense>
   );
 }
