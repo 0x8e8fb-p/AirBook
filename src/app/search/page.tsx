@@ -858,25 +858,6 @@ function SearchContent() {
     };
   }, [cabin, date, from, hasRequiredSearchParams, normalizedOwnedCards, ownedCardsKey, passengerCount, refreshKey, to]);
 
-  useEffect(() => {
-    if (!hasRequiredSearchParams) {
-      return;
-    }
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsLoading(true);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsInsightsLoading(true);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setError(null);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIntelligence(null);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setActiveFilterCount(0);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFilterResetToken((current) => current + 1);
-  }, [routeKey, cabin, passengerCount, ownedCardsKey, hasRequiredSearchParams, refreshKey]);
-
   const avgPrice = useMemo(() => {
     if (allFlights.length === 0) return 0;
     const sum = allFlights.reduce((acc, flight) => acc + flight.price, 0);
@@ -1320,7 +1301,7 @@ function SearchContent() {
                   Start a search with a valid origin, destination, and departure date to view fares for this route.
                 </p>
               </div>
-            ) : isLoading ? (
+            ) : isLoading || isInsightsLoading ? (
               <div className="mx-auto flex max-w-4xl flex-col gap-4 pt-2">
                 <div className="surface-card rounded-[28px] p-5 md:p-6">
                   <div className="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
