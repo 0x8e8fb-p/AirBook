@@ -345,7 +345,9 @@ function IntelligenceContent() {
 
                   {result?.advice ? (
                     <>
-                      <div className="mt-4 inline-flex rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] ${getTrendTone(result.advice.price_trend)}">
+                      <div
+                        className={`mt-4 inline-flex rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] ${getTrendTone(result.advice.price_trend)}`}
+                      >
                         {formatTrendLabel(result.advice.price_trend)} trend
                       </div>
                       <div className="mt-4 text-lg font-semibold">

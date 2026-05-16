@@ -615,13 +615,17 @@ function FareCalendarContent({ route }: { route: string }) {
                       const isClickable = Boolean(day.cheapestPrice);
 
                       return (
-                        <motion.div
+                        <motion.button
                           key={day.date}
+                          type="button"
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.06 }}
-                          className={`flex items-center gap-3 rounded-[22px] border border-[var(--border-default)] bg-[var(--bg-subtle)] p-4 text-sm text-[var(--text-secondary)] ${
-                            isClickable ? "cursor-pointer transition-colors hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]" : ""
+                          disabled={!isClickable}
+                          className={`flex w-full items-center gap-3 rounded-[22px] border border-[var(--border-default)] bg-[var(--bg-subtle)] p-4 text-left text-sm text-[var(--text-secondary)] ${
+                            isClickable
+                              ? "cursor-pointer transition-colors hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
+                              : "cursor-not-allowed opacity-70"
                           }`}
                           onClick={() => {
                             if (isClickable) {
@@ -646,7 +650,7 @@ function FareCalendarContent({ route }: { route: string }) {
                               <div className="text-[11px] text-[var(--text-muted)]">No fare context</div>
                             )}
                           </div>
-                        </motion.div>
+                        </motion.button>
                       );
                     })}
                 </div>
