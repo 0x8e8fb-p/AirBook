@@ -66,29 +66,111 @@
 ├── src/
 │   ├── app/                       # Next.js App Router
 │   │   ├── actions/               # Server Actions (all business logic)
+│   │   │   ├── aggregatorActions.ts
+│   │   │   ├── alertActions.ts
+│   │   │   ├── authActions.ts
+│   │   │   ├── compareActions.ts
+│   │   │   ├── dealsActions.ts
+│   │   │   ├── flightActions.ts
+│   │   │   ├── intelligenceActions.ts
+│   │   │   ├── priceFreezeActions.ts
+│   │   │   ├── priceFreezeActions.test.ts
+│   │   │   ├── trafficActions.ts
+│   │   │   └── userActions.ts
 │   │   ├── api/                   # API Routes + Cron
-│   │   ├── [page].tsx             # Top-level pages
+│   │   │   ├── airports/route.ts
+│   │   │   ├── auth/[...nextauth]/route.ts
+│   │   │   ├── calendar/route.ts
+│   │   │   ├── cron/track/route.ts
+│   │   │   ├── prices/history/route.ts
+│   │   │   └── search/route.ts
+│   │   ├── aggregator/page.tsx
+│   │   ├── alerts/page.tsx
+│   │   ├── calendar/[route]/page.tsx
+│   │   ├── checkout/page.tsx
+│   │   ├── compare/page.tsx
+│   │   ├── deals/page.tsx
+│   │   ├── intelligence/page.tsx
 │   │   ├── layout.tsx             # Root layout (SSR theme + fonts)
+│   │   ├── login/page.tsx
+│   │   ├── page.tsx               # Homepage
+│   │   ├── profile/page.tsx
+│   │   ├── profile/loading.tsx
+│   │   ├── register/page.tsx
+│   │   ├── reset-password/page.tsx
+│   │   ├── search/page.tsx
+│   │   ├── status/page.tsx
+│   │   ├── verify-email/page.tsx
 │   │   ├── globals.css            # Global styles + theme transitions
-│   │   └── page.tsx               # Homepage
+│   │   └── favicon.ico
 │   │
 │   ├── components/
-│   │   ├── layout/                # Navbar, Footer, EnvWarningBanner, ScrollProgressBar
-│   │   ├── theme/                 # ThemeFab, ThemeTransitionOverlay, useThemeController
-│   │   ├── ui/                    # Reusable UI components (30+ files)
+│   │   ├── layout/
+│   │   │   ├── EnvWarningBanner.tsx
+│   │   │   ├── Footer.tsx
+│   │   │   ├── Navbar.tsx
+│   │   │   ├── Navbar.test.tsx
+│   │   │   └── ScrollProgressBar.tsx
+│   │   ├── theme/
+│   │   │   ├── ThemeFab.tsx
+│   │   │   ├── ThemeFab.test.tsx
+│   │   │   ├── ThemeTransitionOverlay.tsx
+│   │   │   └── useThemeController.ts
+│   │   ├── ui/
+│   │   │   ├── AlternativeItineraries.tsx
+│   │   │   ├── AnimatedText.tsx
+│   │   │   ├── Badge.tsx
+│   │   │   ├── Button.tsx
+│   │   │   ├── CostCuttingTips.tsx
+│   │   │   ├── CustomCursor.tsx
+│   │   │   ├── DateHinter.tsx
+│   │   │   ├── FareDipAlert.tsx
+│   │   │   ├── FlightArc.tsx
+│   │   │   ├── GlassCard.tsx
+│   │   │   ├── GroupBookCTA.tsx
+│   │   │   ├── Input.tsx
+│   │   │   ├── MagneticButton.tsx
+│   │   │   ├── OfferClaimGuide.tsx
+│   │   │   ├── PriceFreezeButton.tsx
+│   │   │   ├── PriceTicker.tsx
+│   │   │   ├── ScrollReveal.tsx
+│   │   │   ├── Skeleton.tsx
+│   │   │   └── Spinner.tsx
+│   │   ├── dashboard/
+│   │   │   └── PriceTrendChart.tsx
 │   │   └── Providers.tsx          # NextAuth SessionProvider
 │   │
 │   ├── lib/                       # Core libraries (NO React components)
-│   │   ├── api/                   # Travelpayouts client, types, cache, rate limit
-│   │   ├── flight/                # Offer engine, price trends, split tickets
-│   │   ├── theme/                 # Theme types, resolver, storage helpers
+│   │   ├── api/
+│   │   │   ├── live-flight-mapper.ts
+│   │   │   ├── rateLimit.test.ts
+│   │   │   ├── rateLimit.ts
+│   │   │   ├── travelpayoutsCache.ts
+│   │   │   ├── travelpayoutsClient.test.ts
+│   │   │   ├── travelpayoutsClient.ts
+│   │   │   └── travelpayoutsTypes.ts
+│   │   ├── flight/
+│   │   │   ├── offerEngine.test.ts
+│   │   │   ├── offerEngine.ts
+│   │   │   ├── priceTrend.test.ts
+│   │   │   ├── priceTrend.ts
+│   │   │   ├── splitTicket.test.ts
+│   │   │   └── splitTicket.ts
+│   │   ├── theme/
+│   │   │   ├── resolve.test.ts
+│   │   │   ├── resolve.ts
+│   │   │   ├── storage.ts
+│   │   │   └── types.ts
 │   │   ├── airports.ts            # 600+ airport database + fuzzy search
 │   │   ├── auth.ts                # NextAuth configuration
 │   │   ├── banks.ts               # Available bank/card list
 │   │   ├── constants.ts           # Airlines, filters, formatters
+│   │   ├── gsap.ts                # GSAP plugin registration
 │   │   ├── holidays.ts            # Indian holidays
+│   │   ├── lenis.tsx              # Smooth scroll provider
 │   │   ├── prisma.ts              # Prisma singleton
 │   │   ├── types.ts               # Core TypeScript types
+│   │   ├── utils.test.ts          # Utility tests
 │   │   ├── utils.ts               # cn(), sortFlights(), fuzzyMatch(), formatBankName()
 │   │   └── validators.ts          # Zod schemas
 │   │
@@ -106,30 +188,48 @@
 │   └── proxy.ts                   # Middleware (rate limiting + auth guard)
 │
 ├── supabase/
-│   └── migrations/              # SQL migrations (RLS policies, triggers)
+│   └── migrations/
+│       ├── 001_initial_schema.sql
+│       └── 002_persistence.sql
 │
 ├── docs/
-│   ├── plans/                   # Implementation plans (empty)
+│   ├── plans/
+│   │   └── 2026-04-17-flight-streaming.md
 │   ├── superpowers/
-│   │   ├── plans/               # 20+ detailed implementation plans (MD)
-│   │   └── specs/               # Architecture spec documents
-│   └── TheWingsScan-Architecture-Graph.md  # Mermaid architecture diagram
+│   │   ├── plans/                 # 20+ detailed implementation plans (MD)
+│   │   └── specs/                 # Architecture spec documents
+│   ├── TheWingsScan-Architecture-Graph.md  # Mermaid architecture diagram
+│   └── .DS_Store
 │
 ├── scripts/
-│   ├── test_auth_flow.py        # Playwright smoke test
-│   └── trigger-cron.sh          # Manual cron trigger
+│   ├── test_auth_flow.py          # Playwright smoke test
+│   └── trigger-cron.sh            # Manual cron trigger
 │
 ├── .github/
 │   └── workflows/
-│       └── track-flights.yml    # GitHub Actions cron fallback
+│       └── track-flights.yml      # GitHub Actions cron fallback
 │
-├── public/                      # Static assets
-├── next.config.ts               # Next.js config (CSP, images, headers)
-├── vercel.json                  # Vercel cron + region config
-├── tsconfig.json                # TypeScript paths: `@/* -> ./src/*`
-├── postcss.config.mjs           # Tailwind v4 PostCSS plugin
-├── eslint.config.mjs            # ESLint flat config
-└── .env.example                 # Required environment variables
+├── public/                        # Static assets
+│   ├── file.svg
+│   ├── globe.svg
+│   ├── next.svg
+│   ├── vercel.svg
+│   └── window.svg
+│
+├── next.config.ts                 # Next.js config (CSP, images, headers)
+├── vercel.json                    # Vercel cron + region config
+├── tsconfig.json                  # TypeScript paths: @/* -> ./src/*
+├── postcss.config.mjs             # Tailwind v4 PostCSS plugin
+├── eslint.config.mjs              # ESLint flat config
+├── vitest.config.ts               # Vitest config (jsdom, aliases)
+├── .env.example                   # Required environment variables
+├── .env                           # Local env (gitignored)
+├── .gitignore
+├── AGENTS.md                      # Agent rules (Next.js breaking changes note)
+├── CLAUDE.md                      # Points to AGENTS.md
+├── DEPLOY.md                      # Deployment checklist
+├── README.md                      # Human-facing project overview
+└── ARCHITECTURE.md                # This file
 ```
 
 ---
@@ -162,6 +262,12 @@
 - `PriceHistory`: `routeId + departureDate`
 - `PriceFreeze`: `userId + expiresAt`
 - `FlightOffer`: `active + validUntil`, `category + bankCode`, `platform`
+
+### Supabase Migrations
+- `001_initial_schema.sql`: Raw SQL tables (users, credit_cards, flights_cache, price_history, user_searches, user_alerts, coupons, deals_feed, user_savings_log) with RLS policies and triggers.
+- `002_persistence.sql`: Additional tables (search_history, price_alerts, booking_logs) with UUID primary keys and RLS policies.
+
+> **Note:** Prisma schema is the source of truth at runtime. Supabase migrations are legacy/backup SQL.
 
 ---
 
@@ -203,8 +309,8 @@
 
 TheWingsScan does NOT scrape flights directly. Flight metadata, fare calendars, cached price intelligence, and optional Aviasales real-time search come from **Travelpayouts / Aviasales** through server-only code.
 
-**Client:** `src/lib/api/travelpayoutsClient.ts`
-**Types:** `src/lib/api/travelpayoutsTypes.ts`
+**Client:** `src/lib/api/travelpayoutsClient.ts` (929 lines)  
+**Types:** `src/lib/api/travelpayoutsTypes.ts` (584 lines)  
 **Cache:** `src/lib/api/travelpayoutsCache.ts` (84 lines)
 
 ### Auth Pattern
@@ -244,11 +350,101 @@ Two-tier cache:
 
 `cacheKey()` builds colon-delimited keys. `cacheGet()` checks memory first, then Redis. `cacheSet()` writes to both.
 
+### travelpayoutsClient.ts — Exported Functions
+
+#### Classes
+- `TravelpayoutsConfigError` — thrown when env vars are missing.
+- `TravelpayoutsError` — thrown on HTTP errors; carries `status`, `body?`, `code?`.
+
+#### `requestJson<T>(pathOrUrl, schema, init?)`
+Core fetch wrapper with retry, timeout (8s), header injection, and Zod validation.
+
+#### `buildFlightSearchSignature(token, payload)`
+Builds MD5 signature for Aviasales real-time search from sorted payload values.
+
+#### `searchAirports(params)`
+Fuzzy search over Travelpayouts airport list (cached 24h), falls back to local `searchAirports` in `src/lib/airports.ts`.
+
+#### `listAirlines()`
+Returns cached airline metadata.
+
+#### `searchFares(params)`
+Primary flight search. Tries real-time if enabled; otherwise uses calendar rows filtered by date.
+
+#### `faresCalendar(params)`
+Returns cheapest fare per day for a given month.
+
+#### `listCoupons(_params)`
+Parses `TRAVELPAYOUTS_PARTNER_OFFERS_JSON` env var into Coupon array.
+
+#### `latestPrices(origin?, limit?)`
+Wraps `/v2/prices/latest`.
+
+#### `routeFaresForAnalysis(origin, destination)`
+Returns fares for trend/comparison intelligence.
+
+#### `getDealsTrends()`
+Returns top 12 cheapest routes + most active airlines from latest prices.
+
+#### `getTrendingRoutes(limit?)`
+Returns biggest_drops array.
+
+#### `getNearbyAirportDeals(iata, _radiusKm?)`
+Returns destination ideas from an origin.
+
+#### `searchBankOffers(_bank?, _ota?, limit?)`
+Returns coupons mapped to bank offer shape.
+
+#### `searchCoupons(_q?, _bank?, _ota?, _airline?, limit?)`
+Returns raw coupons slice.
+
+#### `getForecast(origin, destination, _days?)`
+Returns median, p25, p75, sample_size, recommendation.
+
+#### `predictPrice(origin, destination, airline, departDate)`
+Predicts price from calendar rows for a specific date + airline.
+
+#### `getBestTimeToBook(origin, destination)`
+Returns recommendation, price_trend, cheapest_day_of_week, cheapest_month.
+
+#### `compareOta(origin, destination)`
+Groups fares by source API; returns cheapest per source.
+
+#### `compareAirline(origin, destination)`
+Groups fares by airline; returns cheapest/average per airline.
+
+#### `getBankCombo(origin, destination)`
+Returns best_combo (base_price, bank_savings, effective_price).
+
+#### `getBestForRoute(origin, destination, _bank?)`
+Returns cheapest fare for route.
+
+#### `aggregatorSearch(fromCode, toCode, departDate, _returnDate?, _providers?)`
+Wraps searchFares into AggregatorFlight shape.
+
+#### `aggregatorBestDeal(fromCode, toCode, departDate)`
+Returns cheapestOption wrapper.
+
+#### `multiCitySearch(legs, passengers?)`
+Runs searchFares for each leg in parallel.
+
+#### `listProviders()`
+Returns `[{ id: "travelpayouts", name: "Travelpayouts / Aviasales", active: true }]`.
+
+#### `getProviderOffers(_provider)`
+Alias for `searchCouponents()`.
+
+#### `createBookingLink(searchId, bookingToken)`
+Generates affiliate click URL from Travelpayouts.
+
+#### `travelpayoutsApi` (namespace object)
+Exports all functions above as a single object.
+
 ---
 
 ## 7. Authentication System
 
-**File:** `src/lib/auth.ts`
+**File:** `src/lib/auth.ts` (98 lines)
 
 ### Providers
 1. **Google OAuth** (`next-auth/providers/google`)
@@ -332,6 +528,12 @@ Two-tier cache:
 
 **Key rule:** If user has no cards saved, only universal offers (UPI wallets, generic promos) are shown.
 
+**Exported functions:**
+- `getActiveOffers(airlineCode?)`
+- `getOffersForUser(userCards?, price?, airlineCode?)`
+- `calculateBestEffectivePrice(baseFare, userCards?, airlineCode?)`
+- `getAllApplicableOffers(baseFare, userCards?, airlineCode?)`
+
 ### 9.2 Live Flight Mapper (`src/lib/api/live-flight-mapper.ts`)
 
 **Goal:** Convert `EnrichedFlight` (from server action) → `FlightResult` (frontend type).
@@ -342,6 +544,9 @@ Two-tier cache:
 - Resolves source API name to `FlightSource` enum
 - Builds `FlightSegment` and `FlightResult` objects
 - Sets default baggage: cabin 7kg, checked 15kg
+
+**Exported functions:**
+- `fetchFlights(origin, destination, date, userCards?)`
 
 ### 9.3 Price Trend Analysis (`src/lib/flight/priceTrend.ts`)
 
@@ -356,6 +561,9 @@ Two-tier cache:
    - `RISING`: current ≥ 30d avg × 1.08 AND 7d avg > 30d avg × 1.03
    - `STABLE`: everything else
 5. Confidence: `high` (≥20 samples), `medium` (≥8), `low`
+
+**Exported functions:**
+- `analyzePriceTrend(origin, destination, departureDate): Promise<TrendResult>`
 
 ### 9.4 Split Ticket Finder (`src/lib/flight/splitTicket.ts`)
 
@@ -392,18 +600,89 @@ if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError
 throw err;
 ```
 
-| Action File | Exports | Role |
-|-------------|---------|------|
-| `flightActions.ts` | `searchFlightsAction`, `getAndTrackFlights`, `logSearchAction`, `logBookingClick`, `getPlatformStats`, `fetchCheckoutOffers`, `fetchPriceTrend`, `getCheapestNearbyDays`, `fetchSplitTicketSuggestions`, `fetchHiddenCityOpportunities`, + Travelpayouts wrappers | Core flight search + tracking + analytics |
-| `authActions.ts` | `registerUser`, `sendPasswordResetEmail`, `verifyEmail`, `updateProfile`, `deleteAccount`, `updateProfileImage`, `updatePassword` | Auth lifecycle |
-| `userActions.ts` | `syncWallet`, `getUserWallet` | Card wallet persistence |
-| `alertActions.ts` | `subscribePriceAlert`, `getPriceAlerts`, `removePriceAlert` + backward-compat aliases | Price alerts |
-| `aggregatorActions.ts` | `searchAggregatorFlights`, `getAggregatorProviders`, `getProviderOffers`, `getAggregatorBestDeal`, `searchMultiCity` | Multi-OTA aggregation |
-| `compareActions.ts` | `getOtaComparison`, `getAirlineComparison`, `getBestBankCombo`, `getBestForRoute`, `getFareComparePageData` | Fare comparison |
-| `dealsActions.ts` | `getDealsTrends`, `getNearbyAirportDeals`, `getBankOffers`, `getSearchCoupons`, `getDealsPageData` | Deals & offers |
-| `intelligenceActions.ts` | `getPriceForecast`, `getMlPricePrediction`, `getBookingAdvice`, `getTrendingRoutes`, `getIntelligenceCombined` | ML intelligence |
-| `trafficActions.ts` | `getTrafficDaily`, `getTrafficSummary`, `getDomesticTraffic` | Compatibility traffic helpers; returns empty/default data until a dedicated traffic source is attached |
-| `priceFreezeActions.ts` | `createPriceFreeze`, `getUserActiveFreezes`, `redeemPriceFreeze` | Fare lock feature |
+### 10.1 `flightActions.ts` (399 lines)
+**Core flight search + tracking + analytics.**
+- `searchFlightsAction(origin, destination, date, userCards?, opts?)` — dedupes fares by flightNumber+hour bucket, enriches with offer engine, logs search + price history.
+- `getAndTrackFlights(...)` — alias for `searchFlightsAction`.
+- `logSearchAction(origin, destination, date)` — writes to `SearchHistory`.
+- `logBookingClick(route, airline, price, discountSaved)` — writes to `BookingClick`.
+- `getPlatformStats()` — returns `{ searchesToday, moneySavedMonth }`.
+- `fetchCheckoutOffers(baseFare, airlineCode?, userCards?)` — dynamic import of `getAllApplicableOffers`.
+- `fetchPriceTrend(origin, destination, date)` — dynamic import of `analyzePriceTrend`.
+- `getCheapestNearbyDays(origin, destination, selectedDate, windowDays?)` — queries calendar for ±days.
+- `fetchSplitTicketSuggestions(...)` / `fetchHiddenCityOpportunities(...)` — dynamic imports.
+- `searchAggregatorFlights(...)` — wrapper around `travelpayoutsApi.aggregatorSearch`.
+- `getFlightStatus(flightNumber)` — wrapper.
+- `getLiveFlightsSnapshot(bounds?)` — wrapper.
+- `createBookingLinkAction(searchId, bookingToken)` — wrapper.
+- `getBestDealForRoute(...)` — wrapper.
+- `getAirportWeather(iata)` — wrapper.
+
+### 10.2 `authActions.ts` (324 lines)
+**Auth lifecycle.**
+- `registerUser(formData)` — validates uniqueness (email, username, mobile), hashes password with bcrypt, creates `VerificationToken`, sends Resend email.
+- `sendPasswordResetEmail(email)` — creates 1h token, sends reset email.
+- `verifyEmail(formData)` — validates token, sets `emailVerified`, deletes token.
+- `updateProfile(userId, formData)` — updates name, username, mobile, dob with uniqueness checks.
+- `deleteAccount(userId)` — `prisma.user.delete`.
+- `updateProfileImage(userId, imageUrl)` — stores base64/compressed image string.
+- `updatePassword(formData)` — verifies token, hashes new password, deletes token.
+
+### 10.3 `userActions.ts` (65 lines)
+**Card wallet persistence.**
+- `syncWallet(ownedCards)` — validates cards against `AVAILABLE_BANK_CARD_IDS`, stores JSON in `User.savedCards`.
+- `getUserWallet()` — reads `User.savedCards`, parses JSON, validates.
+
+### 10.4 `alertActions.ts` (77 lines)
+**Price alerts.**
+- `subscribePriceAlert(source, destination, targetPrice, expiryDays?)` — creates `PriceAlert` row.
+- `getPriceAlerts(activeOnly?)` — returns DTO array for logged-in user.
+- `removePriceAlert(id)` — soft-delete (sets `active = false`).
+- Backward-compat aliases: `createAlert`, `getAlerts`, `deleteAlert`.
+
+### 10.5 `aggregatorActions.ts` (86 lines)
+**Multi-OTA aggregation.**
+- `searchAggregatorFlights(...)` — calls `travelpayoutsApi.aggregatorSearch`.
+- `getAggregatorProviders()` — returns `[{ id: "travelpayouts", name: "...", active: true }]`.
+- `getProviderOffers(provider)` — returns coupons.
+- `getAggregatorBestDeal(...)` — returns cheapest option.
+- `searchMultiCity(legs, passengers?)` — parallel multi-leg search.
+
+### 10.6 `compareActions.ts` (77 lines)
+**Fare comparison.**
+- `getOtaComparison(origin, destination)` — OTA-level price stats.
+- `getAirlineComparison(...)` — airline-level stats.
+- `getBestBankCombo(...)` — bank combo analysis.
+- `getBestForRoute(...)` — cheapest fare.
+- `getFareComparePageData(...)` — `Promise.allSettled` combo of above.
+
+### 10.7 `dealsActions.ts` (76 lines)
+**Deals & offers.**
+- `getDealsTrends()` — trending routes + active airlines.
+- `getNearbyAirportDeals(iata, radiusKm?)` — nearby destination deals.
+- `getBankOffers(bank?, ota?, limit?)` — bank offer list.
+- `getSearchCoupons(...)` — coupon search.
+- `getDealsPageData(origin?)` — combines trends + bankOffers + nearby.
+
+### 10.8 `intelligenceActions.ts` (85 lines)
+**ML intelligence.**
+- `getPriceForecast(origin, destination, days?)` — median/p25/p75.
+- `getMlPricePrediction(origin, destination, airline, departDate)` — predicted price + confidence band.
+- `getBookingAdvice(...)` — best-time-to-book recommendation.
+- `getTrendingRoutes(limit?)` — biggest drops.
+- `getIntelligenceCombined(...)` — `Promise.allSettled` of forecast + prediction + advice.
+
+### 10.9 `trafficActions.ts` (47 lines)
+**Compatibility traffic helpers.**
+- `getTrafficDaily(...)` — returns empty array until attached.
+- `getTrafficSummary()` — returns null until attached.
+- `getDomesticTraffic()` — combines daily + summary.
+
+### 10.10 `priceFreezeActions.ts` (112 lines)
+**Fare lock feature.**
+- `createPriceFreeze(input)` — dedup check, creates `PriceFreeze` row (24h expiry, capped at departure-1h).
+- `getUserActiveFreezes()` — lists active non-redeemed freezes.
+- `redeemPriceFreeze(freezeId)` — ownership check, expiry check, sets `redeemed = true`.
 
 ---
 
@@ -411,11 +690,11 @@ throw err;
 
 | Route | Method | Runtime | Role |
 |-------|--------|---------|------|
-| `/api/auth/[...nextauth]/route.ts` | ALL | — | NextAuth handler |
+| `/api/auth/[...nextauth]/route.ts` | ALL | — | NextAuth handler (6 lines, delegates to `authOptions`) |
 | `/api/airports/route.ts` | GET | `nodejs` | Airport search (Travelpayouts first, local fallback) |
-| `/api/calendar/route.ts` | GET | `nodejs` | Fare calendar (Travelpayouts + holiday overlay) |
-| `/api/prices/history/route.ts` | GET | `nodejs` | Price history for trend charts |
-| `/api/search/route.ts` | GET | `nodejs` | Logs search + returns generic message |
+| `/api/calendar/route.ts` | GET | `nodejs` | Fare calendar (Travelpayouts + holiday overlay + priceLevel quartiles) |
+| `/api/prices/history/route.ts` | GET | `nodejs` | Price history for trend charts (filters `basePrice > 0`) |
+| `/api/search/route.ts` | GET | `nodejs` | Logs search + returns generic message (compat endpoint) |
 | `/api/cron/track/route.ts` | GET | `nodejs` | **Cron job** — tracks prices, sends alerts |
 
 ### Cron Job (`/api/cron/track`)
@@ -453,6 +732,77 @@ throw err;
 | **Register** | `/register` | Full registration form with username uniqueness check, email verification required |
 | **Verify Email** | `/verify-email` | Token verification page |
 | **Reset Password** | `/reset-password` | Token-based password reset |
+
+### Page Details
+
+#### `src/app/layout.tsx` (120 lines)
+- Fonts: `Geist`, `Geist_Mono`, `DM_Sans` via `next/font/google`
+- Metadata: title template, OG tags, Twitter card, robots
+- Viewport: `themeColor: #09090B`, `maximumScale: 5`
+- SSR theme resolution from cookies (`thewingsscan_theme`, `thewingsscan_theme_mode`)
+- Inline script in `<head>` resolves system theme before paint to prevent FOUC
+- Wraps children in `Providers` → `SmoothScrollProvider` → `EnvWarningBanner` + `Navbar` + `<main>` + `ThemeFab`
+
+#### `src/app/page.tsx` (512 lines)
+- **Client component** (`"use client"`)
+- Local component `AirportInput` — borderless ghost input with fuzzy airport suggestions (fades out on outside click)
+- Local component `SearchPanel` — origin/destination swap with Framer Motion rotate animation + ripple, date pickers, passenger dropdown (adults/children/infants), search CTA
+- Calls `getPlatformStats()` and `getTrendingRoutes()` on mount
+- Sections: Hero (background image + gradient overlay), How it works (3 steps), Why TheWingsScan (4 feature cards), Feature Discovery (4 links), Trending Price Drops
+
+#### `src/app/search/page.tsx` (759 lines)
+- **Client component**
+- `SearchContent` (wrapped in `<Suspense>` because of `useSearchParams`)
+- Reads query params: `from`, `to`, `date`, `return`, `adults`, `children`, `infants`, `cabin`
+- Calls `fetchFlights(...)` (live-flight-mapper) + `getIntelligenceCombined(...)`
+- Internal components:
+  - `FlightCardSkeleton` — shimmer loading UI
+  - `FlightCard` — displays airline logo (kiwi.com fallback + dicebear fallback), times, duration, stops, price, applied offer badge, wallet match badge, "Book Now" → sets checkout store + pushes `/checkout`
+  - `SortBar` — pill toggle with `layoutId="sortPill"` Framer Motion animation
+  - `FilterPanel` — stops (Any/Non-stop/1 Stop), bank offer filter, airline checklist; mobile drawer with AnimatePresence
+  - `WalletModal` — checkbox grid of `AVAILABLE_BANK_CARDS`, syncs via `syncWallet` if logged in
+- Displays: `GroupBookCTA`, `FareDipAlert`, `AlternativeItineraries`, `DateHinter`, `PriceTrendChart`, `CostCuttingTips`
+
+#### `src/app/checkout/page.tsx` (353 lines)
+- **Client component**
+- `CheckoutContent` (wrapped in `<Suspense>`)
+- Reads `selectedFlight` from `checkoutStore` (sessionStorage persisted)
+- If not hydrated/no flight → redirects to `/`
+- Loads applicable offers via `fetchCheckoutOffers`
+- Resolves booking URL: uses `deepLink`/`bookingUrl` if present, else generates via `createBookingLinkAction` if `searchId` + `bookingToken` exist, else falls back to `AVIASALES_AFFILIATE`
+- Displays: flight summary (airline logo, times, stops), baggage/refund policies, fare breakdown (base + convenience fee - discount), `OfferClaimGuide` list, `PriceFreezeButton`
+
+#### `src/app/login/page.tsx` (173 lines)
+- **Client component**
+- `LoginForm` in `<Suspense>`
+- Email/mobile input with dynamic country code selector (`+91` default, auto-detects via `ipapi.co`)
+- `signIn("credentials")` with `redirect: false`
+- `signIn("google")` with callbackUrl
+- Error handling from URL query param `?error=`
+
+#### `src/app/register/page.tsx` (187 lines)
+- **Client component**
+- Form fields: name, username, email, mobile (with country code), password
+- Calls `registerUser(formData)` server action
+- On success: shows verification message + dev note about Resend link logging
+
+#### `src/app/profile/page.tsx` (672 lines)
+- **Client component**
+- `ProfileContent` in `<Suspense>`
+- Tabs: `account`, `wallet`, `alerts` (synced to URL `?tab=`)
+- Account tab: editable name/username/mobile/dob form, password reset (Resend), account deletion (username confirmation prompt)
+- Profile picture upload: file → FileReader → canvas compression (max 150px width, JPEG 0.7) → base64 → `updateProfileImage`
+- Wallet tab: checkbox grid of banks, "Save Wallet" → `syncWallet`
+- Alerts tab: create alert form (origin/dest/target), list active alerts with delete
+
+#### `src/app/calendar/[route]/page.tsx` (426 lines)
+- **Client component**
+- Parses `route` param as `origin-to-destination`
+- Fetches `/api/calendar?origin=&destination=&month=&year=`
+- Displays month grid with Framer Motion slide transitions
+- Price levels: cheap (≤p25), average, expensive (≥p75)
+- Holiday dots + holiday list sidebar
+- Cheapest day highlighted with star animation
 
 ---
 
@@ -525,11 +875,20 @@ throw err;
 ### CSS Tokens
 All colors, spacing, radii, shadows, and timing functions are CSS custom properties in `tokens.css`. Components NEVER hardcode colors — they use `var(--bg-base)`, `var(--text-primary)`, `var(--accent-cta)`, etc.
 
+### globals.css Highlights
+- `@import "tailwindcss"` + `@import "../styles/tokens.css"`
+- `@theme` block maps Tailwind v4 theme keys to CSS vars
+- `html[data-theme-swap]` disables all transitions during theme swap
+- `html[data-theme="matte"] body` adds subtle SVG noise texture
+- `.ghost-input` removes all browser chrome (borders, outlines, shadows)
+- `container-app` utility class (max-width 1200px, responsive padding)
+- `.theme-transition-overlay` with `tt-radial-wipe` keyframe animation
+
 ---
 
 ## 15. Rate Limiting & Middleware
 
-**File:** `src/proxy.ts` (middleware)
+**File:** `src/proxy.ts` (60 lines)
 
 Applied via `matcher` in middleware config to:
 - `/api/search/*` — 60 req/min
@@ -665,6 +1024,28 @@ Display fare breakdown + OfferClaimGuide for best offer
 8. **Email verification gate.** Credentials users MUST verify email before login.
 9. **Vercel Mumbai.** All traffic routes through `bom1` for lowest latency to Indian users.
 10. **Test before deploy.** `npm run build` and `npm test` must pass.
+
+---
+
+## 21. Appendix: Complete Type Reference
+
+### Core Types (`src/lib/types.ts`)
+- `FlightSource` — union of all known source identifiers
+- `CabinClass` — `'economy' | 'premium_economy' | 'business' | 'first'`
+- `Airport` — `{ iata, name, city, state, country, lat, lng, tier, popular }`
+- `PassengerCount` — `{ adults, children, infants }`
+- `SearchParams` — full search request shape
+- `FlightSegment` — single leg details
+- `BaggageInfo` — cabin/checked inclusion and weights
+- `FlightResult` — unified frontend flight shape (price, segments, booking tokens, etc.)
+- `SortOption` — 6 sort variants
+- `FilterState` — airline, stops, time range, price range, sources, baggage, refundable
+- `CalendarDay` — `{ date, cheapestPrice, source, isHoliday, holidayName?, priceLevel }`
+
+### Travelpayouts Types (`src/lib/api/travelpayoutsTypes.ts`)
+- Zod schemas: `AirportSchema`, `AirlineSchema`, `FareSchema`, `CalendarDaySchema`, `CouponSchema`, `LiveFlightSchema`, `RouteSchema`, `SourceHealthSchema`
+- Response schemas: `AirportsResponseSchema`, `FaresResponseSchema`, `CalendarResponseSchema`, `CouponsResponseSchema`, `HealthResponseSchema`
+- Raw endpoint schemas: `FlightStatusSchema`, `FlightBestDealSchema`, `CalendarRawSchema`, `ForecastSchema`, `PredictPriceSchema`, `BestTimeToBookSchema`, `TrendingRoutesSchema`, `OtaComparisonSchema`, `AirlineComparisonSchema`, `BankComboSchema`, `NearbyAirportsSchema`, `DealsTrendsSchema`, `BankOfferSchema`, `BestForRouteSchema`, `AggregatorSearchSchema`, `MultiCitySchema`
 
 ---
 
