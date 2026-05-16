@@ -1,6 +1,6 @@
 # TheWingsScan — Complete Architecture & Design Reference
 
-> **Last updated:** 2026-05-15  
+> **Last updated:** 2026-05-16  
 > **Purpose:** This document is the single source of truth for understanding every line, file, and design decision in the TheWingsScan codebase. Read this before making ANY change.
 
 ---
@@ -118,6 +118,7 @@
 │   │   │   └── useThemeController.ts
 │   │   ├── ui/
 │   │   │   ├── AlternativeItineraries.tsx
+│   │   │   ├── AirlineLogo.tsx
 │   │   │   ├── AnimatedText.tsx
 │   │   │   ├── Badge.tsx
 │   │   │   ├── Button.tsx
@@ -536,17 +537,22 @@ Exports all functions above as a single object.
 
 ### 9.2 Live Flight Mapper (`src/lib/api/live-flight-mapper.ts`)
 
-**Goal:** Convert `EnrichedFlight` (from server action) → `FlightResult` (frontend type).
+**Goal:** Normalize enriched fares into stable frontend results while surfacing provider failures honestly to the UI.
 
 **Mapping steps:**
-- Resolves airline name from `AIRLINES` constant dictionary
+- Accepts either raw `userCards` arrays or a `FetchFlightsOptions` object (`userCards`, `cabin`, `passengers`, `fresh`)
+- Calls `searchFlightsAction()` with `throwOnError: true` so provider/config failures are not silently converted into empty arrays
+- Normalizes Travelpayouts config, auth, rate-limit, and generic provider failures into `FlightSearchClientError`
+- Resolves airline name from `AIRLINES`
 - Computes duration from departure/arrival times
-- Resolves source API name to `FlightSource` enum
+- Resolves source API name to `FlightSource`
 - Builds `FlightSegment` and `FlightResult` objects
 - Sets default baggage: cabin 7kg, checked 15kg
 
-**Exported functions:**
-- `fetchFlights(origin, destination, date, userCards?)`
+**Exported types/classes/functions:**
+- `FetchFlightsOptions`
+- `FlightSearchClientError`
+- `fetchFlights(origin, destination, date, userCardsOrOptions?)`
 
 ### 9.3 Price Trend Analysis (`src/lib/flight/priceTrend.ts`)
 
@@ -600,9 +606,9 @@ if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError
 throw err;
 ```
 
-### 10.1 `flightActions.ts` (399 lines)
+### 10.1 `flightActions.ts` (409 lines)
 **Core flight search + tracking + analytics.**
-- `searchFlightsAction(origin, destination, date, userCards?, opts?)` — dedupes fares by flightNumber+hour bucket, enriches with offer engine, logs search + price history.
+- `searchFlightsAction(origin, destination, date, userCards?, opts?)` — dedupes fares by flightNumber+hour bucket, enriches with offer engine, logs search + price history, and supports `pax`, `cabin`, `fresh`, and `throwOnError`.
 - `getAndTrackFlights(...)` — alias for `searchFlightsAction`.
 - `logSearchAction(origin, destination, date)` — writes to `SearchHistory`.
 - `logBookingClick(route, airline, price, discountSaved)` — writes to `BookingClick`.
@@ -735,42 +741,44 @@ throw err;
 
 ### Page Details
 
-#### `src/app/layout.tsx` (120 lines)
+#### `src/app/layout.tsx` (127 lines)
 - Fonts: `Geist`, `Geist_Mono`, `DM_Sans` via `next/font/google`
 - Metadata: title template, OG tags, Twitter card, robots
 - Viewport: `themeColor: #09090B`, `maximumScale: 5`
 - SSR theme resolution from cookies (`thewingsscan_theme`, `thewingsscan_theme_mode`)
 - Inline script in `<head>` resolves system theme before paint to prevent FOUC
-- Wraps children in `Providers` → `SmoothScrollProvider` → `EnvWarningBanner` + `Navbar` + `<main>` + `ThemeFab`
+- Wraps children in `Providers` → `SmoothScrollProvider` → `ScrollProgressBar` + ambient background layers + `EnvWarningBanner` + `Navbar` + `<main>` + `ThemeFab`
 
-#### `src/app/page.tsx` (512 lines)
+#### `src/app/page.tsx` (772 lines)
 - **Client component** (`"use client"`)
-- Local component `AirportInput` — borderless ghost input with fuzzy airport suggestions (fades out on outside click)
-- Local component `SearchPanel` — origin/destination swap with Framer Motion rotate animation + ripple, date pickers, passenger dropdown (adults/children/infants), search CTA
+- Local component `AirportInput` — fuzzy airport suggestions inside elevated shell surfaces
+- Local component `SearchPanel` — origin/destination swap, cabin chips, date pickers, passenger dropdown, and query preservation for `/search`
 - Calls `getPlatformStats()` and `getTrendingRoutes()` on mount
-- Sections: Hero (background image + gradient overlay), How it works (3 steps), Why TheWingsScan (4 feature cards), Feature Discovery (4 links), Trending Price Drops
+- Sections: premium hero, stats cards, quick-route chips, value panels, How it works, platform capability grid, feature discovery, Trending Price Drops
 
-#### `src/app/search/page.tsx` (759 lines)
+#### `src/app/search/page.tsx` (1177 lines)
 - **Client component**
 - `SearchContent` (wrapped in `<Suspense>` because of `useSearchParams`)
 - Reads query params: `from`, `to`, `date`, `return`, `adults`, `children`, `infants`, `cabin`
-- Calls `fetchFlights(...)` (live-flight-mapper) + `getIntelligenceCombined(...)`
+- Calls `fetchFlights(...)` with `{ userCards, cabin, passengers, fresh }` + `getIntelligenceCombined(...)`
+- Handles distinct states for missing route params, live-provider failure, provider-empty results, and filter-empty results
 - Internal components:
-  - `FlightCardSkeleton` — shimmer loading UI
-  - `FlightCard` — displays airline logo (kiwi.com fallback + dicebear fallback), times, duration, stops, price, applied offer badge, wallet match badge, "Book Now" → sets checkout store + pushes `/checkout`
+  - `FlightCardSkeleton` — premium shimmer loading UI
+  - `FlightCard` — uses shared `AirlineLogo`, shows effective fare context, wallet match badge, and sends selected flight to checkout store
   - `SortBar` — pill toggle with `layoutId="sortPill"` Framer Motion animation
-  - `FilterPanel` — stops (Any/Non-stop/1 Stop), bank offer filter, airline checklist; mobile drawer with AnimatePresence
+  - `FilterPanel` — stops, bank offer filter, airline checklist; reset is keyed so UI state and filtered results clear together
   - `WalletModal` — checkbox grid of `AVAILABLE_BANK_CARDS`, syncs via `syncWallet` if logged in
-- Displays: `GroupBookCTA`, `FareDipAlert`, `AlternativeItineraries`, `DateHinter`, `PriceTrendChart`, `CostCuttingTips`
+- Displays: route summary cards, route-scoped alert feedback, `GroupBookCTA`, `FareDipAlert`, `AlternativeItineraries`, `DateHinter`, `PriceTrendChart`, `CostCuttingTips`
 
-#### `src/app/checkout/page.tsx` (353 lines)
+#### `src/app/checkout/page.tsx` (498 lines)
 - **Client component**
 - `CheckoutContent` (wrapped in `<Suspense>`)
 - Reads `selectedFlight` from `checkoutStore` (sessionStorage persisted)
-- If not hydrated/no flight → redirects to `/`
+- Shows a loading surface until checkout-store hydration completes
+- If no flight is present after hydration, shows a recovery state and routes back home
 - Loads applicable offers via `fetchCheckoutOffers`
-- Resolves booking URL: uses `deepLink`/`bookingUrl` if present, else generates via `createBookingLinkAction` if `searchId` + `bookingToken` exist, else falls back to `AVIASALES_AFFILIATE`
-- Displays: flight summary (airline logo, times, stops), baggage/refund policies, fare breakdown (base + convenience fee - discount), `OfferClaimGuide` list, `PriceFreezeButton`
+- Resolves booking URL: uses `deepLink`/`bookingUrl` if present, else generates via `createBookingLinkAction` if `searchId` + `bookingToken` exist, else falls back to `AVIASALES_AFFILIATE`; if a popup is blocked it falls back to same-window navigation
+- Uses shared `AirlineLogo` and displays wallet-match cues, policy cards, secure-handoff explanation, fare breakdown, `OfferClaimGuide`, and `PriceFreezeButton`
 
 #### `src/app/login/page.tsx` (173 lines)
 - **Client component**
@@ -811,8 +819,8 @@ throw err;
 ### Layout Components
 | Component | Location | Role |
 |-----------|----------|------|
-| `Navbar` | `components/layout/Navbar.tsx` | Fixed top nav with animated active pill (`layoutId="nav-pill"`), user avatar dropdown, mobile hamburger menu |
-| `Footer` | `components/layout/Footer.tsx` | Simple footer with links |
+| `Navbar` | `components/layout/Navbar.tsx` | Fixed translucent top nav with premium link capsule, account controls, and full-screen mobile panel |
+| `Footer` | `components/layout/Footer.tsx` | Large marketing footer with value messaging, product navigation, and booking-context disclaimer |
 | `EnvWarningBanner` | `components/layout/EnvWarningBanner.tsx` | Shows red banner if DB URL or Google OAuth is misconfigured |
 | `ScrollProgressBar` | `components/layout/ScrollProgressBar.tsx` | Thin progress bar at top on scroll |
 
@@ -827,6 +835,7 @@ throw err;
 | Component | Role |
 |-----------|------|
 | `AnimatedText` | Word-by-word framer-motion reveal |
+| `AirlineLogo` | Shared `next/image`-based airline avatar with DiceBear fallback for results and checkout |
 | `Badge` | Status badge variants |
 | `Button` | Primary/ghost/danger/secondary variants with loading spinner |
 | `CostCuttingTips` | Contextual money-saving tips based on search context |
@@ -861,7 +870,7 @@ throw err;
 | Theme | BG Base | Text Primary | Use Case |
 |-------|---------|--------------|----------|
 | `warm` | `#F5F1EA` | `#0B0B0D` | Light mode, warm paper feel |
-| `matte` | `#09090B` | `#FAFAFA` | Dark mode, near-black |
+| `matte` | `#0A0A0A` | `#FAFAFA` | Dark mode, near-black |
 
 ### Theme Switching
 - Default: follow system (`prefers-color-scheme`)
@@ -873,15 +882,17 @@ throw err;
 - Transition: radial wipe from FAB center + scroll lock + clone-based overlay
 
 ### CSS Tokens
-All colors, spacing, radii, shadows, and timing functions are CSS custom properties in `tokens.css`. Components NEVER hardcode colors — they use `var(--bg-base)`, `var(--text-primary)`, `var(--accent-cta)`, etc.
+All colors, spacing, radii, shadows, motion timing, ambient canvas layers, and container sizing are CSS custom properties in `tokens.css`. New tokens such as `--bg-canvas`, `--accent-cyan`, `--accent-purple`, `--accent-amber`, `--shadow-xl`, and `--container-max` support the upgraded premium shell without abandoning the token system.
 
 ### globals.css Highlights
 - `@import "tailwindcss"` + `@import "../styles/tokens.css"`
 - `@theme` block maps Tailwind v4 theme keys to CSS vars
+- `body::before` adds ambient radial lighting across the shell
 - `html[data-theme-swap]` disables all transitions during theme swap
 - `html[data-theme="matte"] body` adds subtle SVG noise texture
 - `.ghost-input` removes all browser chrome (borders, outlines, shadows)
-- `container-app` utility class (max-width 1200px, responsive padding)
+- `container-app` utility class uses tokenized max width (`--container-max`, 1280px)
+- Shared shell utilities: `.surface-panel`, `.surface-card`, `.section-kicker`, `.hero-grid`, `.text-gradient-soft`, `.glow-divider`
 - `.theme-transition-overlay` with `tt-radial-wipe` keyframe animation
 
 ---
@@ -956,36 +967,37 @@ Applied via `matcher` in middleware config to:
 ```
 User enters search on /
   ↓
-Zustand search-store holds form state
+Zustand search-store holds form state (route, passengers, cabin)
   ↓
-User clicks "Search" → router.push(/search?from=...)
+User clicks "Search" → router.push(/search?from=...&cabin=...)
   ↓
-/search/page.tsx reads URL params
+/search/page.tsx reads and validates URL params
   ↓
-fetchFlights(origin, dest, date, ownedCards)
+fetchFlights(origin, dest, date, { userCards, cabin, passengers, fresh })
   ↓
-  ├─→ searchFlightsAction() [Server Action]
+  ├─→ searchFlightsAction(..., { pax, cabin, fresh, throwOnError: true }) [Server Action]
   │     ├─→ travelpayoutsApi.searchFares() → Travelpayouts
   │     ├─→ dedupeFares() (by flightNumber + hour bucket)
   │     ├─→ enrichFares() → calculateBestEffectivePrice() per flight
   │     ├─→ logSearchAction() → Prisma SearchHistory
   │     └─→ trackLowestPrice() → Prisma PriceHistory (async, fire-and-forget)
   │
-  └─→ mapEnrichedFlightToResult() → FlightResult[]
+  ├─→ mapEnrichedFlightToResult() → FlightResult[]
+  └─→ normalizeSearchError() → `FlightSearchClientError` on provider/config failures
   ↓
-Frontend: sortFlights() → filter panel → FlightCard components
+Frontend: route summary → intelligence cards → filter panel → sortFlights() → FlightCard components
   ↓
-User clicks "Book Now" → setSelectedFlight(flight) in checkout-store
+User clicks "Continue to checkout" → setSelectedFlight(flight) in checkout-store
   ↓
 router.push(/checkout)
   ↓
-/checkout reads selectedFlight from checkout-store (sessionStorage)
+/checkout hydrates selectedFlight from checkout-store (sessionStorage)
   ↓
 fetchCheckoutOffers(baseFare, airlineCode, ownedCards)
   ↓
-Display fare breakdown + OfferClaimGuide for best offer
+Display fare breakdown + secure handoff context + OfferClaimGuide + PriceFreezeButton
   ↓
-"Proceed to Booking" → logBookingClick() → open OTA URL in new tab
+"Proceed to Booking" → logBookingClick() → open OTA URL (new tab, same-window fallback if popup blocked)
 ```
 
 ---
@@ -997,7 +1009,9 @@ Display fare breakdown + OfferClaimGuide for best offer
 | Add a new bank/card | `src/lib/banks.ts` |
 | Change convenience fee | `src/lib/flight/offerEngine.ts` (`CONVENIENCE_FEE`) |
 | Add airline logo | `src/lib/constants.ts` (`AIRLINES`) |
+| Change airline badge / fallback rendering | `src/components/ui/AirlineLogo.tsx` |
 | Change theme colors | `src/styles/tokens.css` |
+| Change shell surfaces / ambient styling | `src/app/globals.css` + `src/styles/tokens.css` |
 | Add new Travelpayouts endpoint | `src/lib/api/travelpayoutsClient.ts` + `travelpayoutsTypes.ts` |
 | Change search results UI | `src/app/search/page.tsx` |
 | Change checkout UI | `src/app/checkout/page.tsx` |
