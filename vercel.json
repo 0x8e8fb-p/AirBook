@@ -24,5 +24,11 @@
       "src": "api/flights.py",
       "use": "@vercel/python"
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/flights",
+      "destination": "/api/flights.py"
+    }
   ]
 }
