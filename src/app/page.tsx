@@ -188,12 +188,14 @@ export default function HomePage() {
     <div className="relative min-h-[100dvh] overflow-hidden">
       {/* ───── HERO ───────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
-        {/* Single subtle ambient — replaces the previous parallax-driven trio of large blur orbs. */}
+        {/* Single scoped ambient. Kept intentionally light: 80px blur on
+            a moderate element is cheap; the previous trio of 150px+
+            orbs over the whole viewport was eating the paint budget. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-[-12rem] z-[2] h-[28rem] w-[40rem] -translate-x-1/2 rounded-full bg-[color-mix(in_srgb,var(--accent-cyan)_8%,transparent)] blur-[140px]"
+          className="pointer-events-none absolute left-1/2 top-[-8rem] z-[2] h-[22rem] w-[34rem] -translate-x-1/2 rounded-full bg-[color-mix(in_srgb,var(--accent-cyan)_7%,transparent)] blur-[80px]"
         />
-        <div aria-hidden="true" className="hero-grid absolute inset-0 z-[3] opacity-[0.12] fade-bottom" />
+        <div aria-hidden="true" className="hero-grid absolute inset-0 z-[3] opacity-[0.10] fade-bottom" />
 
         <div className="container-app relative z-10 pb-20 pt-24 sm:pt-28 md:pt-32 lg:pb-24">
           <div className="grid gap-10 xl:grid-cols-[1.05fr_0.95fr] xl:items-end">

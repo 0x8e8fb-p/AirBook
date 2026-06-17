@@ -190,11 +190,10 @@ html[data-theme="warm"] select {
     border: 1px solid color-mix(in srgb, var(--border-default) 86%, transparent);
     background:
       linear-gradient(180deg, color-mix(in srgb, var(--bg-elevated) 94%, white 3%) 0%, color-mix(in srgb, var(--bg-elevated) 82%, transparent) 100%);
-    box-shadow: var(--shadow-lg);
     box-shadow:
       inset 0 1px 0 color-mix(in srgb, white 10%, transparent),
       var(--shadow-lg);
-    backdrop-filter: blur(18px);
+    backdrop-filter: blur(8px);
   }
 
   .surface-card {

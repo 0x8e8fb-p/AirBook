@@ -105,11 +105,11 @@ export default async function RootLayout({
         <Providers>
           <SmoothScrollProvider>
             <ScrollProgressBar />
-            <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-              <div className="hero-grid absolute inset-0 opacity-35" />
-              <div className="absolute left-[12%] top-[-12rem] h-[26rem] w-[26rem] rounded-full bg-[color-mix(in_srgb,var(--accent-cyan)_14%,transparent)] blur-[130px]" />
-              <div className="absolute right-[-4rem] top-[4rem] h-[24rem] w-[24rem] rounded-full bg-[color-mix(in_srgb,var(--accent-purple)_13%,transparent)] blur-[130px]" />
-            </div>
+            {/* The previous full-viewport ambient wrapper (hero-grid +
+                two blur-[130px] orbs) was removed: that 130px blur on
+                26rem elements sat behind every page and dominated the
+                paint budget on scroll. Pages that want ambient now own
+                a single scoped layer in their hero section. */}
             <div id="app-shell" className="min-h-full flex flex-col relative z-10">
               <EnvWarningBanner />
               <Navbar />
