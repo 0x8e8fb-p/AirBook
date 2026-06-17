@@ -14,5 +14,15 @@
     "src/app/api/search/route.ts": {
       "maxDuration": 30
     }
-  }
+  },
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    },
+    {
+      "src": "api/flights.py",
+      "use": "@vercel/python"
+    }
+  ]
 }
