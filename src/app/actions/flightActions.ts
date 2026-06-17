@@ -1,10 +1,14 @@
 "use server";
 
 import { getServerSession } from "next-auth/next";
-import { travelpayoutsApi, TravelpayoutsConfigError, TravelpayoutsError } from "@/lib/api/travelpayoutsClient";
-import { amadeusApi, AmadeusConfigError, AmadeusError } from "@/lib/api/amadeusClient";
+import { flightDataOrchestrator } from "@/lib/api/flight-data-provider";
 import { fetchFlights, type FetchFlightsOptions, type FetchFlightsResponse } from "@/lib/api/live-flight-mapper";
-import type { Fare } from "@/lib/api/travelpayoutsTypes";
+// Travelpayouts is still imported by the auxiliary helpers below
+// (aggregator, status, weather, etc.). These calls no-op gracefully
+// when TRAVELPAYOUTS_TOKEN is unset — they're not on the critical
+// search path. Search itself now flows entirely through the new
+// orchestrator (google-flights → airline-scrapers → simulated).
+import { travelpayoutsApi, TravelpayoutsConfigError, TravelpayoutsError } from "@/lib/api/travelpayoutsClient";
 import { calculateBestEffectivePrice, type FlightPriceDetails } from "@/lib/flight/offerEngine";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
@@ -39,45 +43,6 @@ async function getSessionUserId(): Promise<string | null> {
   } catch {
     return null;
   }
-}
-
-function buildFlightId(fare: Fare, index: number): string {
-  const core = [fare.sourceApi, fare.airline, fare.flightNumber ?? "NN", fare.departureDate, fare.departureTime ?? index].join("-");
-  return core.replace(/\s+/g, "");
-}
-
-function dedupeFares(fares: Fare[]): Fare[] {
-  const map = new Map<string, Fare>();
-  for (const f of fares) {
-    if (!(f.price > 0)) continue;
-    const hourBucket = (f.departureTime ?? "").slice(0, 13);
-    const key = `${f.flightNumber ?? "NN"}-${hourBucket}`;
-    const current = map.get(key);
-    if (!current || f.price < current.price) map.set(key, f);
-  }
-  return Array.from(map.values());
-}
-
-async function enrichFares(fares: Fare[], userCards?: string[]): Promise<EnrichedFlight[]> {
-  return Promise.all(
-    fares.map(async (fare, i): Promise<EnrichedFlight> => {
-      const pricing = await calculateBestEffectivePrice(fare.price, userCards, fare.airline);
-      return {
-        id: buildFlightId(fare, i),
-        source: fare.sourceApi,
-        airline: fare.airline,
-        flightNumber: fare.flightNumber ?? "",
-        departureTime: fare.departureTime ?? fare.departureDate,
-        arrivalTime: fare.arrivalTime ?? fare.departureDate,
-        durationMinutes: fare.durationMinutes ?? null,
-        stops: fare.stops ?? 0,
-        bookingToken: fare.bookingToken ?? null,
-        searchId: fare.searchId ?? null,
-        gateId: fare.gateId ?? null,
-        pricing,
-      };
-    }),
-  );
 }
 
 async function trackLowestPrice(
@@ -134,52 +99,45 @@ export async function searchFlightsAction(
   userCards?: string[],
   opts: SearchFlightsActionOptions = {},
 ): Promise<EnrichedFlight[]> {
-  let allFares: Fare[] = [];
-  let amadeusFares: Fare[] = [];
-  let tpFares: Fare[] = [];
+  // Routes through the no-API orchestrator (google-flights via
+  // fast-flights → airline scrapers → simulated). The legacy direct
+  // amadeus + travelpayouts paths were removed.
+  const result = await flightDataOrchestrator.searchAll({
+    origin,
+    destination,
+    date: dateString,
+    passengers: opts.pax,
+    cabin: opts.cabin,
+    fresh: opts.fresh,
+  });
 
-  // 1. Try Amadeus first (Live data)
-  try {
-    const { fares } = await amadeusApi.searchFares({
-      from: origin,
-      to: destination,
-      date: dateString,
-      pax: opts.pax ?? 1,
-      cabin: opts.cabin ?? "economy",
-    });
-    amadeusFares = fares;
-  } catch (err) {
-    console.error("Amadeus search failed, falling back to Travelpayouts:", err instanceof Error ? err.message : err);
-    if (opts.throwOnError && !(err instanceof AmadeusConfigError || err instanceof AmadeusError)) {
-      throw err;
+  if (result.offers.length === 0) {
+    if (opts.throwOnError) {
+      throw new Error("No flights returned for this route");
     }
+    return [];
   }
 
-  // 2. Always fetch Travelpayouts as fallback/supplement
-  try {
-    const { fares } = await travelpayoutsApi.searchFares({
-      from: origin,
-      to: destination,
-      date: dateString,
-      pax: opts.pax ?? 1,
-      cabin: opts.cabin ?? "economy",
-      fresh: opts.fresh,
-    });
-    tpFares = fares;
-  } catch (err) {
-    console.error("Travelpayouts search failed:", err instanceof Error ? err.message : err);
-    // If both failed, and we are told to throw, then throw
-    if (amadeusFares.length === 0 && opts.throwOnError) {
-      throw err;
-    }
-  }
+  const enriched: EnrichedFlight[] = await Promise.all(
+    result.offers.map(async (offer): Promise<EnrichedFlight> => {
+      const pricing = await calculateBestEffectivePrice(offer.price, userCards, offer.airline);
+      return {
+        id: offer.id,
+        source: offer.source,
+        airline: offer.airline,
+        flightNumber: offer.flightNumber,
+        departureTime: offer.departureTime,
+        arrivalTime: offer.arrivalTime,
+        durationMinutes: offer.durationMinutes,
+        stops: offer.stops,
+        bookingToken: offer.bookingToken ?? null,
+        searchId: offer.searchId ?? null,
+        gateId: offer.gateId ?? null,
+        pricing,
+      };
+    }),
+  );
 
-  // 3. Merge and dedupe
-  allFares = [...amadeusFares, ...tpFares];
-  const deduped = dedupeFares(allFares);
-  const enriched = await enrichFares(deduped, userCards);
-
-  // 4. Logging and tracking
   if (enriched.length > 0) {
     logSearchAction(origin, destination, dateString).catch((e) =>
       console.error("logSearchAction failed:", e),

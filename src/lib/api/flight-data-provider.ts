@@ -6,27 +6,22 @@ import type {
   FlightSource,
 } from "@/lib/types";
 import { airlineScrapersProvider } from "./airline-scrapers";
-import { amadeusProvider } from "./amadeus-provider";
+import { googleFlightsProvider } from "./google-flights-provider";
 import { simulatedProvider } from "./simulated-provider";
-import { travelpayoutsApi } from "./travelpayoutsClient";
-import type { Fare } from "./travelpayoutsTypes";
 
-const ENABLE_SIMULATED_PROVIDER =
-  // Production: opt-in only via the explicit env flag (never accidentally
-  // ship mock data alongside real fares).
-  process.env.AIRBOOK_ENABLE_SIMULATED_FLIGHTS === "true" ||
-  // Dev: always-on as a safety net. The dedupe in `shouldPreferOffer`
-  // already ranks live (bookable / cached / high-confidence) results
-  // above simulated, so this only fills the gap when live providers
-  // return nothing (no creds, expired token, rate-limited, etc.). Keeps
-  // a bare `npm run dev` from showing the "no results" empty state.
-  process.env.NODE_ENV !== "production";
+// Zero paid-API architecture. Travelpayouts + Amadeus integrations
+// were removed from this orchestrator. Search now flows through:
+//   1. Google Flights via the open-source `fast-flights` Python bridge
+//      (returns live fares when python3 + fast-flights are installed,
+//      silently no-ops otherwise)
+//   2. Direct airline scrapers (Ryanair public JSON)
+//   3. Simulated provider — ALWAYS on, last-resort guarantee that the
+//      UI never shows "no fares"
 
 export type FlightProviderName =
-  | "amadeus"
-  | "travelpayouts"
-  | "simulated"
-  | "airline_scrapers";
+  | "google_flights"
+  | "airline_scrapers"
+  | "simulated";
 
 export interface RawFlightOffer {
   id: string;
@@ -172,49 +167,6 @@ function deduplicateOffers(offers: RawFlightOffer[]): RawFlightOffer[] {
   return Array.from(seen.values());
 }
 
-function travelpayoutsFareToOffer(fare: Fare, params: FlightSearchParams): RawFlightOffer {
-  const departureTime = fare.departureTime || `${params.date}T00:00:00`;
-  const arrivalTime = fare.arrivalTime || departureTime;
-  const durationMinutes = fare.durationMinutes ?? 0;
-  const source: FlightSource =
-    fare.sourceApi === "travelpayouts_realtime" ? "travelpayouts_realtime" : "travelpayouts_calendar";
-  const hasBookingHandoff = Boolean(fare.searchId && fare.bookingToken);
-  const isRealtime = source === "travelpayouts_realtime";
-
-  return {
-    id: `${fare.sourceApi}-${fare.airline}-${fare.flightNumber || "NN"}-${departureTime}`,
-    provider: "travelpayouts",
-    source,
-    airline: fare.airline,
-    flightNumber: fare.flightNumber ?? "",
-    origin: params.origin,
-    destination: params.destination,
-    departureTime,
-    arrivalTime,
-    durationMinutes,
-    stops: fare.stops ?? 0,
-    stopCities: [],
-    price: fare.price,
-    currency: fare.currency,
-    cabinClass: (params.cabin || "economy") as CabinClass,
-    baggage: {
-      cabin: { included: false },
-      checked: { included: false },
-    },
-    refundable: false,
-    bookingUrl: null,
-    deepLink: null,
-    bookingToken: fare.bookingToken ?? null,
-    searchId: fare.searchId ?? null,
-    gateId: fare.gateId ?? null,
-    availabilityState: isRealtime && hasBookingHandoff ? "bookable_live" : "reference_only",
-    dataFreshness: isRealtime ? "live" : "cached",
-    confidence: isRealtime ? (hasBookingHandoff ? "high" : "medium") : "low",
-    baggageConfirmed: false,
-    refundabilityConfirmed: false,
-  };
-}
-
 function sortOffersForDisplay(offers: RawFlightOffer[]): RawFlightOffer[] {
   return [...offers].sort((a, b) => {
     const availabilityDiff = availabilityRank(b.availabilityState) - availabilityRank(a.availabilityState);
@@ -238,50 +190,21 @@ function sortOffersForDisplay(offers: RawFlightOffer[]): RawFlightOffer[] {
 
 const PROVIDER_SEARCH_TIMEOUT_MS = 20_000;
 
-// Wraps the long-standing travelpayoutsApi.searchFares call as a
-// FlightProvider so the orchestrator can treat every source the same
-// way. travelpayoutsApi itself is unchanged — all 929 lines of
-// existing client logic, retries, caching, and tests still apply.
-class TravelpayoutsProvider implements FlightProvider {
-  readonly name = "travelpayouts" as const;
-
-  isAvailable(): boolean {
-    return Boolean(process.env.TRAVELPAYOUTS_TOKEN);
-  }
-
-  async search(params: FlightSearchParams): Promise<RawFlightOffer[]> {
-    const { fares } = await travelpayoutsApi.searchFares({
-      from: params.origin,
-      to: params.destination,
-      date: params.date,
-      pax: params.passengers || 1,
-      cabin: params.cabin || "economy",
-      fresh: params.fresh,
-    });
-    return fares.map((fare) => travelpayoutsFareToOffer(fare, params));
-  }
-}
-
-export const travelpayoutsProvider = new TravelpayoutsProvider();
-
 class FlightDataProviderOrchestrator {
   private providers: FlightProvider[] = [];
 
   constructor() {
-    // Tier 3: direct airline scrapers (Ryanair only today — IndiGo /
-    // SpiceJet / Air India are deliberately not registered until a
-    // ToS-compliant data source for those carriers is identified).
+    // Google Flights via the fast-flights Python bridge (no-ops if
+    // python3 / fast-flights aren't installed).
+    this.providers.push(googleFlightsProvider);
+
+    // Direct airline scrapers (Ryanair public JSON, route-gated).
     this.providers.push(airlineScrapersProvider);
 
-    // Existing live API providers retained as primaries until the
-    // Google Flights RPC port lands. travelpayoutsProvider wraps the
-    // unchanged travelpayoutsApi client.
-    this.providers.push(amadeusProvider);
-    this.providers.push(travelpayoutsProvider);
-
-    if (ENABLE_SIMULATED_PROVIDER) {
-      this.providers.push(simulatedProvider);
-    }
+    // Simulated is ALWAYS registered. Guarantees the UI never shows
+    // "no fares" when the live tiers are unconfigured or failing.
+    // Dedup ranks live > simulated, so this only fills the gap.
+    this.providers.push(simulatedProvider);
   }
 
   async searchAll(params: FlightSearchParams): Promise<FlightProviderSearchResponse> {
@@ -331,27 +254,8 @@ class FlightDataProviderOrchestrator {
       }
     }
 
-    // Calendar context — Travelpayouts is the only source that
-    // exposes a fare calendar. Skip the call when the token isn't set
-    // so we don't generate spurious errors.
-    let calendarData: { date: string; cheapest: number | null }[] = [];
-    if (travelpayoutsProvider.isAvailable()) {
-      try {
-        const month = params.date.slice(0, 7);
-        const { days } = await travelpayoutsApi.faresCalendar({
-          from: params.origin,
-          to: params.destination,
-          month,
-        });
-        calendarData = days.map((d) => ({
-          date: d.date,
-          cheapest: d.cheapest,
-        }));
-      } catch {
-        // Nearby-date context is optional.
-      }
-    }
-
+    // Calendar fetch removed — it was Travelpayouts-only. If a future
+    // provider exposes calendar data, plug it in here.
     const offers = sortOffersForDisplay(deduplicateOffers(allOffers));
     const availabilityState: FlightAvailabilityState = offers.some(
       (offer) => offer.availabilityState === "bookable_live",
@@ -365,7 +269,6 @@ class FlightDataProviderOrchestrator {
       offers,
       sources: Array.from(sourceSet),
       availabilityState,
-      calendarData: calendarData.length > 0 ? calendarData : undefined,
       errors: Object.keys(errors).length > 0 ? errors : undefined,
     };
   }

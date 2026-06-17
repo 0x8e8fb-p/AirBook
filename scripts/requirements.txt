@@ -1,0 +1,11 @@
+# Python deps for TheWingScan scrapers.
+#
+# Install:   pip install -r scripts/requirements.txt
+# Or venv:   python3 -m venv .venv && source .venv/bin/activate \
+#              && pip install -r scripts/requirements.txt
+
+# Reverse-engineered Google Flights RPC client. Used by
+# `src/lib/api/google-flights-provider.ts` via child_process.
+# Pin a known-stable release; bump deliberately because Google rotates
+# the underlying schema and fast-flights tends to ship breaking fixes.
+fast-flights>=2.2,<3
