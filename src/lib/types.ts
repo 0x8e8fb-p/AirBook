@@ -16,7 +16,16 @@ export type FlightSource =
   | 'cleartrip'
   | 'master_api'
   | 'travelpayouts_calendar'
-  | 'travelpayouts_realtime';
+  | 'travelpayouts_realtime'
+  // Multi-tier scraping architecture (rolling out incrementally).
+  // Slots are declared here so downstream code can switch on them
+  // before the underlying providers ship.
+  | 'google_flights_rpc'
+  | 'google_flights_headless'
+  | 'airline_direct_ryanair'
+  | 'airline_direct_indigo'
+  | 'airline_direct_spicejet'
+  | 'airline_direct_generic';
 
 export type FlightAvailabilityState = 'bookable_live' | 'reference_only' | 'unavailable';
 export type FlightDataFreshness = 'live' | 'cached' | 'unknown';

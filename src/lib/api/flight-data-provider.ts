@@ -5,6 +5,7 @@ import type {
   FlightDataFreshness,
   FlightSource,
 } from "@/lib/types";
+import { airlineScrapersProvider } from "./airline-scrapers";
 import { amadeusProvider } from "./amadeus-provider";
 import { simulatedProvider } from "./simulated-provider";
 import { travelpayoutsApi } from "./travelpayoutsClient";
@@ -14,7 +15,11 @@ const ENABLE_SIMULATED_PROVIDER =
   process.env.NODE_ENV !== "production" &&
   process.env.AIRBOOK_ENABLE_SIMULATED_FLIGHTS === "true";
 
-export type FlightProviderName = "amadeus" | "travelpayouts" | "simulated";
+export type FlightProviderName =
+  | "amadeus"
+  | "travelpayouts"
+  | "simulated"
+  | "airline_scrapers";
 
 export interface RawFlightOffer {
   id: string;
@@ -224,11 +229,48 @@ function sortOffersForDisplay(offers: RawFlightOffer[]): RawFlightOffer[] {
   });
 }
 
+const PROVIDER_SEARCH_TIMEOUT_MS = 20_000;
+
+// Wraps the long-standing travelpayoutsApi.searchFares call as a
+// FlightProvider so the orchestrator can treat every source the same
+// way. travelpayoutsApi itself is unchanged — all 929 lines of
+// existing client logic, retries, caching, and tests still apply.
+class TravelpayoutsProvider implements FlightProvider {
+  readonly name = "travelpayouts" as const;
+
+  isAvailable(): boolean {
+    return Boolean(process.env.TRAVELPAYOUTS_TOKEN);
+  }
+
+  async search(params: FlightSearchParams): Promise<RawFlightOffer[]> {
+    const { fares } = await travelpayoutsApi.searchFares({
+      from: params.origin,
+      to: params.destination,
+      date: params.date,
+      pax: params.passengers || 1,
+      cabin: params.cabin || "economy",
+      fresh: params.fresh,
+    });
+    return fares.map((fare) => travelpayoutsFareToOffer(fare, params));
+  }
+}
+
+export const travelpayoutsProvider = new TravelpayoutsProvider();
+
 class FlightDataProviderOrchestrator {
   private providers: FlightProvider[] = [];
 
   constructor() {
-    this.providers = [amadeusProvider];
+    // Tier 3: direct airline scrapers (Ryanair only today — IndiGo /
+    // SpiceJet / Air India are deliberately not registered until a
+    // ToS-compliant data source for those carriers is identified).
+    this.providers.push(airlineScrapersProvider);
+
+    // Existing live API providers retained as primaries until the
+    // Google Flights RPC port lands. travelpayoutsProvider wraps the
+    // unchanged travelpayoutsApi client.
+    this.providers.push(amadeusProvider);
+    this.providers.push(travelpayoutsProvider);
 
     if (ENABLE_SIMULATED_PROVIDER) {
       this.providers.push(simulatedProvider);
@@ -241,7 +283,20 @@ class FlightDataProviderOrchestrator {
     const providerResults = await Promise.all(
       availableProviders.map(async (provider): Promise<SearchResult> => {
         try {
-          const offers = await provider.search(params);
+          const offers = await Promise.race([
+            provider.search(params),
+            new Promise<RawFlightOffer[]>((_, reject) =>
+              setTimeout(
+                () =>
+                  reject(
+                    new Error(
+                      `Provider ${provider.name} timed out after ${PROVIDER_SEARCH_TIMEOUT_MS}ms`,
+                    ),
+                  ),
+                PROVIDER_SEARCH_TIMEOUT_MS,
+              ),
+            ),
+          ]);
           return { offers, provider: provider.name, cached: false };
         } catch (err) {
           return {
@@ -269,39 +324,25 @@ class FlightDataProviderOrchestrator {
       }
     }
 
-    try {
-      const { fares } = await travelpayoutsApi.searchFares({
-        from: params.origin,
-        to: params.destination,
-        date: params.date,
-        pax: params.passengers || 1,
-        cabin: params.cabin || "economy",
-        fresh: params.fresh,
-      });
-
-      const tpOffers = fares.map((fare) => travelpayoutsFareToOffer(fare, params));
-      if (tpOffers.length > 0) {
-        allOffers.push(...tpOffers);
-        sourceSet.add("travelpayouts");
-      }
-    } catch (err) {
-      errors.travelpayouts = err instanceof Error ? err.message : "Could not load route context";
-    }
-
+    // Calendar context — Travelpayouts is the only source that
+    // exposes a fare calendar. Skip the call when the token isn't set
+    // so we don't generate spurious errors.
     let calendarData: { date: string; cheapest: number | null }[] = [];
-    try {
-      const month = params.date.slice(0, 7);
-      const { days } = await travelpayoutsApi.faresCalendar({
-        from: params.origin,
-        to: params.destination,
-        month,
-      });
-      calendarData = days.map((d) => ({
-        date: d.date,
-        cheapest: d.cheapest,
-      }));
-    } catch {
-      // Nearby-date context is optional.
+    if (travelpayoutsProvider.isAvailable()) {
+      try {
+        const month = params.date.slice(0, 7);
+        const { days } = await travelpayoutsApi.faresCalendar({
+          from: params.origin,
+          to: params.destination,
+          month,
+        });
+        calendarData = days.map((d) => ({
+          date: d.date,
+          cheapest: d.cheapest,
+        }));
+      } catch {
+        // Nearby-date context is optional.
+      }
     }
 
     const offers = sortOffersForDisplay(deduplicateOffers(allOffers));
@@ -323,15 +364,11 @@ class FlightDataProviderOrchestrator {
   }
 
   hasLiveProvider(): boolean {
-    return Boolean(process.env.TRAVELPAYOUTS_TOKEN) || this.providers.some((p) => p.name !== "simulated" && p.isAvailable());
+    return this.providers.some((p) => p.name !== "simulated" && p.isAvailable());
   }
 
   getAvailableProviders(): FlightProviderName[] {
-    const available = this.providers.filter((p) => p.isAvailable()).map((p) => p.name);
-    if (process.env.TRAVELPAYOUTS_TOKEN) {
-      available.push("travelpayouts");
-    }
-    return Array.from(new Set(available));
+    return this.providers.filter((p) => p.isAvailable()).map((p) => p.name);
   }
 }
 

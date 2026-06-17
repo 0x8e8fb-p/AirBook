@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(grep -E \"\\\\.sql$|scratch/|playwright\")",
-      "Bash(git rm *)"
-    ]
-  }
-}
