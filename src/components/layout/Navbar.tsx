@@ -35,10 +35,10 @@ export function Navbar() {
     <>
       <header
         className={cn(
-          "fixed left-0 right-0 top-0 z-[60] border-b backdrop-blur-2xl transition-all duration-[var(--duration-base)] ease-[var(--ease-out)]",
+          "fixed left-0 right-0 top-0 z-[60] border-b backdrop-blur-md transition-all duration-[var(--duration-base)] ease-[var(--ease-out)]",
           scrolled
-            ? "h-[58px] border-[var(--border-default)]/90 bg-[var(--bg-base)]/90 shadow-[var(--depth-soft)]"
-            : "h-16 border-[var(--border-default)]/60 bg-[var(--bg-base)]/72",
+            ? "h-[58px] border-[var(--border-default)]/90 bg-[var(--bg-base)]/92 shadow-[var(--depth-soft)]"
+            : "h-16 border-[var(--border-default)]/60 bg-[var(--bg-base)]/82",
         )}
       >
         <nav

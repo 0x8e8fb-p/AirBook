@@ -13,7 +13,11 @@ import type { Fare } from "./travelpayoutsTypes";
 
 const ENABLE_SIMULATED_PROVIDER =
   process.env.NODE_ENV !== "production" &&
-  process.env.AIRBOOK_ENABLE_SIMULATED_FLIGHTS === "true";
+  (process.env.AIRBOOK_ENABLE_SIMULATED_FLIGHTS === "true" ||
+    // Auto-enable in dev when no live provider credentials are present,
+    // so a bare `npm run dev` returns realistic flight results instead
+    // of an empty UI. Production always requires the explicit env flag.
+    (!process.env.TRAVELPAYOUTS_TOKEN && !process.env.AMADEUS_CLIENT_ID));
 
 export type FlightProviderName =
   | "amadeus"
