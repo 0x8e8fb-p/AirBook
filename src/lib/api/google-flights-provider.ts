@@ -217,18 +217,62 @@ function mapToOffer(
   };
 }
 
+async function getBaseUrl(): Promise<string | null> {
+  try {
+    const { headers } = await import("next/headers");
+    const host = (await headers()).get("host");
+    if (!host) return null;
+    const protocol = host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https";
+    return `${protocol}://${host}`;
+  } catch {
+    return null;
+  }
+}
+
 class GoogleFlightsProvider implements FlightProvider {
   readonly name = "google_flights" as const;
 
   isAvailable(): boolean {
-    if (pythonMissing) return false;
     if (process.env.GF_DISABLED === "true") return false;
+    const isServerless = process.env.VERCEL === "true" || process.env.NODE_ENV === "production";
+    if (!isServerless && pythonMissing) return false;
     return true;
   }
 
   async search(params: FlightSearchParams): Promise<RawFlightOffer[]> {
     try {
-      const response = await runPythonBridge(params);
+      let response: PythonResponse | null = null;
+      const baseUrl = await getBaseUrl();
+
+      if (baseUrl) {
+        try {
+          const url = new URL(`${baseUrl}/api/flights`);
+          url.searchParams.set("origin", params.origin);
+          url.searchParams.set("destination", params.destination);
+          url.searchParams.set("date", params.date);
+          url.searchParams.set("passengers", String(params.passengers ?? 1));
+          url.searchParams.set("cabin", params.cabin ?? "economy");
+
+          const res = await fetch(url.toString(), { cache: "no-store" });
+          if (res.ok) {
+            response = (await res.json()) as PythonResponse;
+          } else {
+            console.warn(
+              `[google-flights] API endpoint returned status ${res.status}, falling back to local bridge.`,
+            );
+          }
+        } catch (fetchErr) {
+          console.warn(
+            "[google-flights] API endpoint fetch failed, falling back to local bridge:",
+            fetchErr instanceof Error ? fetchErr.message : fetchErr,
+          );
+        }
+      }
+
+      if (!response) {
+        response = await runPythonBridge(params);
+      }
+
       if (!response.success) {
         console.warn(
           `[google-flights] ${response.kind ?? "error"}: ${response.error ?? "unknown"}`,
@@ -240,7 +284,10 @@ class GoogleFlightsProvider implements FlightProvider {
         .filter((f) => f && f.price > 0)
         .map((f, i) => mapToOffer(f, params, i));
     } catch (err) {
-      console.warn("[google-flights] bridge call failed:", err instanceof Error ? err.message : err);
+      console.warn(
+        "[google-flights] search failed:",
+        err instanceof Error ? err.message : err,
+      );
       return [];
     }
   }
