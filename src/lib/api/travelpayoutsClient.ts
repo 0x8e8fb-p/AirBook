@@ -179,7 +179,7 @@ async function requestJson<T>(
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
-      const res = await fetch(url, {
+      const fetchOpts: RequestInit = {
         ...init,
         signal: controller.signal,
         cache: "no-store",
@@ -188,7 +188,23 @@ async function requestJson<T>(
           "User-Agent": "TheWingsScan/1.0 Travelpayouts",
           ...(init.headers ?? {}),
         },
-      });
+      };
+
+      let res: Response;
+      try {
+        res = await fetch(url, fetchOpts);
+      } catch (fetchErr) {
+        if (
+          fetchErr instanceof TypeError &&
+          (fetchErr.message.includes("AbortSignal") || fetchErr.message.includes("signal"))
+        ) {
+          // If the runtime rejects the signal due to class/polyfill mismatch, fallback to no signal.
+          delete fetchOpts.signal;
+          res = await fetch(url, fetchOpts);
+        } else {
+          throw fetchErr;
+        }
+      }
       clearTimeout(timeout);
 
       if ((res.status >= 500 || res.status === 429) && attempt < MAX_RETRIES) {
