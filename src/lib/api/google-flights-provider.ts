@@ -234,7 +234,7 @@ class GoogleFlightsProvider implements FlightProvider {
 
   isAvailable(): boolean {
     if (process.env.GF_DISABLED === "true") return false;
-    const isServerless = process.env.VERCEL === "true" || process.env.NODE_ENV === "production";
+    const isServerless = process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
     if (!isServerless && pythonMissing) return false;
     return true;
   }
