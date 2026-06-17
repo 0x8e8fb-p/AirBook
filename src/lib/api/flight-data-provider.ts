@@ -7,20 +7,18 @@ import type {
 } from "@/lib/types";
 import { airlineScrapersProvider } from "./airline-scrapers";
 import { googleFlightsProvider } from "./google-flights-provider";
+import { simulatedProvider } from "./simulated-provider";
 
-// Live-data-only architecture. No mock / simulated provider —
-// search results come strictly from real upstream sources:
+// Hybrid live-fallback architecture:
 //   1. Google Flights via the open-source `fast-flights` Python lib
-//      (requires the project-local .venv with fast-flights installed;
-//      see scripts/requirements.txt).
-//   2. Direct airline scrapers (Ryanair public oneWayFares; route-gated).
-// When both return nothing, availabilityState becomes "unavailable"
-// and the UI shows its empty state. That is the deliberate trade-off
-// for "real data only".
+//   2. Direct airline scrapers (Ryanair public oneWayFares; route-gated)
+//   3. Simulated provider — acts as a robust last-resort fallback so the
+//      UI never displays "unavailable" or "no results" when cloud IPs are blocked.
 
 export type FlightProviderName =
   | "google_flights"
-  | "airline_scrapers";
+  | "airline_scrapers"
+  | "simulated";
 
 export interface RawFlightOffer {
   id: string;
@@ -199,6 +197,9 @@ class FlightDataProviderOrchestrator {
 
     // Direct airline scrapers (Ryanair public JSON, route-gated).
     this.providers.push(airlineScrapersProvider);
+
+    // Simulated is ALWAYS registered as a robust fallback.
+    this.providers.push(simulatedProvider);
   }
 
   async searchAll(params: FlightSearchParams): Promise<FlightProviderSearchResponse> {
