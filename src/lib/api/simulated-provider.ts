@@ -345,7 +345,10 @@ class SimulatedProvider implements FlightProvider {
   readonly name = "simulated" as const;
 
   isAvailable(): boolean {
-    return process.env.NODE_ENV !== "production" && process.env.AIRBOOK_ENABLE_SIMULATED_FLIGHTS === "true";
+    return (
+      process.env.AIRBOOK_ENABLE_SIMULATED_FLIGHTS === "true" ||
+      process.env.NODE_ENV !== "production"
+    );
   }
 
   async search(params: FlightSearchParams): Promise<RawFlightOffer[]> {
