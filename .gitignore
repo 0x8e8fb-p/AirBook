@@ -48,3 +48,6 @@ next-env.d.ts
 *.db
 *.log
 scratch/
+
+# Python venv for fast-flights bridge
+.venv/

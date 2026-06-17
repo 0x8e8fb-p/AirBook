@@ -20,7 +20,6 @@
 // ──────────────────────────────────────────────────────────────────
 
 import { execFile } from "node:child_process";
-import path from "node:path";
 import type { CabinClass } from "@/lib/types";
 import type {
   FlightProvider,
@@ -28,9 +27,22 @@ import type {
   RawFlightOffer,
 } from "./flight-data-provider";
 
-const SCRIPT_PATH = path.join(process.cwd(), "scripts", "google-flights-rpc.py");
-const PYTHON_BIN = process.env.GF_PYTHON_BIN || "python3";
 const TIMEOUT_MS = Number(process.env.GF_TIMEOUT_MS || 18_000);
+
+// Paths resolved lazily so static analysers in Turbopack don't try
+// to bundle .venv/bin/python3 as an asset (it's a symlink to
+// /opt/homebrew/... which trips the "points out of filesystem root"
+// guard). The default python binary is "python3" on PATH; set
+// GF_PYTHON_BIN in .env to point at the project-local venv:
+//
+//   GF_PYTHON_BIN=./.venv/bin/python3
+function getScriptPath(): string {
+  return `${process.cwd()}/scripts/google-flights-rpc.py`;
+}
+
+function getPythonBin(): string {
+  return process.env.GF_PYTHON_BIN || "python3";
+}
 
 // In-process memoization. Once we discover python3 isn't on PATH we
 // stop trying for the lifetime of this process. Restart the dev server
@@ -65,8 +77,8 @@ function runPythonBridge(params: FlightSearchParams): Promise<PythonResponse> {
     });
 
     const child = execFile(
-      PYTHON_BIN,
-      [SCRIPT_PATH],
+      getPythonBin(),
+      [getScriptPath()],
       { timeout: TIMEOUT_MS, maxBuffer: 4 * 1024 * 1024 },
       (err, stdout, stderr) => {
         if (err) {

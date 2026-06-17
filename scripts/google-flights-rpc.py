@@ -29,11 +29,15 @@ import sys
 from typing import Any
 
 
-CABIN_MAP = {
-    "economy":         1,
-    "premium_economy": 2,
-    "business":        3,
-    "first":           4,
+# fast-flights >= 2.2 expects string seat keys (see
+# fast_flights/flights_impl.py: from_interface). The earlier integer
+# mapping triggered `KeyError: 1`.
+CABIN_MAP: dict[str, str] = {
+    "economy":         "economy",
+    "premium_economy": "premium-economy",
+    "premium-economy": "premium-economy",
+    "business":        "business",
+    "first":           "first",
 }
 
 
@@ -58,7 +62,7 @@ def main() -> None:
     try:
         # Import lazily so we can report a clean failure when the
         # package isn't installed yet.
-        from fast_flights import FlightData, Passengers, create_filter, get_flights  # type: ignore
+        from fast_flights import FlightData, Passengers, get_flights  # type: ignore
     except ImportError as e:
         emit_failure(
             "import",
@@ -67,30 +71,52 @@ def main() -> None:
         return
 
     try:
-        flight_filter = create_filter(
+        # fast-flights 2.2: get_flights() takes everything keyword-only;
+        # no separate create_filter step.
+        result = get_flights(
             flight_data=[FlightData(date=date, from_airport=origin, to_airport=destination)],
             trip="one-way",
-            seat=CABIN_MAP.get(cabin, 1),
+            seat=CABIN_MAP.get(cabin, "economy"),
             passengers=Passengers(adults=max(passengers, 1)),
         )
-        result = get_flights(flight_filter)
     except Exception as e:  # noqa: BLE001 - fast-flights raises a wide range
-        emit_failure("fetch", f"google flights request failed: {e}")
+        emit_failure("fetch", f"google flights request failed: {type(e).__name__}: {e}")
         return
 
     flights: list[dict[str, Any]] = []
     for f in getattr(result, "flights", []) or []:
         flights.append({
-            "airline":        getattr(f, "name",            "") or "",
-            "departure_time": getattr(f, "departure",       "") or "",
-            "arrival_time":   getattr(f, "arrival",         "") or "",
-            "duration":       getattr(f, "duration",        "") or "",
-            "stops":          int(getattr(f, "stops",       0) or 0),
+            "airline":        getattr(f, "name",       "") or "",
+            "departure_time": getattr(f, "departure",  "") or "",
+            "arrival_time":   getattr(f, "arrival",    "") or "",
+            "duration":       getattr(f, "duration",   "") or "",
+            "stops":          stops_to_int(getattr(f, "stops", 0)),
             "price":          parse_price(getattr(f, "price", "")),
-            "is_best":        bool(getattr(f, "is_best",   False)),
+            "is_best":        bool(getattr(f, "is_best", False)),
         })
 
-    json.dump({"success": True, "flights": flights}, sys.stdout)
+    json.dump(
+        {
+            "success":       True,
+            "flights":       flights,
+            "current_price": getattr(result, "current_price", None),
+        },
+        sys.stdout,
+    )
+
+
+def stops_to_int(raw: Any) -> int:
+    """fast-flights returns stops as int OR string ("Nonstop", "1 stop",
+    "Unknown"). Normalise to int."""
+    if isinstance(raw, int):
+        return raw
+    if isinstance(raw, str):
+        lower = raw.lower()
+        if "nonstop" in lower or lower == "0":
+            return 0
+        digits = "".join(ch for ch in raw if ch.isdigit())
+        return int(digits) if digits else 0
+    return 0
 
 
 def parse_price(raw: Any) -> float:

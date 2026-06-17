@@ -7,21 +7,20 @@ import type {
 } from "@/lib/types";
 import { airlineScrapersProvider } from "./airline-scrapers";
 import { googleFlightsProvider } from "./google-flights-provider";
-import { simulatedProvider } from "./simulated-provider";
 
-// Zero paid-API architecture. Travelpayouts + Amadeus integrations
-// were removed from this orchestrator. Search now flows through:
-//   1. Google Flights via the open-source `fast-flights` Python bridge
-//      (returns live fares when python3 + fast-flights are installed,
-//      silently no-ops otherwise)
-//   2. Direct airline scrapers (Ryanair public JSON)
-//   3. Simulated provider — ALWAYS on, last-resort guarantee that the
-//      UI never shows "no fares"
+// Live-data-only architecture. No mock / simulated provider —
+// search results come strictly from real upstream sources:
+//   1. Google Flights via the open-source `fast-flights` Python lib
+//      (requires the project-local .venv with fast-flights installed;
+//      see scripts/requirements.txt).
+//   2. Direct airline scrapers (Ryanair public oneWayFares; route-gated).
+// When both return nothing, availabilityState becomes "unavailable"
+// and the UI shows its empty state. That is the deliberate trade-off
+// for "real data only".
 
 export type FlightProviderName =
   | "google_flights"
-  | "airline_scrapers"
-  | "simulated";
+  | "airline_scrapers";
 
 export interface RawFlightOffer {
   id: string;
@@ -194,17 +193,12 @@ class FlightDataProviderOrchestrator {
   private providers: FlightProvider[] = [];
 
   constructor() {
-    // Google Flights via the fast-flights Python bridge (no-ops if
-    // python3 / fast-flights aren't installed).
+    // Google Flights via the fast-flights Python bridge. Returns []
+    // silently if python3 / fast-flights / the .venv aren't set up.
     this.providers.push(googleFlightsProvider);
 
     // Direct airline scrapers (Ryanair public JSON, route-gated).
     this.providers.push(airlineScrapersProvider);
-
-    // Simulated is ALWAYS registered. Guarantees the UI never shows
-    // "no fares" when the live tiers are unconfigured or failing.
-    // Dedup ranks live > simulated, so this only fills the gap.
-    this.providers.push(simulatedProvider);
   }
 
   async searchAll(params: FlightSearchParams): Promise<FlightProviderSearchResponse> {
@@ -274,7 +268,7 @@ class FlightDataProviderOrchestrator {
   }
 
   hasLiveProvider(): boolean {
-    return this.providers.some((p) => p.name !== "simulated" && p.isAvailable());
+    return this.providers.some((p) => p.isAvailable());
   }
 
   getAvailableProviders(): FlightProviderName[] {
