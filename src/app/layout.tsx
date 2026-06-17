@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, Geist, Geist_Mono } from "next/font/google";
+import { Cairo, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { cookies } from "next/headers";
@@ -10,23 +10,22 @@ import { ThemeFab } from "@/components/theme/ThemeFab";
 import { EnvWarningBanner } from "@/components/layout/EnvWarningBanner";
 import type { ThemeMode, ThemeName } from "@/lib/theme/types";
 
-const geist = Geist({
+// Cairo is a geometric sans whose Latin glyphs are visually very close
+// to Dubai font. Dubai itself isn't on Google Fonts, so we list it
+// first in the family chain (loads automatically for users who have it
+// installed locally) and Cairo as the network fallback.
+const cairo = Cairo({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-geist",
+  variable: "--font-cairo",
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
+// Kept only for `.font-mono-price` tabular numbers in fare cards.
 const geistMono = Geist_Mono({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-geist-mono",
-});
-
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-dm-sans",
-  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -90,7 +89,7 @@ export default async function RootLayout({
       suppressHydrationWarning
       data-theme={initialTheme}
       data-theme-mode={mode}
-      className={`${geist.variable} ${geistMono.variable} ${dmSans.variable} h-full antialiased`}
+      className={`${cairo.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
         <script

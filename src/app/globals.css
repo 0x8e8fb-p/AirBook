@@ -3,7 +3,10 @@
 
 @layer base {
   :root {
-    --font-body: var(--font-dm-sans), system-ui, -apple-system, sans-serif;
+    /* Body font is resolved in tokens.css → "Dubai" → Cairo → system.
+       The earlier `--font-dm-sans` override is dropped; that variable
+       no longer exists. */
+    --font-body: "Dubai", var(--font-cairo), system-ui, -apple-system, sans-serif;
   }
 }
 
