@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -18,29 +18,14 @@ const NAV_LINKS = [
 export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
 
   const { data: session } = useSession();
   const user = session?.user;
   const displayName = user?.name?.split(" ")[0] || "Profile";
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   return (
     <>
-      <header
-        className={cn(
-          "fixed left-0 right-0 top-0 z-[60] border-b transition-all duration-[var(--duration-base)] ease-[var(--ease-out)]",
-          scrolled
-            ? "h-[58px] border-[var(--border-default)]/90 bg-[var(--bg-base)]/98 shadow-[var(--depth-soft)]"
-            : "h-16 border-[var(--border-default)]/60 bg-[var(--bg-base)]/94",
-        )}
-      >
+      <header className="fixed left-0 right-0 top-0 z-[60] h-16 border-b border-[var(--border-default)]/80 bg-[var(--bg-base)]/96">
         <nav
           className="container-app flex h-full items-center justify-between gap-3"
           aria-label="Main navigation"
@@ -163,14 +148,6 @@ export function Navbar() {
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </nav>
-
-        <span
-          aria-hidden="true"
-          className={cn(
-            "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[color-mix(in_srgb,var(--accent-cta)_42%,transparent)] to-transparent transition-opacity duration-[var(--duration-slow)]",
-            scrolled ? "opacity-100" : "opacity-0",
-          )}
-        />
       </header>
 
       <AnimatePresence>
@@ -180,7 +157,7 @@ export function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-[55] bg-[var(--bg-base)]/96 pt-16 backdrop-blur-2xl md:hidden"
+            className="fixed inset-0 z-[55] bg-[var(--bg-base)]/98 pt-16 md:hidden"
           >
             <div className="container-app flex h-[calc(100vh-4rem)] flex-col justify-between py-8 pb-10">
               <div className="surface-panel mb-8 rounded-[28px] p-4">
