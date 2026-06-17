@@ -26,10 +26,10 @@ export function AnimatedText({
       {words.map((word, i) => (
         <motion.span
           key={`${word}-${i}`}
-          initial={{ opacity: 0, y: 20, filter: "blur(4px)" }}
-          animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : {}}
+          initial={{ opacity: 0, y: 16 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{
-            duration: 0.5,
+            duration: 0.45,
             delay: i * staggerDelay,
             ease: [0.16, 1, 0.3, 1],
           }}

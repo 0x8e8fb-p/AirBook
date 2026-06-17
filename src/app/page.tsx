@@ -197,7 +197,9 @@ export default function HomePage() {
           aria-hidden="true"
           className="pointer-events-none absolute left-1/2 top-[-8rem] z-[2] h-[22rem] w-[34rem] -translate-x-1/2 rounded-full bg-[color-mix(in_srgb,var(--accent-cyan)_7%,transparent)] blur-[80px]"
         />
-        <div aria-hidden="true" className="hero-grid absolute inset-0 z-[3] opacity-[0.10] fade-bottom" />
+        {/* hero-grid pattern + fade-bottom mask removed: two stacked
+            linear-gradients + a mask-image were a recurring paint cost
+            on every scroll over the hero section. */}
 
         <div className="container-app relative z-10 pb-20 pt-24 sm:pt-28 md:pt-32 lg:pb-24">
           <div className="grid gap-10 xl:grid-cols-[1.05fr_0.95fr] xl:items-end">

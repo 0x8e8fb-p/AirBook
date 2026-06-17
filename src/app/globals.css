@@ -48,34 +48,14 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at top center, color-mix(in srgb, var(--accent-cyan) 12%, transparent) 0%, transparent 42%),
-    radial-gradient(circle at 16% 12%, color-mix(in srgb, var(--accent-purple) 12%, transparent) 0%, transparent 24%),
-    radial-gradient(circle at 84% 18%, color-mix(in srgb, var(--accent-amber) 7%, transparent) 0%, transparent 26%),
-    linear-gradient(180deg, color-mix(in srgb, var(--bg-base) 15%, transparent) 0%, transparent 24%, color-mix(in srgb, var(--accent-cyan) 5%, transparent) 100%);
-  opacity: 0.92;
-  z-index: 0;
-}
-
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.035'/%3E%3C/svg%3E");
-  mix-blend-mode: soft-light;
-  opacity: 0.2;
-  z-index: 0;
-}
-
-html[data-theme="matte"] body {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.008'/%3E%3C/svg%3E");
-}
+/* body::before and body::after fixed-viewport overlays have been
+   removed entirely:
+   - body::after used `mix-blend-mode: soft-light` over an SVG noise
+     image, which forced a backdrop read on every paint (worst single
+     scroll-perf offender in the app).
+   - body::before stacked 4 radial gradients at 0.92 opacity over the
+     whole viewport, painted on every scroll.
+   The page surfaces (cards, panels) carry enough texture on their own. */
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-body);
@@ -348,58 +328,27 @@ html[data-theme="warm"] select {
     background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent-primary) 24%, transparent), transparent);
   }
 
-  /* ── Cinematic depth surface — for hero / flagship cards ── */
+  /* surface-hero — flagship rounded panel. The previous version added
+     a gradient-edge "kiss" via a `::before` pseudo with mask-composite
+     (border-image style trick). That mask compositing was expensive
+     on every paint of the panel and any overlapping scroll, so it was
+     removed in favor of a static slightly brighter border. */
   .surface-hero {
     position: relative;
     border-radius: 28px;
-    border: 1px solid color-mix(in srgb, var(--border-default) 90%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border-strong) 84%, transparent);
     background:
       linear-gradient(180deg,
         color-mix(in srgb, var(--bg-elevated) 96%, white 4%) 0%,
         color-mix(in srgb, var(--bg-subtle) 88%, transparent) 100%);
     box-shadow: var(--depth-hero);
-    isolation: isolate;
   }
 
-  .surface-hero::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    padding: 1px;
-    border-radius: inherit;
-    background: var(--gradient-edge-soft);
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-    opacity: 0.9;
-  }
-
-  /* ── Static gradient border kiss for premium cards.
-        Mask compositing is the expensive bit; we keep it static and
-        only animate opacity on hover to avoid per-frame mask recalcs. ── */
+  /* gradient-border-kiss — was a mask-composited gradient border.
+     Replaced with a no-op class so existing call sites keep working
+     without us paying the per-paint mask-composite cost. */
   .gradient-border-kiss {
     position: relative;
-    isolation: isolate;
-  }
-  .gradient-border-kiss::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    padding: 1px;
-    border-radius: inherit;
-    background: var(--gradient-aurora);
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-    opacity: 0.45;
-    transition: opacity var(--duration-base) var(--ease-out);
-  }
-  .gradient-border-kiss:hover::after {
-    opacity: 0.85;
   }
 
   /* ── Hover lift — universal interactive surface motion.
@@ -563,17 +512,12 @@ html[data-theme="warm"] select {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-grid {
-    background-size: 120px 120px;
-  }
   .marquee-track,
-  .gradient-border-kiss::after,
   .pulse-dot,
   .gloss-sweep::before {
     animation: none !important;
     transition: none !important;
   }
-  .gradient-border-kiss::after { opacity: 0.55; }
 }
 
 .theme-transition-overlay {
