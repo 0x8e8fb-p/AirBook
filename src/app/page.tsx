@@ -22,7 +22,6 @@ import {
 import { getPlatformStats } from "@/app/actions/flightActions";
 import { Footer } from "@/components/layout/Footer";
 import { AnimatedText } from "@/components/ui/AnimatedText";
-import { Marquee } from "@/components/ui/Marquee";
 import { TravelerSearchForm } from "@/components/ui/TravelerSearchForm";
 import type { SearchParams } from "@/lib/types";
 import { useSearchStore } from "@/stores/search-store";
@@ -102,7 +101,10 @@ const SURFACE_BENEFITS = [
   },
 ];
 
-// Indian carrier roster + select internationals. Marquee items.
+// Indian carrier roster surfaced as plain content below the hero.
+// Was previously rendered through a `Marquee` with an infinite
+// `marquee-scroll` keyframe; the always-on animation cost wasn't
+// worth the eye-candy on a search-first page.
 const CARRIER_STRIP: Array<{ code: string; name: string }> = [
   { code: "6E", name: "IndiGo" },
   { code: "AI", name: "Air India" },
@@ -313,25 +315,25 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ───── CARRIER MARQUEE ────────────────────────────────────── */}
+      {/* ───── CARRIERS ─ static row, no animation ───────────────── */}
       <section className="relative z-10 border-y border-[var(--border-muted)] py-7">
         <div className="container-app">
           <div className="mb-4">
             <span className="text-eyebrow text-[var(--text-muted)]">Carriers covered</span>
           </div>
-          <Marquee duration="48s">
+          <div className="flex flex-wrap gap-2">
             {CARRIER_STRIP.map((carrier) => (
               <div
                 key={carrier.code}
-                className="inline-flex items-center gap-3 rounded-full border border-[var(--border-default)] bg-[color-mix(in_srgb,var(--bg-elevated)_72%,transparent)] px-4 py-2"
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--border-default)] bg-[color-mix(in_srgb,var(--bg-elevated)_72%,transparent)] px-3 py-1.5"
               >
-                <span className="font-mono-price text-sm font-semibold tracking-[0.08em] text-[var(--text-primary)]">
+                <span className="font-mono-price text-xs font-semibold tracking-[0.08em] text-[var(--text-primary)]">
                   {carrier.code}
                 </span>
-                <span className="text-sm text-[var(--text-secondary)]">{carrier.name}</span>
+                <span className="text-xs text-[var(--text-secondary)]">{carrier.name}</span>
               </div>
             ))}
-          </Marquee>
+          </div>
         </div>
       </section>
 

@@ -480,24 +480,25 @@ html[data-theme="warm"] select {
     box-shadow: inset 0 -1px 0 color-mix(in srgb, black 22%, transparent), 0 1px 0 color-mix(in srgb, white 4%, transparent);
   }
 
-  /* ── Live pulse dot — for "Live" badges, scraper status ── */
+  /* ── Live status dot. Was previously animated via a 2s `pulse-ring`
+        keyframe; the continuous animation showed up in scroll-perf
+        traces, so we made it a flat colored dot. Tone variants are
+        kept so call sites don't need to change. ── */
   .pulse-dot {
-    position: relative;
     display: inline-flex;
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 9999px;
     background: var(--accent-green);
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-green) 60%, transparent);
-    animation: pulse-ring 2s var(--ease-out) infinite;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-green) 18%, transparent);
   }
   .pulse-dot.amber {
     background: var(--accent-amber);
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-amber) 60%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-amber) 18%, transparent);
   }
   .pulse-dot.cyan {
     background: var(--accent-cyan);
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-cyan) 60%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-cyan) 18%, transparent);
   }
 
   /* ── Aviation-grade display typography ── */

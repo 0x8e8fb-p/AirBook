@@ -8,7 +8,6 @@ import { SmoothScrollProvider } from "@/lib/lenis";
 import { Navbar } from "@/components/layout/Navbar";
 import { ThemeFab } from "@/components/theme/ThemeFab";
 import { EnvWarningBanner } from "@/components/layout/EnvWarningBanner";
-import { ScrollProgressBar } from "@/components/layout/ScrollProgressBar";
 import type { ThemeMode, ThemeName } from "@/lib/theme/types";
 
 const geist = Geist({
@@ -104,7 +103,9 @@ export default async function RootLayout({
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] relative isolate">
         <Providers>
           <SmoothScrollProvider>
-            <ScrollProgressBar />
+            {/* ScrollProgressBar was removed: it called setState on every
+                scroll event, causing a React re-render at scroll rate.
+                Decorative-only feature; the cost wasn't worth it. */}
             {/* The previous full-viewport ambient wrapper (hero-grid +
                 two blur-[130px] orbs) was removed: that 130px blur on
                 26rem elements sat behind every page and dominated the
