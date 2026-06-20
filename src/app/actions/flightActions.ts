@@ -3,11 +3,9 @@
 import { getServerSession } from "next-auth/next";
 import { flightDataOrchestrator } from "@/lib/api/flight-data-provider";
 import { fetchFlights, type FetchFlightsOptions, type FetchFlightsResponse } from "@/lib/api/live-flight-mapper";
-// Travelpayouts is still imported by the auxiliary helpers below
-// (aggregator, status, weather, etc.). These calls no-op gracefully
-// when TRAVELPAYOUTS_TOKEN is unset — they're not on the critical
-// search path. Search itself now flows entirely through the new
-// orchestrator (google-flights → airline-scrapers → simulated).
+// Travelpayouts helpers (status, weather, split-ticket calendar, etc.) are
+// kept as graceful no-ops when TRAVELPAYOUTS_TOKEN is unset.
+// Flight search itself flows through the orchestrator: google-flights → airline-scrapers → simulated.
 import { travelpayoutsApi, TravelpayoutsConfigError, TravelpayoutsError } from "@/lib/api/travelpayoutsClient";
 import { calculateBestEffectivePrice, type FlightPriceDetails } from "@/lib/flight/offerEngine";
 import { prisma } from "@/lib/prisma";
@@ -307,29 +305,6 @@ export async function fetchHiddenCityOpportunities(origin: string, destination: 
   return findHiddenCityOpportunities(origin, destination, date);
 }
 
-// ─── NEW: Travelpayouts aggregator integration ──────────────────────
-
-export async function searchAggregatorFlights(
-  fromCode: string,
-  toCode: string,
-  departDate: string,
-  returnDate?: string,
-) {
-  try {
-    return await travelpayoutsApi.aggregatorSearch(
-      fromCode,
-      toCode,
-      departDate,
-      returnDate,
-    );
-  } catch (err) {
-    if (err instanceof TravelpayoutsConfigError || err instanceof TravelpayoutsError) {
-      console.error("Aggregator search error:", err.message);
-      return null;
-    }
-    throw err;
-  }
-}
 
 export async function getFlightStatus(flightNumber: string) {
   try {

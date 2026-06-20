@@ -520,17 +520,6 @@ export async function searchAirports(params: SearchAirportsParams) {
   return AirportsResponseSchema.parse({ airports: filtered });
 }
 
-export async function listAirlines() {
-  const key = cacheKey(["travelpayouts", "airlines", DEFAULT_LOCALE]);
-  let records = await cacheGet<Airline[]>(key);
-  if (!records) {
-    const json = await requestJson("/data/en/airlines.json", z.array(z.any()));
-    records = json.map(mapAirline).filter((a): a is Airline => a !== null);
-    await cacheSet(key, records, CACHE_TTL.airlines);
-  }
-  return AirlinesResponseSchema.parse({ airlines: records });
-}
-
 export async function searchFares(params: SearchFaresParams) {
   const useRealtime = process.env.TRAVELPAYOUTS_ENABLE_REALTIME_SEARCH === "true";
   if (useRealtime) {
@@ -897,21 +886,9 @@ export async function createBookingLink(searchId: string, bookingToken: string) 
   }));
 }
 
-export async function subscribeAlert() {
-  return null;
-}
-
-export async function getAlerts() {
-  return [];
-}
-
-export async function deleteAlert() {
-  return null;
-}
 
 export const travelpayoutsApi = {
   searchAirports,
-  listAirlines,
   searchFares,
   faresCalendar,
   listCoupons,
@@ -939,7 +916,4 @@ export const travelpayoutsApi = {
   getTrafficDaily,
   getTrafficSummary,
   createBookingLink,
-  subscribeAlert,
-  getAlerts,
-  deleteAlert,
 };
